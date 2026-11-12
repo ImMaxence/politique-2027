@@ -1,0 +1,207 @@
+---
+import Puppet from '../components/Puppet.astro';
+import { SITE } from '../config/site';
+import { CAMP_IDS } from '../game/data/types';
+import { CAMPS } from '../game/data/units';
+import { GAME_STRINGS, type Lang } from '../i18n/game';
+import { absolute, path } from '../i18n/routes';
+import { SITE_STRINGS } from '../i18n/site';
+import Base from '../layouts/Base.astro';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = SITE_STRINGS[lang];
+const g = GAME_STRINGS[lang];
+const home = t.home;
+const url = absolute(path(lang, 'home'));
+const leaders = CAMP_IDS.map((camp) => ({ camp, id: CAMPS[camp].roster[5] }));
+const spotlight = ['hollande', 'melenchon', 'macron', 'borne', 'sarkozy', 'lepen', 'riner', 'lassalle'];
+
+const author = { '@type': 'Person', name: SITE.author.name, url: SITE.author.url, sameAs: [SITE.author.github] };
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE.name,
+    url: SITE.url,
+    inLanguage: ['fr', 'en'],
+    description: t.meta.home.description,
+    author,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'VideoGame',
+    name: SITE.name,
+    url,
+    description: t.meta.home.description,
+    image: absolute('/og.png'),
+    genre: ['Tower defense', 'Strategy', 'Satire'],
+    gamePlatform: 'Web browser',
+    applicationCategory: 'Game',
+    operatingSystem: 'Any',
+    playMode: 'SinglePlayer',
+    numberOfPlayers: 1,
+    inLanguage: ['fr', 'en'],
+    isAccessibleForFree: true,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+    softwareVersion: SITE.version,
+    datePublished: SITE.published,
+    dateModified: SITE.updated,
+    license: 'https://opensource.org/license/mit',
+    codeRepository: SITE.repo,
+    author,
+    publisher: author,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: home.faq.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+];
+---
+
+<Base lang={lang} route="home" jsonLd={jsonLd}>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="container hero__inner">
+      <div>
+        <p class="kicker">{home.kicker}</p>
+        <h1 id="hero-title">Politique <span>2027</span></h1>
+        <p class="hero__lead">{home.lead}</p>
+        <div class="hero__actions">
+          <a class="btn btn--primary" href={path(lang, 'play')}>{home.cta}</a>
+          <a class="btn" href={path(lang, 'characters')}>{home.secondary}</a>
+        </div>
+        <ul class="perks">
+          {home.perks.map((perk) => <li>{perk}</li>)}
+        </ul>
+      </div>
+      <div class="board" aria-hidden="true">
+        {
+          leaders.map(({ camp, id }) => (
+            <div class="board__poster" data-camp={camp}>
+              <Puppet id={id} uid="hero" size={180} />
+              <span class="board__camp">{g.camps[camp].short}</span>
+              <span class="board__name">{g.figures[id].title}</span>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section container" aria-labelledby="camps-title">
+    <div class="section__head">
+      <h2 id="camps-title">{home.campsTitle}</h2>
+      <span class="tricolour"></span>
+      <p>{home.campsLead}</p>
+    </div>
+    <div class="grid-3">
+      {
+        CAMP_IDS.map((camp) => (
+          <article class="poster" data-camp={camp}>
+            <div class="poster__head">
+              <h3>{g.camps[camp].name}</h3>
+              <p>{g.camps[camp].motto}</p>
+            </div>
+            <div class="poster__body">
+              <div class="poster__faces" aria-hidden="true">
+                {CAMPS[camp].roster.map((id) => <Puppet id={id} uid="camps" size={64} />)}
+              </div>
+              <p class="poster__names">
+                <b>{home.rosterLabel} :</b> {CAMPS[camp].roster.map((id) => g.figures[id].name).join(', ')}.
+              </p>
+              <p class="trump">
+                <small>{home.trump}</small>
+                <b>{g.ultimates[CAMPS[camp].ultimate].name}</b>
+                {g.ultimates[CAMPS[camp].ultimate].desc}
+              </p>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <div class="band">
+    <section class="section container" aria-labelledby="how-title">
+      <div class="section__head">
+        <h2 id="how-title">{home.howTitle}</h2>
+        <span class="tricolour"></span>
+      </div>
+      <ol class="steps" role="list">
+        {
+          home.steps.map((step) => (
+            <li class="step">
+              <h3>{step.title}</h3>
+              <p>{step.text}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+  </div>
+
+  <section class="section container" aria-labelledby="cast-title">
+    <div class="section__head">
+      <h2 id="cast-title">{home.castTitle}</h2>
+      <span class="tricolour"></span>
+      <p>{home.castLead}</p>
+    </div>
+    <ul class="cast" role="list">
+      {
+        spotlight.map((id) => (
+          <li class="figure-card" data-camp={Object.values(CAMPS).find((c) => c.roster.includes(id))?.id}>
+            <Puppet id={id} uid="cast" size={96} />
+            <div>
+              <p class="figure-card__party">{g.figures[id].party}</p>
+              <h3>{g.figures[id].name}</h3>
+              <p class="figure-card__title">{g.figures[id].title}</p>
+            </div>
+            <p class="figure-card__power"><b>{g.figures[id].power}</b>{g.figures[id].desc}</p>
+            <p class="figure-card__quote">« {g.figures[id].lines[0]} »</p>
+          </li>
+        ))
+      }
+    </ul>
+    <p class="meta-line"><a class="btn" href={path(lang, 'characters')}>{home.castCta}</a></p>
+  </section>
+
+  <div class="band">
+    <section class="section container" aria-labelledby="faq-title">
+      <div class="section__head">
+        <h2 id="faq-title">{home.faqTitle}</h2>
+        <span class="tricolour"></span>
+      </div>
+      <div class="faq">
+        {
+          home.faq.map((item, index) => (
+            <details open={index === 0}>
+              <summary><h3>{item.q}</h3></summary>
+              <p>{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+  </div>
+
+  <section class="section container" aria-labelledby="satire-title">
+    <div class="notice">
+      <h2 id="satire-title">{home.satireTitle}</h2>
+      <p>{home.satire}</p>
+    </div>
+  </section>
+
+  <section class="section container cta-final" aria-labelledby="final-title">
+    <h2 id="final-title">{home.finalTitle}</h2>
+    <p>{home.finalText}</p>
+    <a class="btn btn--primary" href={path(lang, 'play')}>{home.cta}</a>
+  </section>
+</Base>

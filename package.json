@@ -1,0 +1,42 @@
+{
+  "name": "politique-2027",
+  "version": "1.1.0",
+  "description": "Politique 2027 — a satirical lane-defense browser game about the French presidential race. Pick the Left, the Centre, the Right or the Others and hold the Élysée steps.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "author": "Maxence Bonnici (https://mbonnici.fr)",
+  "homepage": "https://politique2027.mbonnici.fr",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ImMaxence/politique-2027.git"
+  },
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "balance": "tsx scripts/balance.ts",
+    "assets": "tsx scripts/generate-assets.ts",
+    "screenshots": "tsx scripts/screenshots.ts"
+  },
+  "dependencies": {
+    "@fontsource-variable/public-sans": "^5.3.0",
+    "@fontsource/anton": "^5.3.0",
+    "astro": "^7.4.11"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.65.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.0",
+    "vitest": "^5.1.0"
+  }
+}

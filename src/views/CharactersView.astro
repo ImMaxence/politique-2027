@@ -1,0 +1,187 @@
+---
+import Puppet from '../components/Puppet.astro';
+import { CAMP_IDS, type CampId } from '../game/data/types';
+import { CAMPS, EXTRAS, GUESTS, REINFORCEMENTS, UNITS, categoryOf } from '../game/data/units';
+import { GAME_STRINGS, type Lang } from '../i18n/game';
+import { absolute, path } from '../i18n/routes';
+import { SITE_STRINGS } from '../i18n/site';
+import Base from '../layouts/Base.astro';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = SITE_STRINGS[lang];
+const g = GAME_STRINGS[lang];
+const page = t.characters;
+const extras = Object.keys(EXTRAS).filter((kind) => !EXTRAS[kind].portrait);
+const tint: CampId[] = ['gauche', 'centre', 'droite', 'autres'];
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: t.meta.characters.title,
+    url: absolute(path(lang, 'characters')),
+    numberOfItems: CAMP_IDS.length * 6,
+    itemListElement: CAMP_IDS.flatMap((camp) => CAMPS[camp].roster).map((id, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: `${g.figures[id].name} — ${g.figures[id].power}`,
+      description: g.figures[id].desc,
+    })),
+  },
+];
+---
+
+<Base lang={lang} route="characters" jsonLd={jsonLd}>
+  <div class="container page-head">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href={path(lang, 'home')}>{t.labels.home}</a></li>
+        <li aria-current="page">{t.labels.characters}</li>
+      </ol>
+    </nav>
+    <h1>{page.title}</h1>
+    <span class="tricolour"></span>
+    <p>{page.lead}</p>
+  </div>
+
+  <div class="container">
+    {
+      CAMP_IDS.map((camp) => (
+        <section class="camp-block" data-camp={camp} aria-labelledby={`camp-${camp}`}>
+          <div class="camp-block__head">
+            <div>
+              <h2 id={`camp-${camp}`}><span>{g.camps[camp].name}</span></h2>
+              <p>{g.camps[camp].motto}</p>
+            </div>
+            <p class="trump">
+              <small>{page.trump}</small>
+              <b>{g.ultimates[CAMPS[camp].ultimate].name}</b>
+              {g.ultimates[CAMPS[camp].ultimate].desc}
+            </p>
+          </div>
+          <ul class="cast" role="list">
+            {
+              CAMPS[camp].roster.map((id) => {
+                const unit = UNITS[id];
+                const text = g.figures[id];
+                return (
+                  <li class="figure-card" data-camp={camp} id={id}>
+                    <Puppet id={id} uid="sheet" size={96} />
+                    <div>
+                      <p class="figure-card__party">{text.party}</p>
+                      <h3>{text.name}</h3>
+                      <p class="figure-card__title">{text.title}</p>
+                    </div>
+                    <p class="figure-card__power"><b>{text.power}</b>{text.desc}</p>
+                    <p class="figure-card__quote">« {text.lines.join(' » « ')} »</p>
+                    <ul class="stats">
+                      <li class="stats__type" data-type={categoryOf(unit)}>{g.types[categoryOf(unit)]}</li>
+                      <li>{page.cost} : {unit.cost}</li>
+                      <li>{page.credibility} : {unit.hp}</li>
+                      <li>{page.recharge} : {unit.recharge} {page.seconds}</li>
+                    </ul>
+                  </li>
+                );
+              })
+            }
+          </ul>
+        </section>
+      ))
+    }
+
+    <section class="camp-block" aria-labelledby="reinforcements-title">
+      <div class="camp-block__head">
+        <div>
+          <h2 id="reinforcements-title"><span>{page.reinforcementsTitle}</span></h2>
+          <p>{page.reinforcementsLead}</p>
+        </div>
+      </div>
+      <ul class="cast" role="list">
+        {
+          REINFORCEMENTS.map((id) => {
+            const unit = UNITS[id];
+            const text = g.figures[id];
+            return (
+              <li class="figure-card" id={id}>
+                <Puppet id={id} uid="sheet" size={96} />
+                <div>
+                  <p class="figure-card__party">{text.party}</p>
+                  <h3>{text.name}</h3>
+                  <p class="figure-card__title">{text.title}</p>
+                </div>
+                <p class="figure-card__power"><b>{text.power}</b>{text.desc}</p>
+                <p class="figure-card__quote">« {text.lines.join(' » « ')} »</p>
+                <ul class="stats">
+                  <li class="stats__type" data-type={categoryOf(unit)}>{g.types[categoryOf(unit)]}</li>
+                  <li>{page.cost} : {unit.cost}</li>
+                  <li>{page.recharge} : {unit.recharge} {page.seconds}</li>
+                </ul>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </section>
+
+    <section class="camp-block" aria-labelledby="guest-title">
+      <div class="camp-block__head">
+        <div>
+          <h2 id="guest-title"><span>{page.guestTitle}</span></h2>
+          <p>{page.guestLead}</p>
+        </div>
+      </div>
+      <ul class="cast" role="list">
+        {
+          GUESTS.map((id) => {
+            const text = g.figures[id];
+            return (
+              <li class="figure-card" id={id}>
+                <Puppet id={id} uid="sheet" size={96} />
+                <div>
+                  <p class="figure-card__party">{text.party}</p>
+                  <h3>{text.name}</h3>
+                  <p class="figure-card__title">{text.title}</p>
+                </div>
+                <p class="figure-card__power"><b>{text.power}</b>{text.desc}</p>
+                <p class="figure-card__quote">« {text.lines.join(' » « ')} »</p>
+                <ul class="stats">
+                  <li>{page.credibility} : {EXTRAS[id].hp}</li>
+                </ul>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </section>
+
+    <section class="camp-block" aria-labelledby="extras-title">
+      <div class="camp-block__head">
+        <div>
+          <h2 id="extras-title"><span>{page.extrasTitle}</span></h2>
+          <p>{page.extrasLead}</p>
+        </div>
+      </div>
+      <ul class="cast" role="list">
+        {
+          extras.map((kind, index) => (
+            <li class="figure-card">
+              <Puppet id={kind} camp={tint[index % tint.length]} uid="extras" size={96} />
+              <div>
+                <h3>{g.extras[kind]}</h3>
+              </div>
+              <p class="figure-card__power">{page.extras[kind]}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <p class="section cta-final">
+      <a class="btn btn--primary" href={path(lang, 'play')}>{page.cta}</a>
+    </p>
+  </div>
+</Base>

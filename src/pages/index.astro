@@ -1,0 +1,45 @@
+---
+/**
+ * Root URL. In production nginx answers "/" with a language-negotiated
+ * redirect (see nginx.conf), so this page is only a fallback for other hosts
+ * and for visitors without JavaScript.
+ */
+import '@fontsource/anton/index.css';
+import '@fontsource-variable/public-sans/index.css';
+import '../styles/global.css';
+import { SITE } from '../config/site';
+import { absolute, path } from '../i18n/routes';
+import { SITE_STRINGS } from '../i18n/site';
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline src="/theme.js"></script>
+    <title>{SITE.name}</title>
+    <meta name="description" content={SITE_STRINGS.fr.meta.home.description} />
+    <meta name="robots" content="noindex, follow" />
+    <link rel="canonical" href={absolute(path('fr', 'home'))} />
+    <link rel="alternate" hreflang="fr" href={absolute(path('fr', 'home'))} />
+    <link rel="alternate" hreflang="en" href={absolute(path('en', 'home'))} />
+    <link rel="alternate" hreflang="x-default" href={absolute(path('fr', 'home'))} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <main class="container section cta-final">
+      <h1>Politique 2027</h1>
+      <p lang="fr">{SITE_STRINGS.fr.home.kicker}</p>
+      <div class="lang-choice">
+        <a class="btn btn--primary" href={path('fr', 'home')} hreflang="fr" lang="fr">Français</a>
+        <a class="btn btn--primary" href={path('en', 'home')} hreflang="en" lang="en">English</a>
+      </div>
+    </main>
+    <script>
+      // Send the visitor to the language their browser asks for.
+      const wantsEnglish = (navigator.languages ?? [navigator.language]).every((l) => !l.toLowerCase().startsWith('fr'));
+      location.replace(wantsEnglish ? '/en' : '/fr');
+    </script>
+  </body>
+</html>

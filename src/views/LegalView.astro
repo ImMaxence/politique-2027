@@ -1,0 +1,65 @@
+---
+import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
+import { SITE } from '../config/site';
+import type { Lang } from '../i18n/game';
+import { path, type RouteKey } from '../i18n/routes';
+import { SITE_STRINGS } from '../i18n/site';
+import Base from '../layouts/Base.astro';
+
+interface Props {
+  lang: Lang;
+  route: RouteKey;
+}
+
+interface LegalDoc {
+  Content: AstroComponentFactory;
+  frontmatter: { title: string };
+}
+
+const { lang, route } = Astro.props;
+const t = SITE_STRINGS[lang];
+const docs = import.meta.glob<LegalDoc>('../legal/*/*.md', { eager: true });
+const doc = docs[`../legal/${lang}/${route}.md`];
+if (!doc) throw new Error(`Missing legal document: ${lang}/${route}`);
+const { Content, frontmatter } = doc;
+
+const updated = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-GB', { dateStyle: 'long', timeZone: 'UTC' }).format(
+  new Date(SITE.updated),
+);
+---
+
+<Base lang={lang} route={route}>
+  <div class="container page-head">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href={path(lang, 'home')}>{t.labels.home}</a></li>
+        <li aria-current="page">{t.labels[route]}</li>
+      </ol>
+    </nav>
+    <h1>{frontmatter.title}</h1>
+    <span class="tricolour"></span>
+    <p class="meta-line">
+      {t.legalLayout.updated} : <time datetime={SITE.updated}>{updated}</time> · v{SITE.version}
+    </p>
+  </div>
+
+  <div class="container">
+    <div class="prose">
+      <Content />
+    </div>
+    <aside class="notice section-gap" aria-labelledby="legal-contact">
+      <h2 id="legal-contact">{t.legalLayout.contactTitle}</h2>
+      <p>{t.legalLayout.contactText}</p>
+      <p><a class="btn" href={SITE.author.contact[lang]} rel="noopener">{t.legalLayout.contactCta}</a></p>
+    </aside>
+  </div>
+</Base>
+
+<style>
+  .section-gap {
+    margin-top: 3rem;
+  }
+  .notice h2 {
+    font-size: 1.6rem;
+  }
+</style>

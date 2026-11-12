@@ -1,0 +1,86 @@
+---
+import type { Lang } from '../i18n/game';
+import { otherLang, path, type RouteKey } from '../i18n/routes';
+import { SITE_STRINGS } from '../i18n/site';
+import Icon from './Icon.astro';
+
+interface Props {
+  lang: Lang;
+  route: RouteKey;
+}
+
+const { lang, route } = Astro.props;
+const t = SITE_STRINGS[lang];
+const other = otherLang(lang);
+const links: RouteKey[] = ['play', 'characters'];
+---
+
+<header class="header">
+  <div class="container header__inner">
+    <a class="logo" href={path(lang, 'home')} title={t.nav.home}>
+      <span>Politique</span>{' '}<span class="logo__year">2027</span>
+    </a>
+    <nav class="nav" aria-label={t.nav.main}>
+      <ul class="nav__list" role="list">
+        {
+          links.map((key) => (
+            <li>
+              <a href={path(lang, key)} aria-current={route === key ? 'page' : undefined}>{t.nav[key as 'play' | 'characters']}</a>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="nav__tools">
+        <a href={path(other, route)} hreflang={other} lang={other} aria-label={t.nav.switchLabel}>
+          <Icon name="globe" /><span>{t.nav.switchTo}</span>
+        </a>
+        <button
+          type="button"
+          class="theme-toggle"
+          data-theme-toggle
+          data-label-auto={t.nav.themeAuto}
+          data-label-light={t.nav.themeLight}
+          data-label-dark={t.nav.themeDark}
+          aria-label={t.nav.themeAuto}
+          title={t.nav.themeAuto}
+        >
+          <span data-icon="auto"><Icon name="auto" /></span>
+          <span data-icon="light"><Icon name="sun" /></span>
+          <span data-icon="dark"><Icon name="moon" /></span>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<script>
+  // Theme switch: automatic → light → dark → automatic. Stored locally, never sent.
+  const KEY = 'politique2027:theme';
+  const ORDER = ['auto', 'light', 'dark'] as const;
+  type Theme = (typeof ORDER)[number];
+
+  const button = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+  const html = document.documentElement;
+  const current = (): Theme => (html.dataset.theme === 'light' || html.dataset.theme === 'dark' ? html.dataset.theme : 'auto');
+
+  function describe(theme: Theme): void {
+    if (!button) return;
+    const label = button.dataset[`label${theme[0].toUpperCase()}${theme.slice(1)}`] ?? '';
+    button.setAttribute('aria-label', label);
+    button.title = label;
+  }
+
+  describe(current());
+  button?.addEventListener('click', () => {
+    const next = ORDER[(ORDER.indexOf(current()) + 1) % ORDER.length];
+    if (next === 'auto') delete html.dataset.theme;
+    else html.dataset.theme = next;
+    try {
+      if (next === 'auto') localStorage.removeItem(KEY);
+      else localStorage.setItem(KEY, next);
+    } catch {
+      /* storage unavailable: the choice lasts for this page only */
+    }
+    describe(next);
+  });
+</script>

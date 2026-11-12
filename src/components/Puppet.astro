@@ -1,0 +1,21 @@
+---
+import type { CampId } from '../game/data/types';
+import { enemySvg, portraitSvg } from '../game/render/portraits';
+
+interface Props {
+  /** Figure id ("macron") or extra kind ("militant") when `camp` is set. */
+  id: string;
+  /** Tint for anonymous extras. */
+  camp?: CampId;
+  /** Scope that keeps SVG filter ids unique when a figure appears twice on a page. */
+  uid: string;
+  /** Accessible name. Leave empty when the name is written next to the portrait. */
+  label?: string;
+  size?: number;
+}
+
+const { id, camp, uid, label, size = 120 } = Astro.props;
+const svg = camp ? enemySvg(id, camp, { size, uid, label }) : portraitSvg(id, { size, uid, label });
+---
+
+<span class="puppet" set:html={svg} />

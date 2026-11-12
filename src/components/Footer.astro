@@ -1,0 +1,59 @@
+---
+import { SITE } from '../config/site';
+import type { Lang } from '../i18n/game';
+import { LEGAL_KEYS, path, type RouteKey } from '../i18n/routes';
+import { SITE_STRINGS } from '../i18n/site';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = SITE_STRINGS[lang];
+const pages: RouteKey[] = ['home', 'play', 'characters'];
+const year = SITE.updated.slice(0, 4);
+---
+
+<footer class="footer">
+  <div class="container footer__grid">
+    <div class="footer__about">
+      <p class="logo" aria-hidden="true"><span>Politique</span><span class="logo__year">2027</span></p>
+      <p>{t.footer.disclaimer}</p>
+    </div>
+    <nav aria-labelledby="footer-pages">
+      <h2 id="footer-pages">{t.footer.pages}</h2>
+      <ul role="list">
+        {pages.map((key) => <li><a href={path(lang, key)}>{t.labels[key]}</a></li>)}
+      </ul>
+    </nav>
+    <nav aria-labelledby="footer-legal">
+      <h2 id="footer-legal">{t.footer.legal}</h2>
+      <ul role="list">
+        {
+          LEGAL_KEYS.map((key) => (
+            <li>
+              <a href={path(lang, key)}>
+                {t.labels[key]}
+                {key === 'accessibility' && ` : ${t.footer.a11yStatus}`}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <nav aria-labelledby="footer-elsewhere">
+      <h2 id="footer-elsewhere">{t.footer.elsewhere}</h2>
+      <ul role="list">
+        <li><a href={SITE.repo} rel="noopener">{t.footer.source}</a></li>
+        <li><a href={SITE.author.url} rel="noopener author">{t.footer.author}</a></li>
+        <li><a href="/llms.txt">llms.txt</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="container footer__bar">
+    <p>
+      © {year} · {t.footer.madeBy} <a href={SITE.author.url} rel="noopener author">{SITE.author.name}</a> · {t.footer.license} · v{SITE.version}
+    </p>
+    <p><a href="#top">{t.footer.top} ↑</a></p>
+  </div>
+</footer>

@@ -1,0 +1,189 @@
+---
+/**
+ * Static shell of the game. Every label is rendered at build time in the page
+ * language; src/game/main.ts brings it to life.
+ */
+import '../styles/game.css';
+import { COLS, LEVELS, ROWS } from '../game/data/levels';
+import { CAMP_IDS } from '../game/data/types';
+import { CAMPS } from '../game/data/units';
+import { GAME_STRINGS, fmt, type Lang } from '../i18n/game';
+import Icon from './Icon.astro';
+import Puppet from './Puppet.astro';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = GAME_STRINGS[lang];
+const levels = [...LEVELS.map((l) => l.id), 0];
+const cells = Array.from({ length: ROWS * COLS }, (_, i) => ({ lane: Math.floor(i / COLS), col: i % COLS }));
+---
+
+<div class="game" id="game" data-lang={lang}>
+  <!-- 1. Camp -->
+  <section class="screen" data-screen="camp" aria-labelledby="camp-title">
+    <div class="screen__head">
+      <div>
+        <h2 id="camp-title" tabindex="-1" data-focus>{t.ui.chooseCamp}</h2>
+        <p>{t.ui.chooseCampHint}</p>
+      </div>
+    </div>
+    <ul class="camps" role="list">
+      {
+        CAMP_IDS.map((camp) => {
+          const roster = CAMPS[camp].roster;
+          const faces = [roster[5], roster[1], roster[4]];
+          return (
+            <li>
+              <button type="button" class="camp-card" data-camp={camp}>
+                <span class="camp-card__head">{t.camps[camp].name}</span>
+                <span class="camp-card__faces">
+                  {faces.map((id) => <Puppet id={id} uid={`pick-${camp}`} size={110} />)}
+                </span>
+                <span class="camp-card__body">
+                  <span class="camp-card__motto">{t.camps[camp].motto}</span>
+                  <span class="camp-card__names">{roster.map((id) => t.figures[id].short).join(' · ')}</span>
+                  <span class="trump">
+                    <small>{t.ui.ultimate}</small>
+                    <b>{t.ultimates[CAMPS[camp].ultimate].name}</b>
+                    {t.ultimates[CAMPS[camp].ultimate].desc}
+                  </span>
+                  <span class="camp-card__cta">{t.ui.choose}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </section>
+
+  <!-- 2. Campaign calendar -->
+  <section class="screen" data-screen="levels" aria-labelledby="levels-title" hidden>
+    <div class="screen__head">
+      <div>
+        <h2 id="levels-title" tabindex="-1" data-focus>{t.ui.chooseLevel}</h2>
+        <p><span class="screen__camp" data-slot="camp-name"></span></p>
+      </div>
+      <button type="button" class="btn" data-action="change-camp">{t.ui.changeCamp}</button>
+    </div>
+    <ol class="levels">
+      {
+        levels.map((id) => (
+          <li>
+            <button type="button" class="level-card" data-level={id}>
+              <span class="level-card__date">{t.levels[id].date}</span>
+              <span class="level-card__name">{t.levels[id].name}</span>
+              <span class="level-card__blurb">{t.levels[id].blurb}</span>
+              <span class="level-card__state" data-slot="state" />
+            </button>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <!-- 3. Match -->
+  <section class="screen" data-screen="match" aria-labelledby="match-title" hidden>
+    <h2 id="match-title" class="sr-only" tabindex="-1" data-focus>{t.ui.board}</h2>
+    <div class="hud" data-slot="hud">
+      <div class="hud__res" title={t.ui.resources}>
+        <Icon name="seal" />
+        <span class="sr-only">{t.ui.resources} :</span>
+        <span data-slot="resources">0</span>
+      </div>
+      <div class="hud__cards" role="group" aria-label={t.ui.cards} data-slot="cards"></div>
+      <div data-slot="descriptions" hidden></div>
+      <button type="button" class="tool" data-action="remove" aria-pressed="false" aria-keyshortcuts="R" title={t.ui.reshuffleHint}>
+        <Icon name="swap" />
+        <span>{t.ui.reshuffle}</span>
+      </button>
+      <button type="button" class="tool tool--ult" data-action="ultimate" aria-disabled="true" aria-keyshortcuts="U">
+        <Icon name="bolt" />
+        <span data-slot="ult-name">{t.ui.ultimate}</span>
+        <span class="tool__state" data-slot="ult-state">{t.ui.charging}</span>
+      </button>
+      <div class="hud__status">
+        <div class="polls" role="img" aria-label={t.ui.polls} data-slot="polls">
+          {Array.from({ length: 5 }).map(() => <span />)}
+        </div>
+        <div class="wave">
+          <span data-slot="wave-label">{t.ui.wave}</span>
+          <div class="wave__bar" data-slot="wave-bar"></div>
+        </div>
+      </div>
+      <div class="hud__sys">
+        <button type="button" class="icon-btn" data-action="speed" aria-pressed="false" aria-keyshortcuts="F" aria-label={`${t.ui.speed} ×2`} title={`${t.ui.speed} ×2`}>
+          <Icon name="fast" />
+        </button>
+        <button type="button" class="icon-btn" data-action="mute" aria-pressed="false" aria-keyshortcuts="M" aria-label={t.ui.soundOn} title={t.ui.soundOn}>
+          <span data-when="off"><Icon name="sound" /></span>
+          <span data-when="on"><Icon name="muted" /></span>
+        </button>
+        <button type="button" class="icon-btn" data-action="fullscreen" aria-label={t.ui.fullscreen} title={t.ui.fullscreen}>
+          <Icon name="fullscreen" />
+        </button>
+        <button type="button" class="icon-btn" data-action="pause" aria-keyshortcuts="P" aria-label={t.ui.pause} title={t.ui.pause}>
+          <Icon name="pause" />
+        </button>
+      </div>
+      <p class="hud__info" data-slot="info">{t.ui.howTo}</p>
+    </div>
+
+    <div class="stage" data-slot="stage">
+      <canvas data-slot="canvas" width="1280" height="720" aria-hidden="true"></canvas>
+      <div class="grid" role="group" aria-label={t.ui.board} data-slot="grid">
+        {
+          cells.map(({ lane, col }) => (
+            <button
+              type="button"
+              data-cell
+              tabindex="-1"
+              aria-label={`${fmt(t.ui.rowLabel, { row: lane + 1, col: col + 1 })} : ${t.ui.empty}`}
+            />
+          ))
+        }
+      </div>
+
+      <div class="overlay" data-overlay="pause" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden>
+        <div class="panel">
+          <h2 id="pause-title">{t.ui.paused}</h2>
+          <button type="button" class="btn btn--primary" data-action="resume">{t.ui.resume}</button>
+          <button type="button" class="btn" data-action="restart">{t.ui.restart}</button>
+          <button type="button" class="btn btn--ghost" data-action="quit">{t.ui.quit}</button>
+          <!-- Phones only: landscape is forced by default, and can be released here. -->
+          <button type="button" class="btn btn--toggle" data-action="orientation" aria-pressed="true">
+            <Icon name="phone" /><span>{t.ui.forceLandscape}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="overlay" data-overlay="result" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
+        <div class="gazette">
+          <p class="gazette__mast">{t.ui.gazette}</p>
+          <p class="gazette__tag">{t.ui.gazetteTag}</p>
+          <h2 id="result-title" class="gazette__headline" data-slot="headline"></h2>
+          <p class="gazette__stars" role="img" data-slot="stars"></p>
+          <dl class="gazette__stats" data-slot="stats"></dl>
+          <p class="gazette__unlock" data-slot="unlock" hidden></p>
+          <div class="gazette__actions">
+            <button type="button" class="btn btn--primary" data-action="next">{t.ui.nextLevel}</button>
+            <button type="button" class="btn" data-action="retry">{t.ui.tryAgain}</button>
+            <button type="button" class="btn btn--ghost" data-action="calendar">{t.ui.backToCalendar}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="match__help">{t.ui.keyboardHelp}</p>
+  </section>
+
+  <p class="sr-only" role="status" aria-live="polite" data-slot="live"></p>
+  <p class="sr-only" role="alert" aria-live="assertive" data-slot="alert"></p>
+</div>
+
+<script>
+  import { boot } from '../game/main';
+  boot();
+</script>

@@ -1,0 +1,14 @@
+# Keep the build context small: only what `npm run build` needs.
+node_modules
+dist
+.astro
+.git
+.github
+.vscode
+test-results
+playwright-report
+tests
+docs
+docker-compose*.yml
+Dockerfile
+.env*

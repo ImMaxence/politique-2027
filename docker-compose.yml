@@ -1,0 +1,33 @@
+# Production stack, deployed by Coolify (Docker Compose build pack).
+#
+# In Coolify, assign the domain to the "web" service as:
+#   https://politique2027.mbonnici.fr:8080
+# The ":8080" tells the proxy which container port to route to; visitors still
+# use the normal HTTPS port. No host port is published on purpose: a published
+# port would bypass the proxy.
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - '8080'
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8080/healthz']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: '5m'
+        max-file: '3'

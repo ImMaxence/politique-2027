@@ -1,0 +1,7 @@
+# Politique 2027 — security contact (RFC 9116)
+# Found a vulnerability? Thank you. Please report it privately through the form below.
+Contact: https://mbonnici.fr/en/contact
+Expires: 2027-11-12T00:00:00.000Z
+Preferred-Languages: fr, en
+Canonical: https://politique2027.mbonnici.fr/.well-known/security.txt
+Policy: https://github.com/ImMaxence/politique-2027/security/policy

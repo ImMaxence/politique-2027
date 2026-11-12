@@ -1,0 +1,125 @@
+---
+import GameApp from '../components/GameApp.astro';
+import { SITE } from '../config/site';
+import type { Lang } from '../i18n/game';
+import { absolute, path } from '../i18n/routes';
+import { SITE_STRINGS } from '../i18n/site';
+import Base from '../layouts/Base.astro';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = SITE_STRINGS[lang];
+const play = t.play;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'VideoGame',
+    name: SITE.name,
+    url: absolute(path(lang, 'play')),
+    description: t.meta.play.description,
+    image: absolute('/og.png'),
+    genre: ['Tower defense', 'Strategy', 'Satire'],
+    gamePlatform: 'Web browser',
+    applicationCategory: 'Game',
+    operatingSystem: 'Any',
+    playMode: 'SinglePlayer',
+    inLanguage: lang,
+    isAccessibleForFree: true,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    author: { '@type': 'Person', name: SITE.author.name, url: SITE.author.url },
+  },
+];
+---
+
+<Base lang={lang} route="play" jsonLd={jsonLd}>
+  <div class="container play-head">
+    <h1>{play.title}</h1>
+    <p>{play.lead}</p>
+  </div>
+
+  <div class="container play-stage">
+    <noscript><p class="notice">{play.noscript}</p></noscript>
+    <GameApp lang={lang} />
+  </div>
+
+  <section class="section container" aria-labelledby="controls-title">
+    <div class="section__head">
+      <h2 id="controls-title">{play.controlsTitle}</h2>
+      <span class="tricolour"></span>
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>{play.mouseTitle}</h3>
+        <ul>
+          {play.mouse.map((line) => <li>{line}</li>)}
+        </ul>
+        <h3>{play.rulesTitle}</h3>
+        <ul>
+          {play.rules.map((line) => <li>{line}</li>)}
+        </ul>
+      </div>
+      <div>
+        <h3>{play.keyboardTitle}</h3>
+        <dl class="keys">
+          {
+            play.keys.map(([key, action]) => (
+              <>
+                <dt><kbd>{key}</kbd></dt>
+                <dd>{action}</dd>
+              </>
+            ))
+          }
+        </dl>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .play-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 1.25rem;
+    padding-block: 1rem 0.8rem;
+  }
+  .play-head h1 {
+    font-size: clamp(1.5rem, 3.6vw, 2.1rem);
+  }
+  .play-head p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.975rem;
+  }
+  /* The game gets a wider column than the prose; its title lines up with it. */
+  .play-head,
+  .play-stage {
+    max-width: 84rem;
+  }
+  h3 {
+    margin: 1.4rem 0 0.6rem;
+  }
+  h3:first-child {
+    margin-top: 0;
+  }
+  ul {
+    margin: 0;
+    padding-left: 1.2rem;
+    color: var(--ink-soft);
+  }
+  li {
+    margin-bottom: 0.4rem;
+  }
+  @media (max-height: 34rem) and (orientation: landscape) {
+    .play-head p {
+      display: none;
+    }
+    .play-head {
+      padding-block: 0.4rem;
+    }
+  }
+</style>

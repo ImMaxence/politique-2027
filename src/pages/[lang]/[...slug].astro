@@ -1,0 +1,33 @@
+---
+/**
+ * One route for every localised page: /fr, /fr/jouer, /en/play…
+ * The slug table lives in src/i18n/routes.ts.
+ */
+import { LANGS, type Lang } from '../../i18n/game';
+import { LEGAL_KEYS, ROUTES, ROUTE_KEYS, type RouteKey } from '../../i18n/routes';
+import CharactersView from '../../views/CharactersView.astro';
+import HomeView from '../../views/HomeView.astro';
+import LegalView from '../../views/LegalView.astro';
+import PlayView from '../../views/PlayView.astro';
+
+export function getStaticPaths() {
+  return LANGS.flatMap((lang) =>
+    ROUTE_KEYS.map((route) => ({
+      params: { lang, slug: ROUTES[route][lang] || undefined },
+      props: { lang, route },
+    })),
+  );
+}
+
+interface Props {
+  lang: Lang;
+  route: RouteKey;
+}
+
+const { lang, route } = Astro.props;
+---
+
+{route === 'home' && <HomeView lang={lang} />}
+{route === 'play' && <PlayView lang={lang} />}
+{route === 'characters' && <CharactersView lang={lang} />}
+{LEGAL_KEYS.includes(route) && <LegalView lang={lang} route={route} />}
