@@ -15,7 +15,10 @@ interface Props {
 }
 
 const { id, camp, uid, label, size = 120 } = Astro.props;
-const svg = camp ? enemySvg(id, camp, { size, uid, label }) : portraitSvg(id, { size, uid, label });
+// The die-cut "sticker" edge is an SVG filter: below ~70 px it turns jagged, so
+// small puppets are drawn as plain, crisp vectors.
+const options = { size, uid, label, sticker: size >= 72 };
+const svg = camp ? enemySvg(id, camp, options) : portraitSvg(id, options);
 ---
 
 <span class="puppet" set:html={svg} />

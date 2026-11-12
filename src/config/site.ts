@@ -15,5 +15,6 @@ export const SITE = {
     contact: { fr: 'https://mbonnici.fr/fr/contact', en: 'https://mbonnici.fr/en/contact' },
   },
   repo: 'https://github.com/ImMaxence/politique-2027',
-  themeColor: { light: '#f3ecdd', dark: '#141a36' },
+  /** The site has one theme, and it is dark. */
+  themeColor: '#141a36',
 } as const;

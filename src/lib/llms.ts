@@ -88,7 +88,7 @@ export function llmsFullTxt(): string {
     '- "Endorsements" (parrainages) are the currency: a nod to the 500 signatures a French presidential candidate must collect.',
     '- "Credibility" is a figure\'s health. Nobody is hurt: a figure that runs out of credibility "resigns" and leaves the stage in a burst of confetti.',
     '- Each camp has a "campaign trump card" that charges over time (about 75 seconds).',
-    '- "Reshuffle" (remaniement) removes a placed figure and refunds 25% of its cost.',
+    '- "Remove" takes a placed figure off the field and refunds 25% of its cost.',
     '- Figures speak: speech bubbles show their catchphrases during the match.',
     '',
   );

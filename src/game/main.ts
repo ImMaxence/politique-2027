@@ -45,8 +45,11 @@ class GameApp {
   private wentFullscreen = false;
   /** A phone held upright: the match is then drawn sideways so that it must be turned. */
   private phonePortrait = window.matchMedia('(orientation: portrait) and (max-width: 44rem) and (pointer: coarse)');
-  /** A phone held sideways (or any very short window): the toolbar becomes a side column. */
-  private shortLandscape = window.matchMedia('(max-height: 34rem) and (orientation: landscape)');
+  /**
+   * A phone held sideways, or any short and wide window (a small laptop): the cards
+   * become a side column and the board takes the whole height.
+   */
+  private shortLandscape = window.matchMedia('(max-height: 42rem) and (orientation: landscape)');
   private clock = 0;
   private lastFrame = 0;
   private accumulator = 0;
@@ -204,6 +207,12 @@ class GameApp {
     this.setInfo(this.t.ui.howTo);
     this.show('match');
     this.syncLayout();
+    // The toolbar and the board are sized to fit the window together: if the board
+    // starts below the fold, bring the game to the top (the phone layout does its own).
+    if (!this.root.classList.contains('is-compact')) {
+      const board = this.stage.getBoundingClientRect();
+      if (board.bottom > window.innerHeight || board.top < 0) this.root.scrollIntoView({ block: 'start', behavior: 'instant' });
+    }
     this.updateHud();
     this.say(fmt(this.t.announce.start, { level: this.t.levels[levelId].name, camp: this.t.camps[camp].name }));
   }
@@ -246,6 +255,7 @@ class GameApp {
     this.root.classList.toggle('is-forced', forced);
     this.root.classList.toggle('is-compact', compact);
     document.documentElement.classList.toggle('game-locked', forced);
+    this.renderer.setCompact(compact);
     // Bring the board to the top of short screens, then match the canvas to its new box.
     if (compact && !forced) this.screens.match.scrollIntoView({ block: 'start', behavior: 'instant' });
     this.renderer.resize();
@@ -278,7 +288,7 @@ class GameApp {
       button.dataset.type = category;
       button.innerHTML = `
         <span class="card__key" data-label="${index + 1}" aria-hidden="true"></span>
-        <span class="card__art" aria-hidden="true">${portraitSvg(card.def.id, { size: 64, uid: 'card' })}</span>
+        <span class="card__art" aria-hidden="true">${portraitSvg(card.def.id, { size: 96, sticker: false })}</span>
         <span class="card__name">${text.short}</span>
         <span class="card__type" aria-hidden="true">${this.t.types[category]}</span>
         <span class="card__cost" data-label="${card.def.cost}" aria-hidden="true"></span>
@@ -464,6 +474,9 @@ class GameApp {
     if (this.view.removing) {
       this.setInfo(this.t.ui.reshuffleHint, this.t.ui.reshuffle);
       this.say(this.t.announce.reshuffleOn);
+    } else {
+      this.setInfo(this.t.ui.howTo);
+      this.say(this.t.announce.reshuffleOff);
     }
   }
 
@@ -471,6 +484,7 @@ class GameApp {
     for (const [id, button] of this.cards) button.setAttribute('aria-pressed', String(this.view.selected === id));
     $(this.root, '[data-action="remove"]').setAttribute('aria-pressed', String(this.view.removing));
     this.stage.classList.toggle('is-removing', this.view.removing);
+    this.root.classList.toggle('is-removing', this.view.removing);
   }
 
   private clickCell(lane: number, col: number): void {

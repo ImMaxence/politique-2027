@@ -543,7 +543,7 @@ function entrance(g: Ctx, pal: Palette): void {
 // ───────────────────────────── entry point ─────────────────────────────
 
 /** Paints a full backdrop in logical coordinates (the caller sets the scale). */
-export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: string): void {
+export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: string | null): void {
   const pal = PALETTES[scene];
   g.fillStyle = pal.sky;
   g.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -628,19 +628,21 @@ export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: st
   g.lineTo(VIEW_W, BOARD_Y + BOARD_H);
   outline(g);
 
-  // Level banner
-  const text = label.toUpperCase();
-  g.font = `400 26px ${DISPLAY}`;
-  const width = Math.min(760, g.measureText(text).width + 56);
-  g.save();
-  g.translate(VIEW_W / 2, 82);
-  g.rotate(-0.012);
-  box(g, -width / 2, -24, width, 48, PAPER, 6);
-  g.fillStyle = INK;
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.fillText(text, 0, 2, width - 40);
-  g.restore();
+  // Level banner (left out on phones, where the controls sit over the top of the scenery)
+  if (label) {
+    const text = label.toUpperCase();
+    g.font = `400 26px ${DISPLAY}`;
+    const width = Math.min(760, g.measureText(text).width + 56);
+    g.save();
+    g.translate(VIEW_W / 2, 82);
+    g.rotate(-0.012);
+    box(g, -width / 2, -24, width, 48, PAPER, 6);
+    g.fillStyle = INK;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(text, 0, 2, width - 40);
+    g.restore();
+  }
 
   // Paper grain
   const rnd = noise(2027);

@@ -46,6 +46,8 @@ function pick<T>(items: readonly T[]): T {
 export class Renderer {
   reducedMotion = false;
 
+  /** Phone layout: the controls sit over the top of the scenery, so the level banner is left out. */
+  private compact = false;
   private ctx: CanvasRenderingContext2D;
   private backdrop: HTMLCanvasElement | null = null;
   private backdropKey = '';
@@ -68,17 +70,23 @@ export class Renderer {
     this.ctx = canvas.getContext('2d')!;
   }
 
-  /** Match the backing store to the displayed size (capped at 2× for performance). */
+  /** Match the backing store to the displayed size: every device pixel, up to 3× and 2560 px wide. */
   resize(): void {
     // clientWidth, not getBoundingClientRect(): the stage may be rotated by CSS on phones.
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const width = Math.max(480, Math.round(this.canvas.clientWidth * dpr));
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const width = Math.max(480, Math.min(2560, Math.round(this.canvas.clientWidth * dpr)));
     if (this.canvas.width !== width) {
       this.canvas.width = width;
       this.canvas.height = Math.round((width * VIEW_H) / VIEW_W);
       this.backdropKey = '';
     }
     this.scale = this.canvas.width / VIEW_W;
+  }
+
+  setCompact(compact: boolean): void {
+    if (compact === this.compact) return;
+    this.compact = compact;
+    this.backdropKey = '';
   }
 
   reset(): void {
@@ -93,7 +101,7 @@ export class Renderer {
   }
 
   private buildBackdrop(state: GameState): void {
-    const key = `${state.level.id}|${this.canvas.width}`;
+    const key = `${state.level.id}|${this.canvas.width}|${this.compact}`;
     if (key === this.backdropKey && this.backdrop) return;
     this.backdropKey = key;
     const canvas = this.backdrop ?? document.createElement('canvas');
@@ -103,7 +111,7 @@ export class Renderer {
     const g = canvas.getContext('2d')!;
     g.setTransform(this.scale, 0, 0, this.scale, 0, 0);
     const level = this.strings.levels[state.level.id];
-    paintBackdrop(g, state.level.scene, state.level.lanes, `${level.date} · ${level.name}`);
+    paintBackdrop(g, state.level.scene, state.level.lanes, this.compact ? null : `${level.date} · ${level.name}`);
   }
 
   // ───────────────────────────── effects ─────────────────────────────
@@ -382,12 +390,15 @@ export class Renderer {
     g.lineJoin = 'round';
     g.lineWidth = Math.max(4, size / 4);
     g.strokeStyle = outline;
+    // A long caption next to an edge stays whole instead of being cut by the frame.
+    const half = g.measureText(text).width / 2 + g.lineWidth + 6;
+    if (half * 2 < VIEW_W) x = Math.max(half, Math.min(VIEW_W - half, x));
     g.strokeText(text, x, y);
     g.fillStyle = color;
     g.fillText(text, x, y);
   }
 
-  private drawUnit(state: GameState, unit: Unit, now: number): void {
+  private drawUnit(state: GameState, unit: Unit, now: number, removing = false): void {
     const sprite = this.sprites.unit(unit.def.id);
     if (!sprite) return;
     const g = this.ctx;
@@ -424,7 +435,31 @@ export class Renderer {
     // Being debated is continuous damage: pulse instead of staying washed out.
     const hit = state.time - unit.lastHit;
     const flash = hit >= 0 && hit < 0.1 ? (this.reducedMotion ? 0.18 : 0.12 + 0.3 * Math.abs(Math.sin(now * 9))) : 0;
-    this.blit(sprite, x, y, sx, sy, rot, flash);
+    // Removal mode: every figure is washed out and tagged with a red cross.
+    this.blit(sprite, x, y, sx, sy, rot, removing ? 0.55 : flash, removing ? 0.9 : 1);
+    if (removing) {
+      const pulse = this.reducedMotion ? 1 : 1 + 0.12 * Math.sin(now * 7 + unit.id);
+      g.save();
+      g.translate(x + 30, y - 104);
+      g.scale(pulse, pulse);
+      g.fillStyle = RED;
+      g.strokeStyle = INK;
+      g.lineWidth = 3;
+      g.beginPath();
+      g.arc(0, 0, 16, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.strokeStyle = PAPER;
+      g.lineWidth = 4.5;
+      g.lineCap = 'round';
+      g.beginPath();
+      g.moveTo(-6, -6);
+      g.lineTo(6, 6);
+      g.moveTo(6, -6);
+      g.lineTo(-6, 6);
+      g.stroke();
+      g.restore();
+    }
 
     if (unit.silenced > 0) {
       // Microphone cut: a crossed-out speech bubble.
@@ -467,7 +502,7 @@ export class Renderer {
     g.globalAlpha = 1;
   }
 
-  private drawEnemy(state: GameState, enemy: Enemy, now: number): void {
+  private drawEnemy(state: GameState, enemy: Enemy, now: number, dimmed = false): void {
     const sprite = this.sprites.enemy(enemy.def.id, enemy.camp);
     if (!sprite) return;
     const g = this.ctx;
@@ -513,7 +548,7 @@ export class Renderer {
       g.fill();
     }
     const hit = state.time - enemy.lastHit;
-    this.blit(sprite, x, y - lift, size, size, rot, hit >= 0 && hit < 0.09 ? 0.6 : 0, striking || enemy.dry ? 0.75 : 1);
+    this.blit(sprite, x, y - lift, size, size, rot, hit >= 0 && hit < 0.09 ? 0.6 : 0, (striking || enemy.dry ? 0.75 : 1) * (dimmed ? 0.45 : 1));
     if (enemy.def.fire) this.flames(x - 2, y - sprite.h * 0.74, now, enemy.id);
 
     const top = y - sprite.h * size + 6;
@@ -862,6 +897,40 @@ export class Renderer {
     g.restore();
   }
 
+  /**
+   * Removal mode: a ribbon says what the next tap will do. It is pinned over the
+   * sign of the stage set, above the lanes, so that it never hides a figure. The
+   * phone layout has no sign: there the toolbar carries the sentence instead.
+   */
+  private drawRemoveRibbon(state: GameState, now: number): void {
+    if (this.compact) return;
+    const g = this.ctx;
+    const text = this.strings.announce.removeBanner.toUpperCase();
+    const level = this.strings.levels[state.level.id];
+    g.save();
+    g.translate(VIEW_W / 2, 82);
+    g.rotate(-0.012);
+    const bob = this.reducedMotion ? 0 : Math.sin(now * 4) * 2;
+    g.translate(0, bob);
+    // Wide enough to cover the sign it is pinned on (see paintBackdrop).
+    g.font = `400 26px ${DISPLAY}`;
+    const sign = Math.min(760, g.measureText(`${level.date} · ${level.name}`.toUpperCase()).width + 56);
+    g.font = `400 30px ${DISPLAY}`;
+    const width = Math.min(1000, Math.max(sign + 20, g.measureText(text).width + 60));
+    g.fillStyle = RED;
+    g.strokeStyle = INK;
+    g.lineWidth = 4;
+    g.beginPath();
+    g.roundRect(-width / 2, -28, width, 56, 8);
+    g.fill();
+    g.stroke();
+    g.fillStyle = PAPER;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(text, 0, 2, width - 36);
+    g.restore();
+  }
+
   /** A price tag stays pinned to the wall for as long as tariffs apply. */
   private drawTariff(): void {
     const g = this.ctx;
@@ -891,6 +960,9 @@ export class Renderer {
     const dt = Math.max(0, Math.min(0.05, now - this.last));
     this.last = now;
     g.setTransform(this.scale, 0, 0, this.scale, 0, 0);
+    // Sprites are drawn smaller than they were rasterised: ask for the smooth resampler.
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
     if (!state) {
       g.fillStyle = '#f3ecdd';
       g.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -930,18 +1002,24 @@ export class Renderer {
       g.fillRect(0, laneTop(lane), BOARD_X, CELL_H);
     }
 
+    // Removal mode: a dark veil falls over the board so that it is obvious something changed.
+    if (view.removing) {
+      g.fillStyle = 'rgba(20,26,54,.5)';
+      g.fillRect(0, 0, VIEW_W, VIEW_H);
+    }
     this.drawSelection(state, view);
 
     for (let lane = 0; lane < ROWS; lane++) {
-      for (const unit of state.units) if (unit.lane === lane) this.drawUnit(state, unit, now);
+      for (const unit of state.units) if (unit.lane === lane) this.drawUnit(state, unit, now, view.removing);
       const marching = state.enemies.filter((e) => e.lane === lane).sort((a, b) => b.x - a.x);
-      for (const enemy of marching) this.drawEnemy(state, enemy, now);
+      for (const enemy of marching) this.drawEnemy(state, enemy, now, view.removing);
       for (const shot of state.projectiles) if (shot.lane === lane) this.drawProjectile(shot, now);
     }
 
     this.drawEffects(dt);
     this.drawBubbles(state, dt);
     if (state.tariff > 1) this.drawTariff();
-    this.drawBanner(dt);
+    if (view.removing) this.drawRemoveRibbon(state, now);
+    else this.drawBanner(dt);
   }
 }

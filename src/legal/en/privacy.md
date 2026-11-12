@@ -15,8 +15,7 @@ To remember your progress and settings, the site uses your browser's local stora
 
 | Key | Content | Duration |
 | --- | --- | --- |
-| `politique2027:save` | Chosen camp, unlocked levels, stars, endless-mode record, sound muted or not, game speed | Until you delete it |
-| `politique2027:theme` | Light or dark theme, only if you pick one by hand | Until you delete it |
+| `politique2027:save` | Chosen camp, unlocked levels, stars, endless-mode record, sound muted or not, game speed, forced landscape on phones or not | Until you delete it |
 
 This storage is strictly necessary for a feature you ask for (finding your game and preferences again), so it does not require consent. To remove everything, clear the "site data" for `politique2027.mbonnici.fr` in your browser settings. The game also works when storage is blocked: progress is simply not kept.
 

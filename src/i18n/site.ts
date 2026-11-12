@@ -13,7 +13,7 @@ export interface SiteStrings {
   meta: Record<RouteKey, { title: string; description: string }>;
   nav: {
     skip: string; home: string; play: string; characters: string; main: string;
-    switchTo: string; switchLabel: string; theme: string; themeAuto: string; themeLight: string; themeDark: string;
+    switchTo: string; switchLabel: string;
   };
   footer: {
     pages: string; legal: string; elsewhere: string; source: string; author: string; a11yStatus: string;
@@ -74,10 +74,6 @@ const fr: SiteStrings = {
     main: 'Navigation principale',
     switchTo: 'English',
     switchLabel: 'Read this page in English',
-    theme: 'Thème',
-    themeAuto: 'Thème : automatique',
-    themeLight: 'Thème : clair',
-    themeDark: 'Thème : sombre',
   },
   footer: {
     pages: 'Pages',
@@ -148,7 +144,7 @@ const fr: SiteStrings = {
     mouseTitle: 'Souris et tactile',
     mouse: [
       'Clique une figure dans la barre, puis une case du terrain pour la placer.',
-      'Le bouton Remaniement retire une figure et rembourse 25 % de son coût.',
+      'Le bouton Retirer enlève une figure du terrain et rembourse 25 % de son coût : le terrain se grise, touche la figure à retirer.',
       "L'atout de campagne se déclenche d'un clic dès qu'il est chargé.",
       'Sur téléphone, la partie se joue en paysage : cartes à gauche, terrain à droite. Le menu pause permet de libérer l’orientation.',
     ],
@@ -157,7 +153,7 @@ const fr: SiteStrings = {
       ['1 à 8', 'Choisir une figure'],
       ['Flèches', 'Se déplacer sur le terrain'],
       ['Entrée ou Espace', 'Placer la figure'],
-      ['R', 'Remaniement'],
+      ['R', 'Retirer une figure'],
       ['U', 'Atout de campagne'],
       ['P ou Échap', 'Pause'],
       ['F', 'Vitesse ×2'],
@@ -252,10 +248,6 @@ const en: SiteStrings = {
     main: 'Main navigation',
     switchTo: 'Français',
     switchLabel: 'Lire cette page en français',
-    theme: 'Theme',
-    themeAuto: 'Theme: automatic',
-    themeLight: 'Theme: light',
-    themeDark: 'Theme: dark',
   },
   footer: {
     pages: 'Pages',
@@ -326,7 +318,7 @@ const en: SiteStrings = {
     mouseTitle: 'Mouse and touch',
     mouse: [
       'Click a figure in the bar, then a square of the field to place it.',
-      'The Reshuffle button removes a figure and refunds 25% of its cost.',
+      'The Remove button takes a figure off the field and refunds 25% of its cost: the field greys out, tap the figure to remove.',
       'The campaign trump card fires with one click as soon as it is charged.',
       'On a phone the match is played in landscape: cards on the left, field on the right. The pause menu can release the orientation.',
     ],
@@ -335,7 +327,7 @@ const en: SiteStrings = {
       ['1 to 8', 'Pick a figure'],
       ['Arrows', 'Move around the field'],
       ['Enter or Space', 'Place the figure'],
-      ['R', 'Reshuffle'],
+      ['R', 'Remove a figure'],
       ['U', 'Campaign trump card'],
       ['P or Esc', 'Pause'],
       ['F', 'Speed ×2'],

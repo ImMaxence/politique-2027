@@ -69,16 +69,19 @@ test('llms.txt follows the expected shape', async ({ request }) => {
   }
 });
 
-test('the theme switch cycles and persists', async ({ page }) => {
-  await page.goto('/fr');
-  const html = page.locator('html');
-  const toggle = page.locator('[data-theme-toggle]');
-  await toggle.click();
-  await expect(html).toHaveAttribute('data-theme', 'light');
-  await toggle.click();
-  await expect(html).toHaveAttribute('data-theme', 'dark');
-  await page.reload();
-  await expect(html).toHaveAttribute('data-theme', 'dark');
-  await toggle.click();
-  await expect(html).not.toHaveAttribute('data-theme', /.+/);
-});
+for (const scheme of ['light', 'dark'] as const) {
+  test(`the site is dark, even for a browser that prefers ${scheme}`, async ({ browser }) => {
+    const context = await browser.newContext({ colorScheme: scheme });
+    const page = await context.newPage();
+    await page.goto('/fr');
+    const colours = await page.evaluate(() => {
+      const body = getComputedStyle(document.body);
+      return { background: body.backgroundColor, text: body.color, scheme: getComputedStyle(document.documentElement).colorScheme };
+    });
+    expect(colours).toEqual({ background: 'rgb(20, 26, 54)', text: 'rgb(243, 236, 221)', scheme: 'dark' });
+    // No theme switch, and nothing about a theme kept in storage.
+    await expect(page.locator('[data-theme-toggle]')).toHaveCount(0);
+    expect(await page.evaluate(() => Object.keys(localStorage))).toEqual([]);
+    await context.close();
+  });
+}

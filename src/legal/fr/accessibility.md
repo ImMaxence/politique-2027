@@ -18,7 +18,7 @@ Les pages de contenu (accueil, personnages, pages légales) ne présentent pas d
 
 Il s'agit d'une auto-évaluation réalisée par l'éditeur, sans audit par un tiers.
 
-- **Tests automatiques** : axe-core, piloté par Playwright, sur toutes les pages publiques en français et en anglais, en thème clair et en thème sombre, ainsi que sur les écrans du jeu (choix du camp, calendrier, partie en cours, pause). Aucune erreur détectée.
+- **Tests automatiques** : axe-core, piloté par Playwright, sur toutes les pages publiques en français et en anglais, ainsi que sur les écrans du jeu (choix du camp, calendrier, partie en cours, pause). Aucune erreur détectée.
 - **Vérifications complémentaires**, elles aussi automatisées : parcours au clavier seul (choix du camp, lancement d'une partie, placement et retrait d'une figure, pause), redistribution du contenu à 320 pixels de large et à l'équivalent d'un zoom 200 %, affichage sur téléphone tenu à l'horizontale, prise en compte de la préférence « réduire les animations ».
 
 Le site n'a pas encore été testé avec un lecteur d'écran par une personne qui l'utilise au quotidien. Aucun taux de conformité global n'a été calculé, faute d'audit complet.
@@ -30,7 +30,7 @@ Le site n'a pas encore été testé avec un lecteur d'écran par une personne qu
 - **Orientation** : sur téléphone, la partie s'affiche par défaut en paysage (tournée d'un quart de tour si l'appareil est tenu droit). Ce comportement se désactive d'un bouton dans le menu pause : le jeu suit alors l'orientation de l'appareil.
 - **Types de cartes** : chaque carte porte son type (Argent, Attaque, Effet, Défense) en toutes lettres, en plus de la couleur.
 - **Mouvement** : avec le réglage système « réduire les animations », les tremblements d'écran sont supprimés et les effets sont atténués. Aucun flash plein écran n'est utilisé.
-- **Couleurs** : les camps se distinguent par leur nom et pas seulement par leur couleur ; l'information de danger est doublée d'une annonce.
+- **Couleurs** : le site n'a qu'un thème, sombre, dont les contrastes sont vérifiés. Les camps se distinguent par leur nom et pas seulement par leur couleur ; l'information de danger est doublée d'une annonce.
 - **Son** : aucun son ne démarre sans action de votre part, il se coupe d'un bouton, et chaque signal sonore a un équivalent visuel et textuel.
 - **Rythme** : la pause est disponible à tout moment (elle s'active seule quand vous changez d'onglet) et la vitesse rapide est facultative.
 
@@ -51,7 +51,7 @@ Les sites tiers vers lesquels le site renvoie (GitHub, site de l'auteur) sont ho
 
 ## Établissement de cette déclaration
 
-- Déclaration établie le 12 novembre 2026 avec la version 1.0.0, mise à jour avec la version 1.1.0.
+- Déclaration établie le 12 novembre 2026 avec la version 1.0.0, mise à jour avec la version 1.2.0.
 - Technologies utilisées : HTML, CSS, JavaScript (Astro), SVG, Canvas et Web Audio.
 - Environnement de test : navigateur Chromium récent piloté par Playwright, en affichage ordinateur et mobile.
 

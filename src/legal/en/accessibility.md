@@ -18,7 +18,7 @@ The content pages (home, characters, legal pages) have no known non-conformity. 
 
 This is a self-assessment by the publisher, with no third-party audit.
 
-- **Automated tests**: axe-core, driven by Playwright, on every public page in French and English, in the light and dark themes, and on the game screens (camp choice, calendar, match in progress, pause). No error detected.
+- **Automated tests**: axe-core, driven by Playwright, on every public page in French and English, and on the game screens (camp choice, calendar, match in progress, pause). No error detected.
 - **Additional checks**, also automated: a keyboard-only journey (choosing a camp, starting a match, placing and removing a figure, pausing), reflow at 320 pixels wide and at the equivalent of 200% zoom, display on a phone held sideways, and support for the "reduce motion" preference.
 
 The site has not yet been tested with a screen reader by someone who uses one every day. No overall conformance rate has been calculated, for lack of a full audit.
@@ -30,7 +30,7 @@ The site has not yet been tested with a screen reader by someone who uses one ev
 - **Orientation**: on a phone the match is shown in landscape by default (turned a quarter turn if the device is held upright). One button in the pause menu switches this off: the game then follows the device's orientation.
 - **Card types**: every card carries its type (Money, Attack, Effect, Defence) in words as well as in colour.
 - **Motion**: with the system "reduce motion" setting, screen shake is removed and effects are toned down. No full-screen flash is used.
-- **Colour**: camps are told apart by name and not by colour alone; danger information is backed by an announcement.
+- **Colour**: the site has a single, dark theme, whose contrast is checked. Camps are told apart by name and not by colour alone; danger information is backed by an announcement.
 - **Sound**: no sound starts without an action from you, one button mutes it, and every audio cue has a visual and textual equivalent.
 - **Pace**: pause is available at any time (it triggers by itself when you switch tabs) and the fast speed is optional.
 
@@ -51,7 +51,7 @@ Third-party sites the site links to (GitHub, the author's website) are outside t
 
 ## Preparation of this statement
 
-- Statement prepared on 12 November 2026 with version 1.0.0, updated with version 1.1.0.
+- Statement prepared on 12 November 2026 with version 1.0.0, updated with version 1.2.0.
 - Technologies used: HTML, CSS, JavaScript (Astro), SVG, Canvas and Web Audio.
 - Test environment: a recent Chromium browser driven by Playwright, in desktop and mobile layouts.
 

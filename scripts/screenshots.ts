@@ -44,7 +44,7 @@ async function match(page: Page, lang: string, slug: string, camp: string, level
 const browser = await launch();
 const errors: string[] = [];
 try {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, colorScheme: 'light' });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
   const page = await context.newPage();
   page.on('console', (msg) => msg.type() === 'error' && errors.push(`${page.url()} — ${msg.text()}`));
   page.on('response', (res) => res.status() >= 400 && errors.push(`${res.status()} ${res.url()}`));
@@ -70,6 +70,21 @@ try {
     await match(page, lang, slug, camp, level, seconds, until);
     await page.locator('#game').screenshot({ path: resolve(out, file) });
   }
+
+  // Removal mode: the board dims and every figure can be taken off.
+  await match(page, 'en', 'play', 'gauche', 6, 120);
+  await page.locator('[data-action="remove"]').click();
+  await page.waitForTimeout(500);
+  await page.locator('#game').screenshot({ path: resolve(out, 'gameplay-remove.png') });
+  await context.close();
+
+  // A phone held sideways: tickets on the left, the board over the whole height.
+  const phone = await browser.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+  const small = await phone.newPage();
+  small.on('pageerror', (err) => errors.push(`${small.url()} — ${err.message}`));
+  await match(small, 'en', 'play', 'droite', 6, 110);
+  await small.screenshot({ path: resolve(out, 'gameplay-phone.png') });
+  await phone.close();
 
   console.log(`Screenshots written to ${out}`);
 } finally {

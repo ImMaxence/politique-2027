@@ -24,7 +24,7 @@ mkdirSync(resolve(root, 'docs'), { recursive: true });
 
 const BASE_CSS = `${fontFaces()}
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: 'Public Sans', sans-serif; color: #17203f; }
+  body { margin: 0; font-family: 'Public Sans', sans-serif; color: #f3ecdd; }
   .display { font-family: Anton, sans-serif; font-weight: 400; text-transform: uppercase; line-height: 1; }`;
 
 function html(body: string, css: string): string {
@@ -50,23 +50,23 @@ function socialCard(): string {
       <i class="flag"></i>
     </main>`,
     `main { position: relative; width: 1200px; height: 630px; display: flex; align-items: center; gap: 40px; padding: 0 64px;
-        background-color: #f3ecdd; background-image: radial-gradient(rgba(23,32,63,.2) 2px, transparent 2.2px); background-size: 16px 16px; overflow: hidden; }
+        background-color: #141a36; background-image: radial-gradient(rgba(243,236,221,.16) 2px, transparent 2.2px); background-size: 16px 16px; overflow: hidden; }
       .copy { flex: 1; }
-      .kicker { display: inline-block; padding: 7px 14px; background: #17203f; color: #f3ecdd; font-weight: 800; font-size: 19px;
+      .kicker { display: inline-block; padding: 7px 14px; background: #f3ecdd; color: #141a36; font-weight: 800; font-size: 19px;
         letter-spacing: .06em; text-transform: uppercase; transform: rotate(-1.5deg); }
       h1 { margin: 18px 0 0; font-size: 150px; letter-spacing: .01em; }
-      h1 span { display: inline-block; margin-top: 10px; padding: 6px 24px 0; background: #e5383b; color: #fffdf6;
-        border: 6px solid #17203f; box-shadow: 9px 9px 0 #17203f; transform: rotate(-2.5deg); }
+      h1 span { display: inline-block; margin-top: 10px; padding: 6px 24px 0; background: #d62b30; color: #fffdf6;
+        border: 6px solid #f3ecdd; box-shadow: 9px 9px 0 #05081a; transform: rotate(-2.5deg); }
       p { max-width: 520px; margin: 34px 0 18px; font-size: 29px; font-weight: 600; line-height: 1.3; }
-      .url { font-weight: 800; font-size: 22px; }
-      .board { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 14px; background: #9aa3b8; border: 5px solid #17203f; border-radius: 12px;
-        box-shadow: 9px 9px 0 #17203f; transform: rotate(2deg); }
+      .url { font-weight: 800; font-size: 22px; color: #ffd23f; }
+      .board { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 14px; background: #262f5c; border: 5px solid #f3ecdd; border-radius: 12px;
+        box-shadow: 9px 9px 0 #05081a; transform: rotate(2deg); color: #17203f; }
       .poster { display: flex; flex-direction: column; align-items: center; width: 190px; padding: 8px 6px 6px;
         background: #fffdf6; border: 3px solid #17203f; }
       .poster svg { height: 196px; width: auto; }
       .p0 { transform: rotate(-2deg); } .p3 { transform: rotate(1.5deg); }
       .camp { width: 100%; margin-top: 4px; padding: 5px 0 1px; font-size: 26px; text-align: center; }
-      .flag { position: absolute; left: 0; right: 0; bottom: 0; height: 18px; border-top: 5px solid #17203f;
+      .flag { position: absolute; left: 0; right: 0; bottom: 0; height: 18px; border-top: 5px solid #05081a;
         background: linear-gradient(90deg, #2f5fe0 0 33.3%, #fffdf6 33.3% 66.6%, #e5383b 66.6%); }`,
   );
 }
@@ -93,21 +93,21 @@ function castSheet(): string {
       )
       .join('');
   return html(
-    `<main>${rows}<section><h2 class="display"><span style="background:#17203f;color:#f3ecdd">Guests, reinforcements and extras</span></h2>
+    `<main>${rows}<section><h2 class="display"><span style="background:#f3ecdd;color:#141a36">Guests, reinforcements and extras</span></h2>
       <div class="row extras">${sheet(['trump', 'hugo', 'squeezie', 'durif', 'crs', 'pompiers'])}</div>
       <div class="row extras">${sheet(['lyceen', 'gilet', 'agriculteur', 'impots', 'patron', 'auto', 'poubelle'])}</div>
       <div class="row extras">${sheet(['militant', 'placard', 'pundit', 'tracteur', 'bus', 'cat'])}</div></section></main>`,
-    `main { width: 1280px; padding: 36px 40px 28px; background-color: #f3ecdd;
-        background-image: radial-gradient(rgba(23,32,63,.16) 1.6px, transparent 1.8px); background-size: 14px 14px; }
+    `main { width: 1280px; padding: 36px 40px 28px; background-color: #141a36;
+        background-image: radial-gradient(rgba(243,236,221,.13) 1.6px, transparent 1.8px); background-size: 14px 14px; }
       section { margin-bottom: 26px; }
       h2 { display: flex; align-items: center; gap: 18px; margin: 0 0 10px; font-size: 40px; }
-      h2 span { padding: 6px 14px 0; border: 4px solid #17203f; transform: rotate(-1.5deg); }
+      h2 span { padding: 6px 14px 0; border: 4px solid #f3ecdd; transform: rotate(-1.5deg); }
       h2 small { font: italic 600 19px 'Public Sans', sans-serif; text-transform: none; }
       .row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; align-items: end; }
       .extras { display: flex; justify-content: flex-start; gap: 34px; margin-bottom: 14px; }
       figure { margin: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
       figcaption b { display: block; font-size: 16px; }
-      figcaption i { display: block; font-size: 13.5px; color: #485070; }`,
+      figcaption i { display: block; font-size: 13.5px; color: #b9c0dc; }`,
   );
 }
 

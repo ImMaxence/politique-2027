@@ -12,6 +12,30 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [1.2.0] — 2026-11-12
+
+One look — dark — and a phone layout redrawn from scratch. Saves are untouched.
+
+### Added
+
+- **A new phone layout**, the way lane-defense games do it on mobile: the purse and a column of tickets on the left (portrait, surname, price and the family of the card written in full), the board over the whole height, the controls laid over the top of the scenery and a line under the last lane that describes the card just picked. Tickets and buttons grow with the screen.
+- **The same layout on short, wide windows** (a small laptop, a browser with many toolbars): the board is about twice as wide as it used to be there.
+- **Removal mode you cannot miss**: the board dims, every figure is washed out and gets a pulsing ✕, a red frame beats around the board and a ribbon says what the next tap does (on phones the toolbar says it, in place of the trump card and the polls).
+
+### Changed
+
+- **Dark only.** The night-blue look is now the only one: the light theme, the automatic mode, the theme button and its `localStorage` key are gone. The social card and the cast sheet follow.
+- **"Reshuffle" is now "Remove"** ("Retirer"), with a bin icon: nobody understood the old name.
+- Sharper pictures: card portraits are plain vectors at any size, and the board is drawn at up to 3× (it stopped at 2×) on dense phone screens.
+- Desktop toolbar: cards share the width that is left instead of pushing the buttons to a second line; on shorter windows the toolbar takes two tidy rows and the board gives up the height of one, so the match fits the window; starting a match brings the board into view.
+- Long captions near the edge of the board ("Family-benefit transfer: +50") are kept whole instead of being cut by the frame.
+
+### Fixed
+
+- "Back to the calendar" was unreadable on hover (dark text on a dark button).
+- A long title word ("Confidentialité" at 320 px) could widen the page until the display font had loaded.
+- In full screen on a phone held sideways, the last card of the column was cut by the bottom of the screen.
+
 ## [1.1.0] — 2026-11-12
 
 A fourth camp, the news of the day, catchphrases and six stage sets. Existing saves are migrated to the new seven-level campaign.

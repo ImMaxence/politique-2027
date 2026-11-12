@@ -44,7 +44,7 @@ const structured = [...breadcrumb, ...jsonLd];
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script is:inline src="/theme.js"></script>
+    <meta name="color-scheme" content="dark" />
     <title>{meta.title}</title>
     <meta name="description" content={meta.description} />
     <meta name="author" content={SITE.author.name} />
@@ -70,8 +70,7 @@ const structured = [...breadcrumb, ...jsonLd];
     <meta name="twitter:description" content={meta.description} />
     <meta name="twitter:image" content={image} />
 
-    <meta name="theme-color" content={SITE.themeColor.light} media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content={SITE.themeColor.dark} media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content={SITE.themeColor} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

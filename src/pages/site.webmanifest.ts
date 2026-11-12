@@ -12,8 +12,8 @@ export const GET: APIRoute = () => {
     scope: '/',
     display: 'standalone',
     orientation: 'any',
-    background_color: SITE.themeColor.light,
-    theme_color: SITE.themeColor.light,
+    background_color: SITE.themeColor,
+    theme_color: SITE.themeColor,
     categories: ['games', 'entertainment'],
     icons: [
       { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },

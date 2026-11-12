@@ -15,8 +15,7 @@ Pour retenir votre progression et vos réglages, le site utilise le stockage loc
 
 | Clé | Contenu | Durée |
 | --- | --- | --- |
-| `politique2027:save` | Camp choisi, niveaux débloqués, étoiles, record du mode sans fin, son coupé ou non, vitesse de jeu | Jusqu'à ce que vous l'effaciez |
-| `politique2027:theme` | Thème clair ou sombre, seulement si vous le choisissez à la main | Jusqu'à ce que vous l'effaciez |
+| `politique2027:save` | Camp choisi, niveaux débloqués, étoiles, record du mode sans fin, son coupé ou non, vitesse de jeu, paysage forcé ou non sur téléphone | Jusqu'à ce que vous l'effaciez |
 
 Ce stockage est strictement nécessaire à une fonctionnalité que vous demandez (retrouver votre partie et vos préférences) : il ne requiert pas de consentement. Pour tout supprimer, effacez les « données de site » de `politique2027.mbonnici.fr` dans les réglages de votre navigateur. Le jeu fonctionne aussi si le stockage est bloqué : la progression n'est alors simplement pas conservée.
 

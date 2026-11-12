@@ -35,9 +35,9 @@ test('a full match makes no network request beyond the page itself', async ({ pa
   const origin = new URL(baseURL!).origin;
   expect(requests.filter((u) => new URL(u).origin !== origin)).toEqual([]);
   expect(await context.cookies()).toEqual([]);
-  // Progress is kept in localStorage only, under the two documented keys.
+  // Progress is kept in localStorage only, under the single documented key.
   const keys = await page.evaluate(() => Object.keys(localStorage));
-  expect(keys.every((key) => ['politique2027:save', 'politique2027:theme'].includes(key))).toBe(true);
+  expect(keys).toEqual(['politique2027:save']);
 });
 
 test('security.txt is published', async ({ request }) => {

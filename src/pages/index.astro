@@ -17,7 +17,8 @@ import { SITE_STRINGS } from '../i18n/site';
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script is:inline src="/theme.js"></script>
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content={SITE.themeColor} />
     <title>{SITE.name}</title>
     <meta name="description" content={SITE_STRINGS.fr.meta.home.description} />
     <meta name="robots" content="noindex, follow" />

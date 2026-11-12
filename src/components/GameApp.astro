@@ -88,46 +88,58 @@ const cells = Array.from({ length: ROWS * COLS }, (_, i) => ({ lane: Math.floor(
   <!-- 3. Match -->
   <section class="screen" data-screen="match" aria-labelledby="match-title" hidden>
     <h2 id="match-title" class="sr-only" tabindex="-1" data-focus>{t.ui.board}</h2>
+    <!--
+      On a desktop the three groups below sit side by side in one toolbar. On a phone
+      the cards become a column of tickets on the left and the two other groups are
+      laid over the top of the board (see ".is-compact" in game.css).
+    -->
     <div class="hud" data-slot="hud">
-      <div class="hud__res" title={t.ui.resources}>
-        <Icon name="seal" />
-        <span class="sr-only">{t.ui.resources} :</span>
-        <span data-slot="resources">0</span>
+      <div class="hud__start">
+        <div class="hud__res" title={t.ui.resources}>
+          <Icon name="seal" />
+          <span class="sr-only">{t.ui.resources} :</span>
+          <span data-slot="resources">0</span>
+        </div>
       </div>
       <div class="hud__cards" role="group" aria-label={t.ui.cards} data-slot="cards"></div>
       <div data-slot="descriptions" hidden></div>
-      <button type="button" class="tool" data-action="remove" aria-pressed="false" aria-keyshortcuts="R" title={t.ui.reshuffleHint}>
-        <Icon name="swap" />
-        <span>{t.ui.reshuffle}</span>
-      </button>
-      <button type="button" class="tool tool--ult" data-action="ultimate" aria-disabled="true" aria-keyshortcuts="U">
-        <Icon name="bolt" />
-        <span data-slot="ult-name">{t.ui.ultimate}</span>
-        <span class="tool__state" data-slot="ult-state">{t.ui.charging}</span>
-      </button>
-      <div class="hud__status">
-        <div class="polls" role="img" aria-label={t.ui.polls} data-slot="polls">
-          {Array.from({ length: 5 }).map(() => <span />)}
+      <div class="hud__end">
+        <button type="button" class="tool" data-action="remove" aria-pressed="false" aria-keyshortcuts="R" title={t.ui.reshuffleHint}>
+          <Icon name="trash" />
+          <span class="tool__label">{t.ui.reshuffle}</span>
+        </button>
+        <!-- Phone layout only: says what the next tap does while figures are being removed.
+             Screen readers get the same sentence from the live region. -->
+        <span class="hud__mode" aria-hidden="true">{t.announce.removeBanner}</span>
+        <button type="button" class="tool tool--ult" data-action="ultimate" aria-disabled="true" aria-keyshortcuts="U">
+          <Icon name="bolt" />
+          <span class="tool__label" data-slot="ult-name">{t.ui.ultimate}</span>
+          <span class="tool__state" data-slot="ult-state">{t.ui.charging}</span>
+        </button>
+        <div class="hud__status">
+          <div class="polls" role="img" aria-label={t.ui.polls} data-slot="polls">
+            {Array.from({ length: 5 }).map(() => <span />)}
+          </div>
+          <div class="wave">
+            <span data-slot="wave-label">{t.ui.wave}</span>
+            <div class="wave__bar" data-slot="wave-bar"></div>
+          </div>
         </div>
-        <div class="wave">
-          <span data-slot="wave-label">{t.ui.wave}</span>
-          <div class="wave__bar" data-slot="wave-bar"></div>
+        <div class="hud__sys">
+          <button type="button" class="icon-btn" data-action="speed" aria-pressed="false" aria-keyshortcuts="F" aria-label={`${t.ui.speed} ×2`} title={`${t.ui.speed} ×2`}>
+            <Icon name="fast" />
+          </button>
+          <button type="button" class="icon-btn" data-action="mute" aria-pressed="false" aria-keyshortcuts="M" aria-label={t.ui.soundOn} title={t.ui.soundOn}>
+            <span data-when="off"><Icon name="sound" /></span>
+            <span data-when="on"><Icon name="muted" /></span>
+          </button>
+          <button type="button" class="icon-btn" data-action="fullscreen" aria-label={t.ui.fullscreen} title={t.ui.fullscreen}>
+            <Icon name="fullscreen" />
+          </button>
+          <button type="button" class="icon-btn" data-action="pause" aria-keyshortcuts="P" aria-label={t.ui.pause} title={t.ui.pause}>
+            <Icon name="pause" />
+          </button>
         </div>
-      </div>
-      <div class="hud__sys">
-        <button type="button" class="icon-btn" data-action="speed" aria-pressed="false" aria-keyshortcuts="F" aria-label={`${t.ui.speed} ×2`} title={`${t.ui.speed} ×2`}>
-          <Icon name="fast" />
-        </button>
-        <button type="button" class="icon-btn" data-action="mute" aria-pressed="false" aria-keyshortcuts="M" aria-label={t.ui.soundOn} title={t.ui.soundOn}>
-          <span data-when="off"><Icon name="sound" /></span>
-          <span data-when="on"><Icon name="muted" /></span>
-        </button>
-        <button type="button" class="icon-btn" data-action="fullscreen" aria-label={t.ui.fullscreen} title={t.ui.fullscreen}>
-          <Icon name="fullscreen" />
-        </button>
-        <button type="button" class="icon-btn" data-action="pause" aria-keyshortcuts="P" aria-label={t.ui.pause} title={t.ui.pause}>
-          <Icon name="pause" />
-        </button>
       </div>
       <p class="hud__info" data-slot="info">{t.ui.howTo}</p>
     </div>

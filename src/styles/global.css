@@ -1,36 +1,38 @@
 /*
- * Politique 2027 — "election poster" design system.
- * Paper, ink, three primary colours, hard shadows: everything looks cut out
- * and pasted, like the puppets. No CSS framework.
+ * Politique 2027 — "election night" design system.
+ * Night-blue paper, cream ink, four campaign colours, hard shadows: everything
+ * looks cut out and pasted, like the puppets. No CSS framework.
+ *
+ * The site has a single, dark theme: there is no light mode and no switch.
  */
 
 /* ───────────────────────────── tokens ───────────────────────────── */
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  --paper: #f3ecdd;
-  --paper-2: #fdf9ef;
-  --paper-3: #e9dfca;
-  --ink: #17203f;
-  --ink-soft: #485070;
-  --line: rgba(23, 32, 63, 0.18);
-  --shadow: #17203f;
+  --paper: #141a36;
+  --paper-2: #1d2549;
+  --paper-3: #262f5c;
+  --ink: #f3ecdd;
+  --ink-soft: #b9c0dc;
+  --line: rgba(243, 236, 221, 0.2);
+  --shadow: #05081a;
 
-  /* Camp colours: fills, then text-safe variants for the current theme.
+  /* Camp colours: fills, then lighter variants that stay readable as text on the night blue.
      The red is a touch deeper than the in-game one so white text on it passes AA (4.8:1). */
   --gauche: #d62b30;
   --centre: #f6aa1c;
   --droite: #2f5fe0;
   --autres: #1f8043;
-  --gauche-ink: #b0191f;
-  --centre-ink: #855000;
-  --droite-ink: #1c3fa8;
-  --autres-ink: #17653a;
+  --gauche-ink: #ff8f92;
+  --centre-ink: #ffc55c;
+  --droite-ink: #9db8ff;
+  --autres-ink: #7fe0a0;
 
   --accent: var(--gauche-ink);
-  --focus: #1c3fa8;
-  --ok: #1f7a3d;
+  --focus: #ffd23f;
+  --ok: #6fdc8c;
 
   --font-display: 'Anton', 'Arial Narrow', Impact, sans-serif;
   --font-body: 'Public Sans Variable', 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -41,42 +43,6 @@
   --hard-sm: 3px 3px 0 var(--shadow);
   --container: 70rem;
   --gutter: clamp(1rem, 4vw, 2rem);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --paper: #141a36;
-    --paper-2: #1d2549;
-    --paper-3: #262f5c;
-    --ink: #f3ecdd;
-    --ink-soft: #b9c0dc;
-    --line: rgba(243, 236, 221, 0.2);
-    --shadow: #05081a;
-    --gauche-ink: #ff8f92;
-    --centre-ink: #ffc55c;
-    --droite-ink: #9db8ff;
-    --autres-ink: #7fe0a0;
-    --focus: #ffd23f;
-    --ok: #6fdc8c;
-  }
-}
-
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --paper: #141a36;
-  --paper-2: #1d2549;
-  --paper-3: #262f5c;
-  --ink: #f3ecdd;
-  --ink-soft: #b9c0dc;
-  --line: rgba(243, 236, 221, 0.2);
-  --shadow: #05081a;
-  --gauche-ink: #ff8f92;
-  --centre-ink: #ffc55c;
-  --droite-ink: #9db8ff;
-  --autres-ink: #7fe0a0;
-  --focus: #ffd23f;
-  --ok: #6fdc8c;
 }
 
 /* ───────────────────────────── base ───────────────────────────── */
@@ -120,6 +86,9 @@ h3 {
   letter-spacing: 0.01em;
   text-transform: uppercase;
   text-wrap: balance;
+  /* Until the condensed display font has loaded, the fallback is wider: a long word
+     ("CONFIDENTIALITÉ" at 320 px) breaks instead of widening the page. */
+  overflow-wrap: break-word;
 }
 
 h1 {
@@ -371,18 +340,6 @@ ol[role='list'] {
   gap: 0.25rem;
   padding-left: 0.4rem;
   border-left: 2px solid var(--line);
-}
-.theme-toggle svg {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-.theme-toggle [data-icon] {
-  display: none;
-}
-:root:not([data-theme]) .theme-toggle [data-icon='auto'],
-:root[data-theme='light'] .theme-toggle [data-icon='light'],
-:root[data-theme='dark'] .theme-toggle [data-icon='dark'] {
-  display: block;
 }
 
 /* ───────────────────────────── footer ───────────────────────────── */
