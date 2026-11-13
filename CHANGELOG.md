@@ -12,6 +12,30 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [2.0.0] — 2026-11-13
+
+A new night, new ways to play, substitutes and a page for everyone. The save format changes (version 3): older saves are converted, and the run-off night keeps its stars as night 8.
+
+### Added
+
+- **Night 7, the run-off debate**: one rival heavyweight on set, and "soundbites" raining down on the board. Tap a soundbite (or press Enter on its square) before it lands to send it back: +15 endorsements and a blow to the frontmost opponent. Left alone, it silences the figure it lands on. The run-off is now night 8.
+- **Daily challenge**: the same night, camp and waves for everybody on a given day, scored, with your best of the day on the calendar.
+- **Turn-based duel**: play a match, then hand over on the same device or share a link (`?duel=…`); the second player plays the same match with the score to beat.
+- **Head to head on one screen**: for three minutes, one player defends with the mouse or a finger, the other sends opponents from a budget that refills — with the left-hand keys (A Z E R T / Q S D F G on AZERTY, Q W E R T / A S D F G on QWERTY) or a column of buttons aligned with the lanes.
+- **Substitutes**, one per camp, fielded from the calendar instead of a starter: Bernard Cazeneuve (the Method: a sentence that goes through two opponents) for Hollande, Sébastien Lecornu (No 49.3: the whole lane stops to negotiate) for Borne, Xavier Bertrand (Fully Comprehensive: neighbours take 30% less damage) for Ciotti, Nathalie Arthaud ("Working women, working men!") for Poutou. They also turn up among rival lieutenants.
+- **14 achievements**, listed on the calendar and announced on the gazette.
+- **News twists**: a march against the pension reform (a union marcher in every lane) and a rival 49.3 (the next wave comes at once), on the later nights; **themed weeks** every ten waves in Cohabitation (CNews, Zucman tax, strike, cost of living, farming).
+- **Duos**: two neighbours of the same camp answer each other (Macron and Philippe, Le Pen and Bardella…).
+- **Background music**, synthesised like the sound effects, with its own switch in the pause menu.
+- **A page per character** (34) and **per night** (9), each with its own social card, linked from the characters page, the play page and the sitemap.
+- **Accessibility**: a slow speed (×½), the S key reads a summary of the board, a long press on a card shows its full description.
+
+### Changed
+
+- Speech bubbles and names stay readable on phones (they no longer shrink with the board).
+- Code: the share picture, the home-screen tip and the game modes live in their own modules; the game stylesheet is split in three; a test keeps the grid's CSS in step with the board geometry.
+- README rewritten for 2.0: ways to play, controls, substitutes, privacy, and three new screenshots (the debate, head to head, a "New!" card).
+
 ## [1.5.0] — 2026-11-13
 
 Easier to understand, nicer on phones, and something to share. Saves are kept (new settings are added with their defaults).

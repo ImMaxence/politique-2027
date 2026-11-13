@@ -59,6 +59,74 @@ export class Audio {
     source.start(ctx.currentTime + start);
   }
 
+  // ───────────────────────────── music ─────────────────────────────
+
+  private musicGain: GainNode | null = null;
+  private musicTimer = 0;
+  private musicNext = 0;
+  private musicStep = 0;
+
+  /**
+   * A light campaign march, synthesised like the sound effects: four chords
+   * (C, G, A minor, F), a bass and a tune, scheduled a little ahead of time.
+   * It follows the mute button, and has its own switch in the pause menu.
+   */
+  music(on: boolean): void {
+    if (!on) {
+      window.clearInterval(this.musicTimer);
+      this.musicTimer = 0;
+      return;
+    }
+    if (this.musicTimer || !this.ctx || !this.master) return;
+    if (!this.musicGain) {
+      this.musicGain = this.ctx.createGain();
+      this.musicGain.gain.value = 0.2;
+      this.musicGain.connect(this.master);
+    }
+    this.musicNext = this.ctx.currentTime + 0.15;
+    this.musicStep = 0;
+    this.musicTimer = window.setInterval(() => this.scheduleMusic(), 120);
+  }
+
+  private scheduleMusic(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const eighth = 60 / 116 / 2;
+    while (this.musicNext < ctx.currentTime + 0.4) {
+      if (!this.muted && ctx.state === 'running') this.musicNotes(this.musicStep, this.musicNext, eighth);
+      this.musicNext += eighth;
+      this.musicStep = (this.musicStep + 1) % 32;
+    }
+  }
+
+  private musicNotes(step: number, at: number, eighth: number): void {
+    const midi = (n: number) => 440 * 2 ** ((n - 69) / 12);
+    // C, G, A minor, F: root, third, fifth (MIDI note numbers).
+    const chords = [[48, 52, 55], [43, 47, 50], [45, 48, 52], [41, 45, 48]];
+    const chord = chords[Math.floor(step / 8)];
+    const beat = step % 8;
+    if (beat % 2 === 0) this.voice(midi(chord[beat % 4 === 0 ? 0 : 2] - 12), at, eighth * 1.6, 'triangle', 0.5);
+    // The tune: chord tones an octave and a half up, with a rest now and then.
+    const pattern = [2, 1, 0, 1, 2, -1, 1, 0];
+    const index = pattern[beat];
+    if (index >= 0) this.voice(midi(chord[index] + 24), at, eighth * 0.9, 'square', 0.16);
+    if (beat === 4) this.voice(midi(chord[0] + 12), at, eighth * 3, 'triangle', 0.18);
+  }
+
+  private voice(freq: number, at: number, duration: number, type: OscillatorType, volume: number): void {
+    const ctx = this.ctx!;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, at);
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(volume, at + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
+    osc.connect(gain).connect(this.musicGain!);
+    osc.start(at);
+    osc.stop(at + duration + 0.02);
+  }
+
   play(name: Sfx): void {
     if (this.muted || !this.ctx || this.ctx.state !== 'running') return;
     // Rate-limit the chatty ones so a full courtyard stays pleasant.

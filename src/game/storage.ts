@@ -1,4 +1,5 @@
 import { LAST_LEVEL } from './data/levels';
+import { ACHIEVEMENTS, blankCounters, type AchievementId, type Counters } from './achievements';
 import { CAMP_IDS, type CampId } from './data/types';
 
 /**
@@ -20,11 +21,12 @@ export interface CampProgress {
 }
 
 export interface Save {
-  v: 2;
+  v: 3;
   camp: CampId | null;
   progress: Record<CampId, CampProgress>;
   muted: boolean;
-  speed: 1 | 2;
+  /** Game speed: slow (accessibility), normal or fast. */
+  speed: 0.5 | 1 | 2;
   /** On a phone held upright, draw the match sideways so that it must be turned (default on). */
   forceLandscape: boolean;
   /** Hard mode: bigger waves (default off). */
@@ -33,10 +35,21 @@ export interface Save {
   seen: string[];
   /** True once the "add to home screen" tip has been dismissed. */
   installTipDismissed: boolean;
+  /** Daily challenge: best score per day (YYYY-MM-DD), the last few days only. */
+  daily: Record<string, number>;
+  /** Achievements earned, and the running totals they are counted from. */
+  achievements: AchievementId[];
+  counters: Counters;
+  /** Background music (sound effects follow the mute button). */
+  music: boolean;
+  /** Camps whose substitute is fielded instead of the starter in the same slot. */
+  bench: Record<CampId, boolean>;
 }
 
 /** v1 had five levels; 1.1.0 inserted "the street" and "the summit". */
 const V1_LEVELS: Record<number, number> = { 1: 1, 2: 2, 3: 4, 4: 6, 5: 7 };
+/** 2.0.0 inserted the debate as night 7: the run-off night moved to 8. */
+const V2_LEVELS = (n: number) => (n >= 7 ? n + 1 : n);
 
 function blankProgress(): CampProgress {
   return { unlocked: 1, stars: {}, endlessBest: 0, finished: false };
@@ -44,7 +57,7 @@ function blankProgress(): CampProgress {
 
 export function blankSave(): Save {
   return {
-    v: 2,
+    v: 3,
     camp: null,
     progress: { gauche: blankProgress(), centre: blankProgress(), droite: blankProgress(), autres: blankProgress() },
     muted: false,
@@ -53,6 +66,11 @@ export function blankSave(): Save {
     hard: false,
     seen: [],
     installTipDismissed: false,
+    daily: {},
+    achievements: [],
+    counters: blankCounters(),
+    music: true,
+    bench: { gauche: false, centre: false, droite: false, autres: false },
   };
 }
 
@@ -64,18 +82,34 @@ export function loadSave(): Save {
     const data = JSON.parse(raw) as {
       v?: number; camp?: unknown; muted?: unknown; speed?: unknown; forceLandscape?: unknown;
       hard?: unknown; seen?: unknown; installTipDismissed?: unknown;
+      daily?: unknown; achievements?: unknown; counters?: Record<string, unknown>; music?: unknown; bench?: Record<string, unknown>;
       progress?: Record<string, Partial<CampProgress>>;
     };
-    if (data.v !== 1 && data.v !== 2) return save;
-    const level = (n: number) => (data.v === 1 ? (V1_LEVELS[n] ?? 1) : n);
+    if (data.v !== 1 && data.v !== 2 && data.v !== 3) return save;
+    const level = (n: number) => (data.v === 1 ? V2_LEVELS(V1_LEVELS[n] ?? 1) : data.v === 2 ? V2_LEVELS(n) : n);
 
     if (CAMP_IDS.includes(data.camp as CampId)) save.camp = data.camp as CampId;
     save.muted = data.muted === true;
-    save.speed = data.speed === 2 ? 2 : 1;
+    save.speed = data.speed === 2 ? 2 : data.speed === 0.5 ? 0.5 : 1;
     save.forceLandscape = data.forceLandscape !== false;
     save.hard = data.hard === true;
     save.seen = Array.isArray(data.seen) ? data.seen.filter((id): id is string => typeof id === 'string').slice(0, 100) : [];
     save.installTipDismissed = data.installTipDismissed === true;
+    save.music = data.music !== false;
+    for (const camp of CAMP_IDS) save.bench[camp] = data.bench?.[camp] === true;
+    if (data.daily && typeof data.daily === 'object') {
+      const days = Object.entries(data.daily as Record<string, unknown>)
+        .filter(([day, score]) => /^d{4}-d{2}-d{2}$/.test(day) && Number.isFinite(Number(score)))
+        .sort(([a], [b]) => (a < b ? 1 : -1))
+        .slice(0, 14);
+      save.daily = Object.fromEntries(days.map(([day, score]) => [day, Math.max(0, Number(score))]));
+    }
+    if (Array.isArray(data.achievements)) {
+      save.achievements = data.achievements.filter((id): id is AchievementId => ACHIEVEMENTS.includes(id as AchievementId));
+    }
+    for (const key of Object.keys(save.counters) as (keyof Counters)[]) {
+      save.counters[key] = Math.max(0, Number(data.counters?.[key]) || 0);
+    }
     for (const camp of CAMP_IDS) {
       const stored = data.progress?.[camp];
       if (!stored) continue;

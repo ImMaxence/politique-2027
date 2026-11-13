@@ -4,9 +4,13 @@
  * language; src/game/main.ts brings it to life.
  */
 import '../styles/game.css';
+import '../styles/game-side.css';
+import '../styles/game-extras.css';
 import { COLS, LEVELS, ROWS, levelDef } from '../game/data/levels';
 import { CAMP_IDS } from '../game/data/types';
 import { CAMPS, EXTRAS } from '../game/data/units';
+import { ACHIEVEMENTS } from '../game/achievements';
+import { VERSUS_KINDS, type VersusKind } from '../game/sim/engine';
 import { GAME_STRINGS, fmt, type Lang } from '../i18n/game';
 import Icon from './Icon.astro';
 import Puppet from './Puppet.astro';
@@ -19,6 +23,13 @@ const { lang } = Astro.props;
 const t = GAME_STRINGS[lang];
 const levels = [...LEVELS.map((l) => l.id), 0];
 const cells = Array.from({ length: ROWS * COLS }, (_, i) => ({ lane: Math.floor(i / COLS), col: i % COLS }));
+
+const kinds = Object.keys(VERSUS_KINDS) as VersusKind[];
+// Soft hyphens, so that a long name breaks where it should in the narrow column.
+const kindName = (k: VersusKind) =>
+  (k === 'star' ? t.ui.star : t.extras[k]).replace('Éditorialiste', 'Éditoria­liste').replace('Heavyweight', 'Heavy­weight');
+const kindKeys = t.ui.versusKindKeys.split(' ');
+const laneKeys = t.ui.versusLaneKeys.split(' ');
 
 /** Who turns up on a given night, in order of appearance (activists come every night and are left out). */
 function castOf(id: number) {
@@ -97,19 +108,31 @@ function castOf(id: number) {
           <button type="button" class="difficulty__option" data-action="difficulty" data-value="hard" aria-pressed="false" aria-describedby="difficulty-hint">{t.ui.hard}</button>
           <span id="difficulty-hint" class="difficulty__hint">{t.ui.hardHint}</span>
         </div>
+        <button type="button" class="difficulty__option bench-toggle" data-action="bench" aria-pressed="false">
+          <span class="bench-toggle__label">{t.ui.benchTitle}</span>
+          <span data-slot="bench-text"></span>
+        </button>
         <button type="button" class="btn" data-action="change-camp">{t.ui.changeCamp}</button>
       </div>
+    </div>
+    <div class="duel-banner" data-slot="duel-banner" hidden>
+      <p data-slot="duel-text"></p>
+      <button type="button" class="btn btn--primary" data-action="duel-accept">{t.ui.duelAccept}</button>
     </div>
     <ol class="levels">
       {
         levels.map((id) => (
           <li>
-            <button type="button" class="level-card" data-level={id}>
-              <span class="level-card__date">{t.levels[id].date}</span>
-              <span class="level-card__name">{t.levels[id].name}</span>
-              <span class="level-card__blurb">{t.levels[id].blurb}</span>
-              <span class="level-card__state" data-slot="state" />
-              <span class="level-card__cast">
+            <button
+              type="button"
+              class="level-card"
+              data-level={id}
+            >
+              <span class="level-card__date" id={`lvl-${id}-date`}>{t.levels[id].date}</span>
+              <span class="level-card__name" id={`lvl-${id}-name`}>{t.levels[id].name}</span>
+              <span class="level-card__blurb" id={`lvl-${id}-blurb`}>{t.levels[id].blurb}</span>
+              <span class="level-card__state" id={`lvl-${id}-state`} data-slot="state" />
+              <span class="level-card__cast" id={`lvl-${id}-cast`}>
                 <small>{t.ui.tonight}</small>
                 {
                   castOf(id).map((c) => (
@@ -124,6 +147,48 @@ function castOf(id: number) {
         ))
       }
     </ol>
+
+    <h3 class="modes__title">{t.ui.modesTitle}</h3>
+    <ul class="levels modes" role="list">
+      <li>
+        <button type="button" class="level-card level-card--mode" data-mode="daily">
+          <span class="level-card__date" data-slot="daily-date">★</span>
+          <span class="level-card__name" id="mode-daily-name">{t.ui.dailyName}</span>
+          <span class="level-card__blurb" id="mode-daily-blurb" data-slot="daily-blurb"></span>
+          <span class="level-card__state" id="mode-daily-state" data-slot="daily-state">{t.ui.play}</span>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="level-card level-card--mode" data-mode="duel">
+          <span class="level-card__date">1 · 2</span>
+          <span class="level-card__name" id="mode-duel-name">{t.ui.duelName}</span>
+          <span class="level-card__blurb" id="mode-duel-blurb">{t.ui.duelBlurb}</span>
+          <span class="level-card__state" id="mode-duel-state">{t.ui.play}</span>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="level-card level-card--mode" data-mode="versus">
+          <span class="level-card__date">1 + 2</span>
+          <span class="level-card__name" id="mode-versus-name">{t.ui.versusName}</span>
+          <span class="level-card__blurb" id="mode-versus-blurb">{t.ui.versusBlurb}</span>
+          <span class="level-card__state" id="mode-versus-state">{t.ui.play}</span>
+        </button>
+      </li>
+    </ul>
+
+    <details class="achievements">
+      <summary data-slot="achievements-title">{t.ui.achievementsTitle.replace('{n}', '0').replace('{total}', String(ACHIEVEMENTS.length))}</summary>
+      <ul class="achievements__list" role="list">
+        {
+          ACHIEVEMENTS.map((id) => (
+            <li data-achievement={id}>
+              <b>{t.achievements[id].name}</b>
+              <span>{t.achievements[id].desc}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </details>
   </section>
 
   <!-- 3. Match -->
@@ -167,8 +232,9 @@ function castOf(id: number) {
           </div>
         </div>
         <div class="hud__sys">
-          <button type="button" class="icon-btn" data-action="speed" aria-pressed="false" aria-keyshortcuts="F" aria-label={`${t.ui.speed} ×2`} title={`${t.ui.speed} ×2`}>
+          <button type="button" class="icon-btn icon-btn--speed" data-action="speed" aria-pressed="false" aria-keyshortcuts="F" aria-label={`${t.ui.speed} ×1 (${t.ui.speedNormal})`} title={`${t.ui.speed} ×1 (${t.ui.speedNormal})`}>
             <Icon name="fast" />
+            <span class="speed-badge" data-slot="speed-badge" aria-hidden="true">×1</span>
           </button>
           <button type="button" class="icon-btn" data-action="mute" aria-pressed="false" aria-keyshortcuts="M" aria-label={t.ui.soundOn} title={t.ui.soundOn}>
             <span data-when="off"><Icon name="sound" /></span>
@@ -214,6 +280,9 @@ function castOf(id: number) {
           <button type="button" class="btn btn--toggle" data-action="orientation" aria-pressed="true">
             <Icon name="phone" /><span>{t.ui.forceLandscape}</span>
           </button>
+          <button type="button" class="btn btn--toggle btn--music" data-action="music" aria-pressed="true">
+            <span>{t.ui.musicOn}</span>
+          </button>
           <!-- Keyboard only: the shortcuts, which no longer fit under a full-screen board. -->
           <div class="panel__keys">
             <p class="panel__keys-title">{t.ui.keyboardTitle}</p>
@@ -225,7 +294,7 @@ function castOf(id: number) {
       <!-- The first time a special opponent turns up, the match stops for a short introduction. -->
       <div class="overlay" data-overlay="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title" aria-describedby="intro-desc" hidden>
         <div class="panel intro">
-          <p class="intro__tag">{t.ui.newOpponent}</p>
+          <p class="intro__tag" data-slot="intro-tag">{t.ui.newOpponent}</p>
           <div class="intro__art" data-slot="intro-art" aria-hidden="true"></div>
           <div class="intro__text">
             <h2 id="intro-title" data-slot="intro-name"></h2>
@@ -247,12 +316,39 @@ function castOf(id: number) {
           <p class="gazette__notes" data-slot="notes" hidden></p>
           <div class="gazette__actions">
             <button type="button" class="btn btn--primary" data-action="next">{t.ui.nextLevel}</button>
+            <button type="button" class="btn" data-action="duel-pass" hidden>{t.ui.duelPass}</button>
             <button type="button" class="btn btn--share" data-action="share"><Icon name="share" /><span>{t.ui.share}</span></button>
             <button type="button" class="btn" data-action="retry">{t.ui.tryAgain}</button>
             <button type="button" class="btn btn--ghost" data-action="calendar">{t.ui.backToCalendar}</button>
           </div>
         </div>
       </div>
+    </div>
+    <!-- Two players on one screen: the attacker's side (keyboard on the left, or these buttons). -->
+    <div class="versus" data-slot="versus" hidden>
+      <p class="versus__budget"><span>{t.ui.versusBudget}</span> <b data-slot="vs-budget">0</b></p>
+      <div class="versus__kinds" role="group" aria-label={t.ui.versusKinds}>
+        {
+          kinds.map((k, i) => (
+            <button type="button" class="versus__kind" data-kind={k} aria-pressed={i === 0 ? 'true' : 'false'}>
+              <span class="versus__key" aria-hidden="true">{kindKeys[i]}</span>
+              <span class="versus__name">{kindName(k)}</span>
+              <span class="versus__cost">{VERSUS_KINDS[k]}</span>
+            </button>
+          ))
+        }
+      </div>
+      <div class="versus__lanes" role="group" aria-label={t.ui.versusLanes}>
+        {
+          [0, 1, 2, 3, 4].map((lane) => (
+            <button type="button" class="versus__lane" data-lane={lane}>
+              <span class="versus__key" aria-hidden="true">{laneKeys[lane]}</span>
+              <span>{t.ui.versusLane.replace('{n}', String(lane + 1))}</span>
+            </button>
+          ))
+        }
+      </div>
+      <p class="versus__help">{t.ui.versusKeys.replace('{kinds}', t.ui.versusKindKeys).replace('{lanes}', t.ui.versusLaneKeys)}</p>
     </div>
     <p class="match__help">{t.ui.keyboardHelp}</p>
   </section>

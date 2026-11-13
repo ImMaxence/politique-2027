@@ -15,11 +15,11 @@ Pour retenir votre progression et vos réglages, le site utilise le stockage loc
 
 | Clé | Contenu | Durée |
 | --- | --- | --- |
-| `politique2027:save` | Camp choisi, niveaux débloqués, étoiles, record du mode sans fin, son coupé ou non, vitesse de jeu, paysage forcé ou non sur téléphone, mode difficile ou non, adversaires déjà présentés (fiches « Nouveau ! »), astuce « écran d'accueil » masquée ou non | Jusqu'à ce que vous l'effaciez |
+| `politique2027:save` | Camp choisi, niveaux débloqués, étoiles, record du mode sans fin, son coupé ou non, vitesse de jeu, paysage forcé ou non sur téléphone, mode difficile ou non, adversaires déjà présentés (fiches « Nouveau ! »), astuce « écran d'accueil » masquée ou non, meilleurs scores des défis du jour (deux dernières semaines), succès et compteurs qui y mènent, musique activée ou non, remplaçants choisis | Jusqu'à ce que vous l'effaciez |
 
 Pour que le jeu s'ouvre et se joue **hors connexion** (notamment une fois ajouté à l'écran d'accueil), le navigateur garde aussi une copie des fichiers du site — pages, scripts, styles, polices et images — dans son cache (`Cache Storage`, géré par un *service worker*). Ce cache ne contient que les fichiers publics du site, aucune donnée vous concernant ; il est remplacé à chaque nouvelle version du jeu.
 
-Le bouton « Partager le résultat » fabrique une image sur votre appareil et la confie au menu de partage de votre système (ou l'enregistre) : rien n'est envoyé tant que vous ne choisissez pas vous-même un destinataire.
+Le bouton « Partager le résultat » fabrique une image sur votre appareil et la confie au menu de partage de votre système (ou l'enregistre) : rien n'est envoyé tant que vous ne choisissez pas vous-même un destinataire. Un lien de duel ne contient que la soirée, le camp, le tirage de la partie et un score : aucune donnée vous concernant.
 
 Ce stockage est strictement nécessaire à une fonctionnalité que vous demandez (retrouver votre partie et vos préférences) : il ne requiert pas de consentement. Pour tout supprimer (stockage local et cache), effacez les « données de site » de `politique2027.mbonnici.fr` dans les réglages de votre navigateur. Le jeu fonctionne aussi si le stockage est bloqué : la progression n'est alors simplement pas conservée.
 

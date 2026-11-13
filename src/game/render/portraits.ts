@@ -169,6 +169,24 @@ const PROPS: Record<string, string> = {
     <circle cx="90" cy="131" r="4.500" fill="#ffd23f" ${s(1.8)}/><path d="M87 135l-2 7M90 136v7M93 135l2 7" ${thin('#c98a00', 2)}/>
     <g transform="rotate(-62 104 108)"><rect x="84" y="99" width="42" height="17" rx="8" fill="#c62f3a" ${s(2.4)}/>
     <ellipse cx="124" cy="107.500" rx="4.500" ry="8.500" fill="#e5383b" ${s(2)}/><path d="M124 103.500a3 4 0 0 1 0 8" ${thin('#8b1c24', 1.6)}/></g>`,
+  // Bernard Cazeneuve: the method — a notebook and a fountain pen.
+  notebook: `<g transform="rotate(-8 100 110)"><rect x="84" y="90" width="30" height="38" rx="3" fill="#2a3566" ${s(2.4)}/>
+    <path d="M88 90v38" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/><path d="M93 102h16M93 109h16M93 116h11" ${thin('#dfe6f5', 2)}/></g>
+    <g transform="rotate(32 112 96)"><rect x="108" y="74" width="7" height="34" rx="3" fill="#17203f" ${s(1.8)}/><path d="M108.500 108l3 7 3-7z" fill="#ffd23f" ${s(1.4)}/></g>`,
+  // Sébastien Lecornu: no 49.3 — the sign, crossed out.
+  no493: `<g transform="rotate(-6 100 104)"><path d="M100 132v-16" fill="none" ${s(3)}/>
+    <rect x="80" y="90" width="40" height="26" rx="3" fill="${PAPER}" ${s(2.4)}/>
+    <text x="100" y="109" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="15" fill="#9aa3b8">49.3</text>
+    <path d="M84 113l32-20" fill="none" stroke="#e5383b" stroke-width="4" stroke-linecap="round"/></g>`,
+  // Xavier Bertrand: fully comprehensive cover — an umbrella.
+  umbrella: `<g transform="rotate(-14 100 104)"><path d="M100 84v40c0 5 7 5 7 0" fill="none" ${s(3)}/>
+    <path d="M76 88c4-14 14-20 24-20s20 6 24 20c-4-3-8-3-12 0-4-3-8-3-12 0-4-3-8-3-12 0-4-3-8-3-12 0z" fill="#2f5fe0" ${s(2.4)}/>
+    <path d="M100 68v20M88 72l-2 16M112 72l2 16" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.800"/></g>`,
+  // Nathalie Arthaud: the party paper.
+  paper: `<g transform="rotate(10 100 108)"><rect x="82" y="86" width="36" height="42" rx="2" fill="${PAPER}" ${s(2.4)}/>
+    <rect x="82" y="86" width="36" height="12" fill="#e5383b" ${s(2)}/>
+    <text x="100" y="95.500" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="9" fill="${PAPER}">LO</text>
+    <path d="M87 104h26M87 110h26M87 116h18M87 122h22" ${thin('#9aa3b8', 2)}/></g>`,
   // Sylvain Durif: the pan flute.
   panflute: `<g transform="rotate(-8 100 108)" ${s(2.2)}>${[0, 1, 2, 3, 4].map((i) => `<rect x="${84 + i * 7}" y="${92 + i * 2}" width="6.500" height="${34 - i * 4}" rx="2" fill="#d9b382"/>`).join('')}
     <path d="M82 104h38" fill="none" stroke="#8a5a3c" stroke-width="4"/></g><path d="M118 88c3-3 6-1 5 2s-5 3-5-2zM124 100c3-2 5 0 4 2" ${thin(INK, 2)}/>`,
@@ -207,6 +225,12 @@ const LOOKS: Record<string, Look> = {
   retailleau: { skin: '#f6d2b3', face: 'long', hair: 'side', hairColor: '#b9bcc4', brows: '#8d9199', browStyle: 'angry', nose: 'long', mouth: 'flat', glasses: 'thin', wrinkles: true, jacket: CHARCOAL, shirt: WHITE, tie: '#1c3fa8', prop: 'order' },
   zemmour: { skin: '#e9b48f', face: 'long', hair: 'balding', hairColor: '#2a2422', brows: '#2a2422', browStyle: 'sad', thickBrows: true, eyes: 'tired', nose: 'hook', mouth: 'open', ears: 7.5, jacket: CHARCOAL, shirt: WHITE, tie: '#5e1c1c', prop: 'book' },
   lepen: { skin: '#f6d2b3', face: 'square', hair: 'boblong', hairColor: '#f1d27a', brows: '#b8963c', browStyle: 'arched', nose: 'small', mouth: 'laugh', blush: true, outfit: 'coat', jacket: '#1c3fa8', shirt: WHITE, prop: 'cat' },
+
+  // ── Substitutes
+  cazeneuve: { skin: '#efc19c', face: 'long', hair: 'balding', hairColor: '#9aa0aa', brows: '#6b655c', nose: 'long', mouth: 'flat', glasses: 'rect', wrinkles: true, jacket: CHARCOAL, shirt: WHITE, tie: '#8b2f2f', prop: 'notebook' },
+  lecornu: { skin: '#f3c9a5', face: 'oval', hair: 'short', hairColor: '#3b2a20', brows: '#2e2018', nose: 'small', mouth: 'smile', stubble: true, jacket: NAVY, shirt: WHITE, tie: '#1c3fa8', prop: 'no493' },
+  bertrand: { skin: '#f0bf9a', face: 'round', hair: 'side', hairColor: '#d5d8de', brows: '#9aa0aa', nose: 'round', mouth: 'smile', glasses: 'thin', ears: 6, jacket: SUIT, shirt: WHITE, tie: '#2f5fe0', prop: 'umbrella' },
+  arthaud: { skin: '#f4cfae', face: 'oval', hair: 'bob', hairColor: '#3b2a20', brows: '#2e2018', nose: 'small', mouth: 'open', outfit: 'casual', jacket: '#8b2f2f', shirt: '#e9e2d0', prop: 'paper' },
 
   // ── Les Autres
   bmacron: { skin: '#f4cfae', face: 'oval', hair: 'bobfringe', hairColor: '#f3dc96', brows: '#b89a4c', browStyle: 'arched', eyes: 'wide', eyeColor: '#4d8fe0', nose: 'small', mouth: 'smile', blush: true, outfit: 'coat', jacket: '#8fc1ee', shirt: WHITE, prop: 'coins' },

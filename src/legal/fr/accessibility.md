@@ -30,7 +30,11 @@ Le site n'a pas encore été testé avec un lecteur d'écran par une personne qu
 - **Orientation** : sur téléphone, la partie s'affiche par défaut en paysage (tournée d'un quart de tour si l'appareil est tenu droit). Ce comportement se désactive d'un bouton dans le menu pause : le jeu suit alors l'orientation de l'appareil.
 - **Zoom** : le zoom à deux doigts reste toujours possible. Seul le zoom par double tap est désactivé dans le jeu, pour qu'un enchaînement rapide de touchers (une carte, puis une case) n'agrandisse pas la page par erreur.
 - **Nouveaux adversaires** : la première fois qu'un adversaire spécial apparaît, la partie s'arrête et une fenêtre de dialogue présente son effet en texte ; le focus va sur le bouton « Compris ! », Échap la ferme et la partie reprend. Chaque fiche n'apparaît qu'une fois.
-- **Raccourcis clavier** : ils sont rappelés dans le menu pause (touche P ou Échap).
+- **Raccourcis clavier** : ils sont rappelés dans le menu pause (touche P ou Échap). La touche S lit un résumé du terrain (parrainages, sondages, adversaires par couloir).
+- **Rythme** : la partie se met en pause à tout moment, et une vitesse lente (×½) s'ajoute à la vitesse normale et rapide (bouton ou touche F).
+- **Débat** : les « petites phrases » du débat se renvoient en activant leur case (clic, toucher ou Entrée) ; chacune est annoncée avec sa position.
+- **Fiches des cartes** : sur écran tactile, un appui long sur une carte affiche sa description complète ; au clavier et avec un lecteur d'écran, la même description est associée à la carte.
+- **À deux sur un écran** : l'attaque se joue entièrement au clavier (touches de gauche) ou avec des boutons, la défense à la souris ou au doigt.
 - **Difficulté** : un mode « Difficile » est proposé sur le calendrier ; le mode normal reste celui par défaut.
 - **Types de cartes** : chaque carte porte son type (Argent, Attaque, Effet, Défense) en toutes lettres, en plus de la couleur.
 - **Mouvement** : avec le réglage système « réduire les animations », les tremblements d'écran sont supprimés et les effets sont atténués. Aucun flash plein écran n'est utilisé.
@@ -55,7 +59,7 @@ Les sites tiers vers lesquels le site renvoie (GitHub, site de l'auteur) sont ho
 
 ## Établissement de cette déclaration
 
-- Déclaration établie le 12 novembre 2026 avec la version 1.0.0, mise à jour avec la version 1.5.0.
+- Déclaration établie le 12 novembre 2026 avec la version 1.0.0, mise à jour avec la version 2.0.0.
 - Technologies utilisées : HTML, CSS, JavaScript (Astro), SVG, Canvas et Web Audio.
 - Environnement de test : navigateur Chromium récent piloté par Playwright, en affichage ordinateur et mobile.
 

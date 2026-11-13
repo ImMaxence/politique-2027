@@ -37,8 +37,10 @@ export type Ability =
       regen?: number;
       /** Identity check: periodically freezes whoever is in contact. */
       checkpoint?: { interval: number; stun: number };
+      /** Insurance: the eight neighbours take this share less damage (0-1). */
+      shield?: number;
     }
-  | { kind: 'bomb'; fuse: number; damage: number; area: 'lane' | 'square'; friendlyFire?: number }
+  | { kind: 'bomb'; fuse: number; damage: number; area: 'lane' | 'square'; friendlyFire?: number; stun?: number }
   | { kind: 'shout'; interval: number; damage: number; knockback: number; range: number }
   | { kind: 'aura'; slow: number; range: number; dps: number }
   /** Fire hose: puts out every fire in the lane and soaks everyone else. */
@@ -119,12 +121,20 @@ export interface EnemyDef extends AttackerProfile {
 
 export type UltimateId = 'greve' | 'dissolution' | 'trocadero' | 'censure';
 
+/** News twists: a march against the pension reform, or a rival forcing a text through (49.3). */
+export type TwistId = 'manif' | 'force';
+
+/** Endless mode: every ten waves, a themed week changes who turns up. */
+export type ThemeId = 'cnews' | 'zucman' | 'greve' | 'smic' | 'agri';
+
 export interface CampDef {
   id: CampId;
   color: string;
   /** Darker shade used for text on light backgrounds. */
   ink: string;
   ultimate: UltimateId;
+  /** A substitute the player may field instead of the roster figure in the same slot. */
+  bench: string;
   /** Roster in unlock order. */
   roster: string[];
 }
@@ -156,4 +166,10 @@ export interface LevelDef {
   /** Whether the public-service reinforcements can be called. */
   reinforcements: boolean;
   endless?: boolean;
+  /** News twists that may happen once during the night (every so often in endless mode). */
+  twists?: TwistId[];
+  /** The debate: "petites phrases" drop on the board, to be sent back before they land. */
+  punchlines?: { interval: number; life: number };
+  /** Two players, one screen: no waves, an attacker with a budget, and a clock. */
+  versus?: { duration: number };
 }

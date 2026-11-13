@@ -24,12 +24,12 @@ function links(): string {
     '## Pages (English)',
     page('en', 'home', 'what the game is, the four camps, how to play, FAQ'),
     page('en', 'play', 'the game itself, plus controls and rules'),
-    page('en', 'characters', 'all 24 characters with powers, catchphrases and stats'),
+    page('en', 'characters', 'all 28 characters with powers, catchphrases and stats (each also has a page of its own)'),
     '',
     '## Pages (français)',
     page('fr', 'home', 'présentation du jeu, des quatre camps, règles et FAQ'),
     page('fr', 'play', 'le jeu, les commandes et les règles'),
-    page('fr', 'characters', 'les 24 personnages, leurs pouvoirs, leurs répliques et leurs statistiques'),
+    page('fr', 'characters', 'les 28 personnages, leurs pouvoirs, leurs répliques et leurs statistiques (chacun a aussi sa page)'),
     '',
     '## Legal',
     page('en', 'legal', 'publisher, hosting, satire framework, licence'),
@@ -52,9 +52,10 @@ const FACTS = [
   '- Languages: French (default) and English',
   '- Price: free. No sign-up, no ads, no in-app purchases',
   '- Platforms: any recent desktop or mobile browser; nothing to install. On phones the match is played in landscape',
-  '- Content: 4 camps, 24 playable characters, 2 shared reinforcements, 6 guests, 7 campaign levels with their own stage sets, 1 endless mode',
+  '- Content: 4 camps, 24 playable characters plus 4 substitutes, 2 shared reinforcements, 6 guests, 8 campaign nights (including a TV debate with soundbites to send back), 1 endless mode with themed weeks',
   '- Card types: Money, Attack, Effect, Defence',
-  '- Modes: a seven-night campaign (normal or hard), then the endless "Cohabitation" mode with a local record',
+  '- Modes: an eight-night campaign (normal or hard), the endless "Cohabitation" mode, a daily challenge (the same match for everybody each day), a turn-based duel shared by link, and a two-player mode on one screen (defender with the mouse or touch, attacker with the keyboard or side buttons)',
+  '- Extras: 14 achievements, background music, a slow speed for accessibility, a one-key board summary for screen readers',
   '- Installable on the home screen and playable offline; results can be shared as a picture',
   `- Author: ${SITE.author.name} (${SITE.author.url})`,
   `- Licence: MIT. Source: ${SITE.repo}`,
@@ -106,7 +107,7 @@ export function llmsFullTxt(): string {
   }
   out.push(`- Endless mode — ${g.levels[0].name}: ${g.levels[0].blurb} Unlocked by finishing level ${LEVELS.length}.`, '');
 
-  out.push('## The four camps and their 24 characters', '');
+  out.push('## The four camps and their characters', '');
   for (const camp of CAMP_IDS) {
     const ultimate = g.ultimates[CAMPS[camp].ultimate];
     out.push(`### ${g.camps[camp].name}`, '', `Motto: "${g.camps[camp].motto}"`, `Campaign trump card — ${ultimate.name}: ${ultimate.desc}`, '');

@@ -1,0 +1,455 @@
+/*
+ * Game UI, part 2: the side layout used on every landscape screen (tickets on the
+ * left, the board over the rest, the controls on the scenery) and the quarter turn
+ * of a phone held upright. Loaded after game.css.
+ */
+
+/*
+ * Phone layout, the way lane-defense games do it on mobile: landscape, the cards
+ * as a column of tickets on the left under the purse, the board filling the rest
+ * of the screen and the controls laid over the top of the scenery.
+ *
+ * `.is-compact` is set by the game on a phone held sideways (and on any very
+ * short window). `.is-forced` is added on a phone held upright: the browser
+ * cannot always lock the orientation (iPhone), so the match is drawn a quarter
+ * turn round and the phone has to be turned to play. The pause menu can switch
+ * this off.
+ */
+.game.is-compact {
+  --avail-h: 100dvh;
+  /* The page's width without its scrollbar, measured by the game (100dvw counts it). */
+  --avail-w: var(--page-w, 100dvw);
+  --bw: 3px; /* the board's frame */
+  /* Two players on one screen: the attacker's column, on the right of the board. */
+  --versus-w: 0px;
+  /* The notch of a phone held sideways (viewport-fit=cover): the tickets keep clear of
+     it on the left; on the right only scenery may slip under it. */
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  /* Controls grow with the window: a monitor gets bigger buttons than a phone. */
+  --btn: clamp(2.3rem, calc((var(--avail-w) - 13rem) * 0.042), 3.3rem);
+  /*
+   * Every pixel goes to the courtyard. --u is the size of one unit of the scene
+   * (1440 × 720 units, see layout.ts) in CSS pixels, as big as the screen allows:
+   * - in height, the lanes and the floor strip under them (592 units), the heads of the
+   *   first lane (40, so that the controls bar does not hide them) and the bar must fit;
+   * - in width, the nine squares and a little of the steps (1128 units) must fit.
+   * Width to spare shows more of the scene (up to all 1440 units) instead of a margin;
+   * height to spare shows the sky, otherwise the sky is cut.
+   */
+  --u-h: calc((var(--avail-h) - 0.6rem - 2 * var(--bw) - var(--btn) - 0.8rem) / 632);
+  /* A slim column of tickets, about an eighth of the screen; on a very wide, short
+     screen it also takes whatever the board, at its widest, leaves over. */
+  --tickets: clamp(
+    9rem,
+    max(
+      calc(var(--avail-w) * 0.12),
+      calc(var(--avail-w) - var(--safe-l) - var(--versus-w) - 0.9rem - 1440 * var(--u-h) - 2 * var(--bw) - max(0px, var(--safe-r) - 56 * var(--u-h)))
+    ),
+    15rem
+  );
+  /* The width the squares may use: clear of the notch on both sides. */
+  --room: calc(var(--avail-w) - var(--safe-l) - var(--safe-r) - var(--tickets) - var(--versus-w) - 0.9rem);
+  --u: min(var(--u-h), calc((var(--room) - 2 * var(--bw)) / 1128));
+  /* The board itself may run under the right-hand notch by the width of the gate. */
+  --stage-w: min(calc(var(--room) + min(var(--safe-r), 56 * var(--u))), calc(1440 * var(--u) + 2 * var(--bw)));
+  --stage-h: min(calc(var(--avail-h) - 0.6rem), calc(720 * var(--u) + 2 * var(--bw)));
+  /* Everything on a ticket is a share of its width, and the type of the bar a share of the board's. */
+  --bar-font: clamp(0.68rem, calc(var(--stage-w) * 0.0125), 1rem);
+  /* Edge to edge, whatever the width of the page around it. */
+  width: var(--avail-w);
+  margin-inline: calc((100% - var(--avail-w)) / 2);
+  padding-left: var(--safe-l);
+  padding-bottom: 0;
+  overflow-x: clip;
+}
+/* Outside a phone held upright, the match takes the whole screen and sits in its middle. */
+.game.is-compact:not(.is-forced) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: var(--avail-h);
+}
+.game.is-forced {
+  --avail-h: 100dvw;
+  --avail-w: 100dvh;
+  /* Turned a quarter: the status bar is on the left of the match, the home bar on its right. */
+  --safe-l: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-bottom, 0px);
+  position: fixed;
+  top: 0;
+  left: 100dvw;
+  z-index: 60;
+  width: 100dvh;
+  height: 100dvw;
+  margin: 0;
+  padding: 0.3rem 0;
+  overflow: hidden;
+  background: var(--paper);
+  transform-origin: top left;
+  transform: rotate(90deg);
+}
+/* Full screen (Android locks the orientation there): the match is the whole screen. */
+.game.is-compact:fullscreen {
+  --avail-w: 100dvw;
+  width: 100dvw;
+  margin: 0;
+  justify-content: flex-start;
+  padding: 0.3rem 0 0;
+  overflow: hidden;
+}
+html.game-locked,
+html.game-locked body {
+  overflow: hidden;
+}
+/* Two columns, as tall as the screen: the purse and the tickets, then the board. */
+.game.is-compact .screen[data-screen='match']:not([hidden]) {
+  display: grid;
+  grid-template-columns: var(--tickets) var(--stage-w);
+  grid-template-rows: auto minmax(0, 1fr);
+  justify-content: center;
+  align-items: start;
+  column-gap: 0.35rem;
+  height: var(--stage-h);
+}
+/* The toolbar dissolves: its three groups are placed straight on that grid. */
+.game.is-compact .hud {
+  display: contents;
+}
+.game.is-compact .stage {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  min-width: 0;
+  margin: 0;
+  aspect-ratio: auto;
+  border-width: var(--bw);
+  border-radius: var(--radius);
+}
+/* The scene, larger than the board and pinned to its bottom edge. Horizontally the
+   board shows at least units 256…1384 of it (the squares and a bit of the steps);
+   any extra width uncovers the gate on the right, then the building on the left.
+   If need be, the sky is cropped. The renderer reads this offset to keep captions
+   and speech bubbles inside the visible part. */
+.game.is-compact .stage__view {
+  top: auto;
+  bottom: 0;
+  left: calc(-1 * min(1440 * var(--u) - (var(--stage-w) - 2 * var(--bw)), 256 * var(--u)));
+  width: calc(var(--u) * 1440);
+  height: calc(var(--u) * 720);
+}
+.game.is-compact .match__help {
+  display: none;
+}
+/* The number of the key stays on the corner of the portrait where there is a keyboard. */
+.game.is-compact .card__key {
+  padding: 0 0.25rem;
+  font-size: 0.6rem;
+  line-height: 1.3;
+}
+@media (pointer: coarse) {
+  .game.is-compact .card__key {
+    display: none;
+  }
+}
+
+/* ── The purse, above the prices it pays for ── */
+.game.is-compact .hud__start {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  padding-bottom: 0.2rem;
+}
+.game.is-compact .hud__res {
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+  padding: 0.2rem 0.5rem 0.1rem;
+  border-width: 2px;
+  font-size: calc(var(--tickets) * 0.13);
+}
+.game.is-compact .hud__res svg {
+  width: calc(var(--tickets) * 0.12);
+  height: calc(var(--tickets) * 0.12);
+}
+
+/* ── Tickets: portrait, name, price and — in full — the family of the card ── */
+.game.is-compact .hud__cards {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0;
+  overflow: hidden;
+}
+.game.is-compact .card {
+  flex: 1 1 0;
+  display: grid;
+  grid-template-columns: calc(var(--tickets) * 0.26) minmax(0, 1fr) auto;
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas:
+    'art name name'
+    'art type cost';
+  align-items: center;
+  justify-items: start;
+  column-gap: 0.3rem;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 0;
+  max-height: calc(var(--tickets) * 0.34);
+  margin: 0;
+  padding: 0 0.3rem 0 0;
+  border-width: 2px;
+  text-align: left;
+}
+.game.is-compact .card:hover,
+.game.is-compact .card[aria-pressed='true'] {
+  transform: none;
+  box-shadow: none;
+}
+.game.is-compact .card[aria-pressed='true'] {
+  outline: 3px solid var(--focus);
+  outline-offset: -1px;
+}
+.game.is-compact .card__art {
+  grid-area: art;
+  align-self: stretch;
+  width: calc(var(--tickets) * 0.26);
+  max-width: none;
+  overflow: hidden;
+  border-right: 2px solid var(--sticker-ink);
+  background: #e9dfca;
+}
+/* Zoom on the face: the bust and the stick are cropped out. */
+.game.is-compact .card__art svg {
+  width: calc(var(--tickets) * 0.35);
+  max-width: none;
+  margin: calc(var(--tickets) * -0.0353) 0 0 calc(var(--tickets) * -0.045);
+}
+.game.is-compact .card__name {
+  grid-area: name;
+  align-self: end;
+  position: static;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  clip-path: none;
+  font-size: calc(var(--tickets) * 0.078);
+  letter-spacing: 0;
+}
+.game.is-compact .card__type {
+  grid-area: type;
+  align-self: start;
+  width: auto;
+  margin: 0.1rem 0 0;
+  padding: 0 0.3rem;
+  border-radius: 99px;
+  font-size: calc(var(--tickets) * 0.062);
+  line-height: 1.5;
+}
+.game.is-compact .card__cost {
+  grid-area: cost;
+  align-self: start;
+  justify-self: end;
+  position: static;
+  margin-top: 0.1rem;
+  padding: 0 0.25rem;
+  border-radius: 99px;
+  font-size: calc(var(--tickets) * 0.073);
+  line-height: 1.27;
+}
+/* A ticket has no room for the arrow: the new price and the ribbon on the wall say it. */
+.game.is-compact .card.is-taxed .card__cost::after {
+  content: none;
+}
+
+/* ── Controls, laid over the top of the scenery ── */
+.game.is-compact .hud__end {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.35rem calc(0.45rem + min(var(--safe-r), 56 * var(--u))) 0.35rem 0.45rem;
+  /* The bar overlaps the board: only its buttons catch taps. */
+  pointer-events: none;
+}
+.game.is-compact .hud__end > * {
+  pointer-events: auto;
+}
+.game.is-compact .tool,
+.game.is-compact .tool--ult {
+  flex: none;
+  flex-direction: row;
+  gap: 0.3rem;
+  min-width: var(--btn);
+  max-width: 14rem;
+  min-height: var(--btn);
+  padding: 0.15rem 0.5rem;
+  font-size: var(--bar-font);
+}
+.game.is-compact .tool--ult {
+  flex: 0 1 auto;
+}
+.game.is-compact .tool svg {
+  flex: none;
+  width: calc(var(--btn) * 0.42);
+  height: calc(var(--btn) * 0.42);
+}
+.game.is-compact .tool--ult .tool__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* While figures are being removed the bar says so, in place of the trump card and the polls. */
+.game.is-compact.is-removing .hud__mode {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0.5rem 0.7rem 0.35rem;
+  border: 2px solid #17203f;
+  border-radius: 8px;
+  background: var(--gauche);
+  color: #fffdf6;
+  font-family: var(--font-display);
+  font-size: calc(var(--bar-font) * 1.4);
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.game.is-compact.is-removing .tool--ult,
+.game.is-compact.is-removing .hud__status {
+  display: none;
+}
+.game.is-compact.is-removing .hud__sys {
+  margin-left: auto;
+}
+/* The line that describes the chosen card sits on the strip of floor under the last lane. */
+.game.is-compact .hud__info {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  z-index: 3;
+  justify-self: center;
+  max-width: calc(var(--stage-w) - 1rem);
+  min-height: 0;
+  /* Board height, less the line itself (1.5 × its type + padding) and a small gap. */
+  margin-top: calc(var(--stage-h) - var(--bar-font) * 1.5 - 0.45rem);
+  padding: 0.05rem 0.6rem;
+  border-radius: 99px;
+  background: rgba(20, 26, 54, 0.88);
+  color: #f3ecdd;
+  font-size: var(--bar-font);
+  line-height: 1.5;
+  pointer-events: none;
+}
+.game.is-compact .hud__info strong {
+  color: #ffd23f;
+}
+/* Icon-only reshuffle button; the label and the charge state stay available to screen readers. */
+.game.is-compact [data-action='remove'] .tool__label,
+.game.is-compact .tool__state {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.game.is-compact .hud__status {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0 auto;
+  padding: 0.25rem 0.45rem;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+  font-size: var(--bar-font);
+  white-space: nowrap;
+}
+.game.is-compact .polls {
+  gap: 0.15rem;
+}
+.game.is-compact .polls span {
+  width: 0.6rem;
+  height: 0.95rem;
+}
+.game.is-compact .wave__bar {
+  display: none;
+}
+.game.is-compact .hud__sys {
+  display: flex;
+  flex: none;
+  gap: 0.2rem;
+}
+.game.is-compact .icon-btn {
+  width: var(--btn);
+  height: var(--btn);
+}
+.game.is-compact .icon-btn svg {
+  width: calc(var(--btn) * 0.42);
+  height: calc(var(--btn) * 0.42);
+}
+/* Narrow phones: the trump card keeps its bolt and its gauge, not its name
+   (still read by screen readers). Sideways the width is the viewport's; upright
+   and turned by CSS, it is the viewport's height. */
+@media (max-width: 42.5rem) {
+  .game.is-compact:not(.is-forced) .tool--ult .tool__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    clip-path: inset(50%);
+  }
+}
+@media (max-height: 42.5rem) {
+  .game.is-forced .tool--ult .tool__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    clip-path: inset(50%);
+  }
+}
+
+/* ── Dialogs ── */
+.game.is-compact .gazette,
+.game.is-compact .panel {
+  padding: 0.6rem 1rem;
+  gap: 0.4rem;
+}
+.game.is-compact .panel h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+.game.is-compact .panel .btn {
+  min-height: 2.3rem;
+  padding-block: 0.3rem;
+  font-size: 0.9rem;
+}
+.game.is-compact .gazette__headline {
+  font-size: 1.5rem;
+}
+.game.is-compact .gazette__stats {
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0.4rem 0;
+  padding-block: 0.3rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool--ult.is-ready {
+    animation: none;
+    box-shadow: 0 0 0 4px var(--focus);
+  }
+}

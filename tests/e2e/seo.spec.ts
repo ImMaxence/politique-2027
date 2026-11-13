@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { FIGURE_IDS, NIGHT_IDS } from '../../src/lib/pages';
 import { SITE } from '../../src/config/site';
 import { absolute, otherLang, path } from '../../src/i18n/routes';
 import { PAGES, watchErrors } from './helpers';
@@ -46,7 +47,8 @@ for (const { lang, route, url } of PAGES) {
 test('sitemap lists every page with its alternates', async ({ request }) => {
   const xml = await (await request.get('/sitemap.xml')).text();
   for (const { url } of PAGES) expect(xml).toContain(`<loc>${absolute(url)}</loc>`);
-  expect(xml.match(/<url>/g)).toHaveLength(PAGES.length);
+  // Plus one page per figure and per night, in both languages.
+  expect(xml.match(/<url>/g)).toHaveLength(PAGES.length + (FIGURE_IDS.length + NIGHT_IDS.length) * 2);
   expect(xml).toContain('hreflang="x-default"');
 });
 

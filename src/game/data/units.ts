@@ -158,6 +158,32 @@ export const UNITS: Record<string, UnitDef> = {
     attacker: { hp: 2500, speed: 0.15, dps: 50, threat: 16, leak: 2, resist: 0.7 },
   },
 
+  // ---------------------------------------------------------------- Substitutes (one per camp)
+  cazeneuve: {
+    id: 'cazeneuve', camp: 'gauche', slot: 1, cost: 100, hp: 100, recharge: 5,
+    // Method over volume: one measured sentence that goes through two opponents.
+    ability: { kind: 'shooter', damage: 24, interval: 1.8, projectile: 'word', speed: 8, pierce: 1 },
+    attacker: { hp: 540, speed: 0.19, dps: 24, threat: 5, leak: 1, trait: { kind: 'ranged', range: 2.4 } },
+  },
+  lecornu: {
+    id: 'lecornu', camp: 'centre', slot: 4, cost: 150, hp: 120, recharge: 32,
+    // No 49.3: the whole lane stops to negotiate, and comes out of it dazed.
+    ability: { kind: 'bomb', fuse: 1.1, damage: 520, area: 'lane', stun: 3 },
+    attacker: { hp: 520, speed: 0.25, dps: 24, threat: 6, leak: 1, trait: { kind: 'blast', damage: 240 } },
+  },
+  bertrand: {
+    id: 'bertrand', camp: 'droite', slot: 2, cost: 100, hp: 700, recharge: 16,
+    // Fully comprehensive cover: the neighbours take less damage.
+    ability: { kind: 'wall', shield: 0.3 },
+    attacker: { hp: 1250, speed: 0.14, dps: 28, threat: 6, leak: 1, resist: 0.4 },
+  },
+  arthaud: {
+    id: 'arthaud', camp: 'autres', slot: 4, cost: 150, hp: 110, recharge: 30,
+    // "Travailleuses, travailleurs !": a call heard to the end of the lane.
+    ability: { kind: 'bomb', fuse: 1.1, damage: 620, area: 'lane' },
+    attacker: { hp: 500, speed: 0.27, dps: 24, threat: 6, leak: 1, trait: { kind: 'blast', damage: 250 } },
+  },
+
   // ---------------------------------------------------------------- Reinforcements (any camp)
   crs: {
     id: 'crs', camp: 'neutre', slot: 6, cost: 100, hp: 520, recharge: 14,
@@ -176,19 +202,19 @@ export const REINFORCEMENTS = ['crs', 'pompiers'];
 
 export const CAMPS: Record<CampId, CampDef> = {
   gauche: {
-    id: 'gauche', color: '#e5383b', ink: '#b0191f', ultimate: 'greve',
+    id: 'gauche', color: '#e5383b', ink: '#b0191f', ultimate: 'greve', bench: 'cazeneuve',
     roster: ['glucksmann', 'hollande', 'roussel', 'royal', 'ruffin', 'melenchon'],
   },
   centre: {
-    id: 'centre', color: '#f6aa1c', ink: '#8a5300', ultimate: 'dissolution',
+    id: 'centre', color: '#f6aa1c', ink: '#8a5300', ultimate: 'dissolution', bench: 'lecornu',
     roster: ['bayrou', 'attal', 'philippe', 'lemaire', 'borne', 'macron'],
   },
   droite: {
-    id: 'droite', color: '#2f5fe0', ink: '#1c3fa8', ultimate: 'trocadero',
+    id: 'droite', color: '#2f5fe0', ink: '#1c3fa8', ultimate: 'trocadero', bench: 'bertrand',
     roster: ['sarkozy', 'bardella', 'ciotti', 'retailleau', 'zemmour', 'lepen'],
   },
   autres: {
-    id: 'autres', color: '#2e9e5b', ink: '#17653a', ultimate: 'censure',
+    id: 'autres', color: '#2e9e5b', ink: '#17653a', ultimate: 'censure', bench: 'arthaud',
     roster: ['bmacron', 'villepin', 'lassalle', 'tondelier', 'poutou', 'riner'],
   },
 };
@@ -272,6 +298,14 @@ export function categoryOf(def: UnitDef): Category {
 
 export function unitsOf(camp: CampId): UnitDef[] {
   return CAMPS[camp].roster.map((id) => UNITS[id]);
+}
+
+/** A camp's line-up, with its substitute in place of the figure in the same slot when asked. */
+export function lineupOf(camp: CampId, withBench = false): string[] {
+  const { roster, bench } = CAMPS[camp];
+  if (!withBench) return roster;
+  const slot = UNITS[bench].slot;
+  return roster.map((id) => (UNITS[id].slot === slot ? bench : id));
 }
 
 export function rivalsOf(camp: CampId): CampId[] {

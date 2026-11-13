@@ -7,7 +7,7 @@
  */
 import { COLS, ROWS, levelDef } from '../data/levels';
 import { CAMPS, REINFORCEMENTS, UNITS, enemyDef, rivalsOf } from '../data/units';
-import type { CampId, EnemyDef, LevelDef, ProjectileKind, UltimateId, UnitDef } from '../data/types';
+import type { CampId, EnemyDef, LevelDef, ProjectileKind, ThemeId, TwistId, UltimateId, UnitDef } from '../data/types';
 
 export const TICK = 1 / 60;
 export const PASSIVE_INTERVAL = 9;
@@ -115,6 +115,11 @@ export type GameEvent =
   | { type: 'wonOver'; lane: number; x: number; amount: number }
   /** The Zucman tax comes to the vote; when it passes, the CAC 40 bosses on the board leave (and pay). */
   | { type: 'zucman'; adopted: boolean; exiles: { lane: number; x: number }[]; amount: number }
+  | { type: 'twist'; id: TwistId }
+  | { type: 'punchline'; lane: number; col: number }
+  | { type: 'punchlineLanded'; lane: number; col: number; hit: boolean }
+  | { type: 'riposte'; lane: number; col: number; x: number | null }
+  | { type: 'theme'; id: ThemeId }
   | { type: 'caf'; amount: number }
   | { type: 'ultimate'; id: UltimateId }
   | { type: 'win' }
@@ -155,12 +160,22 @@ export interface GameState {
   cafTimer: number;
   /** Seconds until the Zucman tax comes back to the vote (only with a CAC 40 boss on the board). */
   zucmanTimer: number;
+  /** News twists still to come tonight, and when the next one may happen. */
+  twists: TwistId[];
+  twistTimer: number;
+  /** Endless mode: the themed week in progress. */
+  theme: ThemeId | null;
+  /** The debate: "petites phrases" on the board, and when the next one drops. */
+  punchlines: Punchline[];
+  punchTimer: number;
+  /** Two players: the attacker's budget and the defender's clock. */
+  versus: { budget: number; timeLeft: number } | null;
   /** Cost multiplier applied to every card (1 unless tariffs are in force). */
   tariff: number;
   status: 'playing' | 'won' | 'lost';
   /** Hard mode: bigger waves. */
   hard: boolean;
-  stats: { placed: number; kills: number; leaked: number; produced: number; wavesCleared: number };
+  stats: { placed: number; kills: number; leaked: number; produced: number; wavesCleared: number; ripostes: number };
   events: GameEvent[];
   nextId: number;
   rngState: number;
@@ -201,6 +216,8 @@ export interface GameOptions {
   seed?: number;
   /** "Hard" mode: every wave is bigger. */
   hard?: boolean;
+  /** The player's line-up, when it differs from the camp's roster (a substitute fielded). */
+  roster?: string[];
 }
 
 /** In hard mode every wave gets this much more budget. */
@@ -225,7 +242,7 @@ export function createGame(options: GameOptions): GameState {
     units: [],
     enemies: [],
     projectiles: [],
-    cards: [...camp.roster.slice(0, level.slots), ...(level.reinforcements ? REINFORCEMENTS : [])].map((id) => ({
+    cards: [...(options.roster ?? camp.roster).slice(0, level.slots), ...(level.reinforcements ? REINFORCEMENTS : [])].map((id) => ({
       def: UNITS[id],
       cooldown: 0,
     })),
@@ -234,9 +251,15 @@ export function createGame(options: GameOptions): GameState {
     passiveTimer: PASSIVE_INTERVAL,
     cafTimer: CAF_FIRST,
     zucmanTimer: 25,
+    twists: [...(level.twists ?? [])],
+    twistTimer: 80,
+    theme: null,
+    punchlines: [],
+    punchTimer: 8,
+    versus: level.versus ? { budget: VERSUS_START, timeLeft: level.versus.duration } : null,
     tariff: 1,
     status: 'playing',
-    stats: { placed: 0, kills: 0, leaked: 0, produced: 0, wavesCleared: 0 },
+    stats: { placed: 0, kills: 0, leaked: 0, produced: 0, wavesCleared: 0, ripostes: 0 },
     events: [],
     nextId: 1,
     rngState: seed | 0,
@@ -375,7 +398,8 @@ function launchWave(state: GameState): void {
 
   // Headliners from the two rival camps.
   if (index >= level.starsFrom) {
-    const lieutenants = rivals.flatMap((c) => CAMPS[c].roster).filter((id) => !UNITS[id].boss);
+    // Rival lieutenants, substitutes included.
+    const lieutenants = rivals.flatMap((c) => [...CAMPS[c].roster, CAMPS[c].bench]).filter((id) => !UNITS[id].boss);
     const count = big ? 2 : rand(state) < 0.6 ? 1 : 0;
     for (let i = 0; i < count; i++) {
       const id = pick(state, lieutenants);
@@ -388,7 +412,17 @@ function launchWave(state: GameState): void {
   }
 
   // Anonymous extras fill the rest of the budget.
-  const pool = level.pool.filter((p) => p.from <= index);
+  // Endless mode: every ten waves a themed week starts, and its guests come in numbers.
+  if (level.endless && index > 0 && index % 10 === 0) {
+    state.theme = THEMES[Math.floor(rand(state) * THEMES.length)];
+    if (state.theme === 'zucman') state.zucmanTimer = Math.min(state.zucmanTimer, 8);
+    state.events.push({ type: 'theme', id: state.theme });
+  }
+  const boost = state.theme ? THEME_POOL[state.theme] : {};
+  const pool = [
+    ...level.pool.filter((p) => p.from <= index || boost[p.id]).map((p) => ({ ...p, weight: p.weight * (boost[p.id] ?? 1) })),
+    ...Object.entries(boost).filter(([id]) => !level.pool.some((p) => p.id === id)).map(([id, weight]) => ({ id, weight, from: 0 })),
+  ];
   let guard = 200;
   while (budget >= 1 && guard-- > 0) {
     const affordable = pool.filter((p) => enemyDef(p.id).threat <= budget);
@@ -483,7 +517,14 @@ function hurtEnemy(state: GameState, enemy: Enemy, amount: number): void {
 }
 
 function hurtUnit(state: GameState, unit: Unit, amount: number): void {
-  unit.hp -= amount;
+  // Insured: a neighbouring wall with cover takes a share of the blow off.
+  let cover = 0;
+  for (const other of state.units) {
+    const ability = other.def.ability;
+    if (other === unit || ability.kind !== 'wall' || !ability.shield) continue;
+    if (Math.abs(other.lane - unit.lane) <= 1 && Math.abs(other.col - unit.col) <= 1) cover = Math.max(cover, ability.shield);
+  }
+  unit.hp -= amount * (1 - cover);
   unit.lastHit = state.time;
 }
 
@@ -516,7 +557,13 @@ function explode(state: GameState, unit: Unit): void {
       ability.area === 'lane'
         ? enemy.lane === unit.lane && enemy.x <= SPAWN_X
         : Math.abs(enemy.lane - unit.lane) <= 1 && Math.abs(enemy.x - x) <= 1.6;
-    if (inArea) hurtEnemy(state, enemy, ability.damage);
+    if (!inArea) continue;
+    hurtEnemy(state, enemy, ability.damage);
+    // Negotiations: whoever was caught in them stands there, dazed, for a moment.
+    if (ability.stun) {
+      enemy.stunT = Math.max(enemy.stunT, ability.stun * (1 - (enemy.def.resist ?? 0)));
+      enemy.attacking = false;
+    }
   }
   if (ability.friendlyFire) {
     for (const ally of state.units) {
@@ -868,6 +915,130 @@ function cleanup(state: GameState): void {
   }
 }
 
+const THEMES: ThemeId[] = ['cnews', 'zucman', 'greve', 'smic', 'agri'];
+/** Who a themed week brings, as weight multipliers (or weights, for someone not in the pool). */
+const THEME_POOL: Record<ThemeId, Record<string, number>> = {
+  cnews: { cnews: 4, pundit: 2 },
+  zucman: { patron: 4 },
+  greve: { syndicat: 4, lyceen: 2 },
+  smic: { smicard: 4 },
+  agri: { agriculteur: 3, tracteur: 3 },
+};
+
+/**
+ * News twists, once each per night (again and again in endless mode): a march
+ * against the pension reform brings a union marcher into every lane; a rival
+ * forcing a text through (49.3) brings the next wave forward.
+ */
+function updateTwists(state: GameState, dt: number): void {
+  if (!state.twists.length || state.wave.next === 0) return;
+  state.twistTimer -= dt;
+  if (state.twistTimer > 0) return;
+  state.twistTimer = 70 + rand(state) * 40;
+  let id = state.twists[0];
+  const moreWaves = state.level.endless || state.wave.next < state.level.waves;
+  if (id === 'force' && !moreWaves) id = 'manif';
+  if (!state.level.endless) state.twists = state.twists.filter((t) => t !== id);
+  else state.twists.push(state.twists.shift()!);
+  if (id === 'manif') {
+    state.level.lanes.forEach((lane, i) => spawnEnemy(state, 'syndicat', lane, pick(state, rivalsOf(state.camp)), SPAWN_X + (i % 2) * 0.5));
+  } else {
+    state.wave.nextAt = Math.min(state.wave.nextAt, state.time + 2);
+  }
+  state.events.push({ type: 'twist', id });
+}
+
+// ───────────────────────────── the debate ─────────────────────────────
+
+export interface Punchline {
+  id: number;
+  lane: number;
+  col: number;
+  life: number;
+  max: number;
+}
+
+/** What sending a "petite phrase" back is worth: endorsements, and a blow to the frontmost opponent. */
+export const RIPOSTE_REWARD = 15;
+export const RIPOSTE_DAMAGE = 150;
+const LANDED_SILENCE = 3;
+
+function updatePunchlines(state: GameState, dt: number): void {
+  const spec = state.level.punchlines;
+  if (!spec || state.wave.next === 0) return;
+  for (const line of [...state.punchlines]) {
+    line.life -= dt;
+    if (line.life > 0) continue;
+    // Not sent back in time: it lands, and whoever stands there is lost for words.
+    state.punchlines.splice(state.punchlines.indexOf(line), 1);
+    const unit = state.grid[line.lane][line.col];
+    if (unit) unit.silenced = Math.max(unit.silenced, LANDED_SILENCE);
+    state.events.push({ type: 'punchlineLanded', lane: line.lane, col: line.col, hit: !!unit });
+  }
+  state.punchTimer -= dt;
+  if (state.punchTimer > 0) return;
+  state.punchTimer = spec.interval * (0.8 + rand(state) * 0.4);
+  const lane = pick(state, state.level.lanes);
+  const col = Math.floor(rand(state) * COLS);
+  if (state.punchlines.some((p) => p.lane === lane && p.col === col)) return;
+  state.punchlines.push({ id: state.nextId++, lane, col, life: spec.life, max: spec.life });
+  state.events.push({ type: 'punchline', lane, col });
+}
+
+/** Sends a "petite phrase" back: true if there was one on that square. */
+export function catchPunchline(state: GameState, lane: number, col: number): boolean {
+  if (state.status !== 'playing') return false;
+  const index = state.punchlines.findIndex((p) => p.lane === lane && p.col === col);
+  if (index < 0) return false;
+  state.punchlines.splice(index, 1);
+  state.resources += RIPOSTE_REWARD;
+  state.stats.ripostes++;
+  const target = enemiesAhead(state, lane, -1, COLS).sort((a, b) => a.x - b.x)[0];
+  if (target) hurtEnemy(state, target, RIPOSTE_DAMAGE);
+  state.events.push({ type: 'riposte', lane, col, x: target ? target.x : null });
+  return true;
+}
+
+// ───────────────────────────── two players ─────────────────────────────
+
+/** What the attacker can send, and what it costs from the budget. */
+export const VERSUS_KINDS = { militant: 1, placard: 2, pundit: 2, star: 6, bus: 7 } as const;
+export type VersusKind = keyof typeof VERSUS_KINDS;
+const VERSUS_START = 6;
+const VERSUS_CAP = 40;
+
+function updateVersus(state: GameState, dt: number): void {
+  const versus = state.versus!;
+  // The budget comes faster as the minutes go by.
+  versus.budget = Math.min(VERSUS_CAP, versus.budget + dt * (0.8 + state.time / 240));
+  versus.timeLeft = Math.max(0, versus.timeLeft - dt);
+  if (versus.timeLeft === 0 && state.status === 'playing' && state.polls > 0) {
+    state.status = 'won';
+    state.events.push({ type: 'win' });
+  }
+}
+
+export type SendError = 'over' | 'lane' | 'budget';
+
+/** The attacker sends an opponent down a lane. */
+export function versusSend(state: GameState, kind: VersusKind, lane: number): SendError | null {
+  const versus = state.versus;
+  if (!versus || state.status !== 'playing') return 'over';
+  if (!state.level.lanes.includes(lane)) return 'lane';
+  const cost = VERSUS_KINDS[kind];
+  if (versus.budget < cost) return 'budget';
+  versus.budget -= cost;
+  const rivals = rivalsOf(state.camp);
+  const camp = pick(state, rivals);
+  let id: string = kind;
+  if (kind === 'star') {
+    const lieutenants = CAMPS[camp].roster.filter((u) => !UNITS[u].boss);
+    id = `star:${pick(state, lieutenants)}`;
+  }
+  spawnEnemy(state, id, lane, camp);
+  return null;
+}
+
 /** The Zucman tax comes back to the vote while CAC 40 bosses stand in the courtyard. */
 function updateZucman(state: GameState, dt: number): void {
   state.zucmanTimer -= dt;
@@ -910,6 +1081,7 @@ export function step(state: GameState, dt: number = TICK): void {
     state.events.push({ type: 'caf', amount });
   }
   updateZucman(state, dt);
+  updateTwists(state, dt);
   for (const card of state.cards) if (card.cooldown > 0) card.cooldown = Math.max(0, card.cooldown - dt);
   if (state.ult.charge < ULT_CHARGE_TIME) state.ult.charge = Math.min(ULT_CHARGE_TIME, state.ult.charge + dt);
   if (state.ult.strike > 0) state.ult.strike -= dt;
@@ -926,7 +1098,9 @@ export function step(state: GameState, dt: number = TICK): void {
     state.events.push({ type: 'tariff', on: tariff > 1 });
   }
 
-  updateDirector(state);
+  if (state.versus) updateVersus(state, dt);
+  else updateDirector(state);
+  updatePunchlines(state, dt);
   updateUnits(state, dt);
   updateProjectiles(state, dt);
   updateEnemies(state, dt);

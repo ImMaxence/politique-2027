@@ -57,7 +57,7 @@ export const LEVELS: LevelDef[] = [
       { id: 'patron', weight: 1, from: 3 },
       { id: 'cnews', weight: 1, from: 4 },
     ],
-    starsFrom: 2, bosses: 0, guests: ['hugo'], firstWaveAt: 24, waveGap: 26, slots: 5, reinforcements: true,
+    starsFrom: 2, bosses: 0, guests: ['hugo'], twists: ['force'], firstWaveAt: 24, waveGap: 26, slots: 5, reinforcements: true,
   },
   {
     // International summit: a guest arrives with his tariffs.
@@ -72,7 +72,7 @@ export const LEVELS: LevelDef[] = [
       { id: 'patron', weight: 1.2, from: 2 },
       { id: 'bus', weight: 1, from: 5 },
     ],
-    starsFrom: 3, bosses: 0, guests: ['trump'], firstWaveAt: 24, waveGap: 26, slots: 6, reinforcements: true,
+    starsFrom: 3, bosses: 0, guests: ['trump'], twists: ['manif'], firstWaveAt: 24, waveGap: 26, slots: 6, reinforcements: true,
   },
   {
     id: 6, scene: 'elysee', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
@@ -88,10 +88,25 @@ export const LEVELS: LevelDef[] = [
       { id: 'syndicat', weight: 1, from: 3 },
       { id: 'bus', weight: 1, from: 5 },
     ],
-    starsFrom: 2, bosses: 1, guests: ['lucet'], firstWaveAt: 24, waveGap: 27, slots: 6, reinforcements: true,
+    starsFrom: 2, bosses: 1, guests: ['lucet'], twists: ['manif', 'force'], firstWaveAt: 24, waveGap: 27, slots: 6, reinforcements: true,
   },
   {
-    id: 7, scene: 'elysee-nuit', lanes: [0, 1, 2, 3, 4], startResources: 225, polls: 5,
+    // The debate between the two rounds: one heavyweight on the other side of the desk, and
+    // their "petites phrases" raining down on the board, to be sent back before they land.
+    id: 7, scene: 'plateau', lanes: [0, 1, 2, 3, 4], startResources: 225, polls: 5,
+    waves: 10, baseBudget: 9, growth: 5.2, bigWaves: [4, 9],
+    pool: [
+      { id: 'militant', weight: 4, from: 0 },
+      { id: 'pundit', weight: 5, from: 0 },
+      { id: 'placard', weight: 3, from: 1 },
+      { id: 'cnews', weight: 1, from: 3 },
+      { id: 'patron', weight: 1, from: 4 },
+      { id: 'bus', weight: 1, from: 6 },
+    ],
+    starsFrom: 1, bosses: 1, punchlines: { interval: 6.5, life: 4.5 }, firstWaveAt: 24, waveGap: 26, slots: 6, reinforcements: true,
+  },
+  {
+    id: 8, scene: 'elysee-nuit', lanes: [0, 1, 2, 3, 4], startResources: 225, polls: 5,
     waves: 12, baseBudget: 9, growth: 3.9, bigWaves: [3, 7, 11],
     pool: [
       { id: 'militant', weight: 5, from: 0 },
@@ -104,11 +119,19 @@ export const LEVELS: LevelDef[] = [
       { id: 'cnews', weight: 0.8, from: 5 },
       { id: 'tracteur', weight: 0.8, from: 5 },
     ],
-    starsFrom: 1, bosses: 2, firstWaveAt: 24, waveGap: 27, slots: 6, reinforcements: true,
+    starsFrom: 1, bosses: 2, twists: ['manif'], firstWaveAt: 24, waveGap: 27, slots: 6, reinforcements: true,
   },
 ];
 
 export const LAST_LEVEL = LEVELS[LEVELS.length - 1].id;
+
+/** Two players on one screen: the attacker sends opponents from a budget, the defender holds for three minutes. */
+export const VERSUS: LevelDef = {
+  id: -1, scene: 'plateau', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
+  waves: Number.POSITIVE_INFINITY, baseBudget: 0, growth: 0, bigWaves: [], pool: [],
+  starsFrom: 99, bosses: 0, firstWaveAt: 1e9, waveGap: 1e9, slots: 6, reinforcements: true,
+  versus: { duration: 180 },
+};
 
 /** Level 0: the endless "Cohabitation" mode, unlocked by finishing the campaign. */
 export const ENDLESS: LevelDef = {
@@ -131,11 +154,12 @@ export const ENDLESS: LevelDef = {
     { id: 'tracteur', weight: 1, from: 7 },
     { id: 'cnews', weight: 1, from: 8 },
   ],
-  starsFrom: 3, bosses: 1, guests: ['trump', 'hugo', 'lucet', 'squeezie', 'durif', 'lisnard'], firstWaveAt: 24, waveGap: 25, slots: 6, reinforcements: true, endless: true,
+  starsFrom: 3, bosses: 1, guests: ['trump', 'hugo', 'lucet', 'squeezie', 'durif', 'lisnard'], twists: ['manif', 'force'], firstWaveAt: 24, waveGap: 25, slots: 6, reinforcements: true, endless: true,
 };
 
 export function levelDef(id: number): LevelDef {
   if (id === 0) return ENDLESS;
+  if (id === VERSUS.id) return VERSUS;
   const level = LEVELS.find((l) => l.id === id);
   if (!level) throw new Error(`Unknown level: ${id}`);
   return level;

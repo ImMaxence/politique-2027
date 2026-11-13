@@ -3,10 +3,13 @@
  *
  *   npm run build && npm run preview        # in one terminal
  *   PW_CHANNEL=msedge npm run screenshots   # in another (BASE_URL defaults to http://localhost:4321)
+ *
+ * Also writes one picture per campaign night to public/og/nights/ (their page's social card).
  */
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Page } from '@playwright/test';
+import { NIGHT_IDS, nightSlug } from '../src/lib/pages';
 import { launch } from './browser';
 
 const base = process.env.BASE_URL ?? 'http://localhost:4321';
@@ -59,7 +62,7 @@ try {
   await page.locator('#game').screenshot({ path: resolve(out, 'camp-select.png') });
 
   const shots: [string, string, string, string, number, number, string?][] = [
-    ['gameplay.png', 'en', 'play', 'centre', 7, 150],
+    ['gameplay.png', 'en', 'play', 'centre', 8, 150],
     ['gameplay-street.png', 'fr', 'jouer', 'gauche', 3, 95, 'poubelle'],
     ['gameplay-summit.png', 'en', 'play', 'droite', 5, 150, 'trump'],
     ['gameplay-studio.png', 'fr', 'jouer', 'autres', 4, 120],
@@ -76,6 +79,41 @@ try {
   await page.locator('[data-action="remove"]').click();
   await page.waitForTimeout(500);
   await page.locator('#game').screenshot({ path: resolve(out, 'gameplay-remove.png') });
+
+  // The run-off debate: soundbites to send back before they land.
+  await match(page, 'en', 'play', 'droite', 7, 70);
+  await page.evaluate(() => {
+    const state = (window as unknown as { __P2027__: { state(): { punchlines: object[] } } }).__P2027__.state();
+    state.punchlines.push({ id: 9001, lane: 1, col: 5, life: 3, max: 4.5 }, { id: 9002, lane: 3, col: 3, life: 1.2, max: 4.5 });
+  });
+  await page.waitForTimeout(300);
+  await page.locator('#game').screenshot({ path: resolve(out, 'gameplay-debate.png') });
+
+  // A "New!" card: the match waits while a special opponent is introduced.
+  await match(page, 'en', 'play', 'centre', 6, 50);
+  await page.evaluate(() => {
+    const hook = (window as unknown as { __P2027__: { intros(on: boolean): void; spawn(id: string, lane: number, x: number): void } }).__P2027__;
+    hook.intros(true);
+    hook.spawn('lucet', 2, 8.4);
+  });
+  await page.waitForTimeout(600);
+  await page.locator('#game').screenshot({ path: resolve(out, 'new-card.png') });
+
+  // Two players on one screen: the attacker's column on the right.
+  await page.goto(`${base}/en/play?e2e=1`);
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.waitForSelector('#game[data-ready="true"]');
+  await page.locator('[data-camp="autres"]').click();
+  await page.locator('[data-mode="versus"]').click();
+  await page.waitForSelector('[data-screen="match"]:not([hidden])');
+  await page.evaluate(() => (window as unknown as { __P2027__: { advance(s: number, bot: boolean): Promise<void> } }).__P2027__.advance(40, true));
+  for (const [kind, lane] of [['bus', 1], ['pundit', 3], ['militant', 0], ['star', 2]] as const) {
+    await page.locator(`[data-kind="${kind}"]`).click();
+    await page.locator(`[data-lane="${lane}"]`).click();
+  }
+  await page.waitForTimeout(4500);
+  await page.locator('#game').screenshot({ path: resolve(out, 'gameplay-versus.png') });
   await context.close();
 
   // A phone held sideways: tickets on the left, the board over the whole height.
@@ -85,6 +123,19 @@ try {
   await match(small, 'en', 'play', 'droite', 6, 110);
   await small.screenshot({ path: resolve(out, 'gameplay-phone.png') });
   await phone.close();
+
+  // One picture per night: the stage a minute into the match.
+  mkdirSync(resolve(out, '..', 'public/og/nights'), { recursive: true });
+  const card = await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 1 });
+  const nightPage = await card.newPage();
+  const camps = ['gauche', 'centre', 'droite', 'autres'];
+  for (const [i, id] of NIGHT_IDS.entries()) {
+    if (id === 0) await nightPage.goto(`${base}/fr/jouer?e2e=1`).then(() => nightPage.waitForSelector('#game[data-ready="true"]')).then(() => nightPage.evaluate(() => (window as unknown as { __P2027__: { unlockAll(): void } }).__P2027__.unlockAll()));
+    await match(nightPage, 'fr', 'jouer', camps[i % 4], id, id === 7 ? 70 : 60);
+    const file = resolve(out, '..', 'public/og/nights', `${nightSlug(id, 'fr')}.jpg`);
+    await nightPage.locator('.stage').screenshot({ path: file, type: 'jpeg', quality: 80 });
+  }
+  await card.close();
 
   console.log(`Screenshots written to ${out}`);
 } finally {

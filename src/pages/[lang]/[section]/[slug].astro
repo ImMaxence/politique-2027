@@ -1,0 +1,28 @@
+---
+/**
+ * One page per named figure (/fr/personnages/emmanuel-macron, /en/characters/…)
+ * and per campaign night (/fr/soirees/le-second-tour, /en/nights/the-run-off).
+ */
+import { LANGS, type Lang } from '../../../i18n/game';
+import { FIGURE_IDS, NIGHT_IDS, SECTIONS, figureSlug, nightSlug } from '../../../lib/pages';
+import FigureView from '../../../views/FigureView.astro';
+import NightView from '../../../views/NightView.astro';
+
+export function getStaticPaths() {
+  return LANGS.flatMap((lang) => [
+    ...FIGURE_IDS.map((id) => ({ params: { lang, section: SECTIONS.figures[lang], slug: figureSlug(id) }, props: { lang, figure: id } })),
+    ...NIGHT_IDS.map((id) => ({ params: { lang, section: SECTIONS.nights[lang], slug: nightSlug(id, lang) }, props: { lang, night: id } })),
+  ]);
+}
+
+interface Props {
+  lang: Lang;
+  figure?: string;
+  night?: number;
+}
+
+const { lang, figure, night } = Astro.props;
+---
+
+{figure && <FigureView lang={lang} id={figure} />}
+{night !== undefined && <NightView lang={lang} id={night} />}

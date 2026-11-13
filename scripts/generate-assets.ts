@@ -7,13 +7,15 @@
  *   public/apple-touch-icon.png
  *   public/icon-192.png, icon-512.png
  *   docs/cast.png                 the full cast, used by the README
+ *   public/og/<figure>.jpg        one social card per named figure (their page)
  *
  *   PW_CHANNEL=msedge npm run assets
  */
 import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { CAMP_IDS } from '../src/game/data/types';
-import { CAMPS } from '../src/game/data/units';
+import { CAMPS, UNITS } from '../src/game/data/units';
+import { FIGURE_IDS, figureSlug } from '../src/lib/pages';
 import { extraSvg, portraitSvg } from '../src/game/render/portraits';
 import { GAME_STRINGS } from '../src/i18n/game';
 import { fontFaces, launch } from './browser';
@@ -21,6 +23,8 @@ import { fontFaces, launch } from './browser';
 const root = resolve(import.meta.dirname, '..');
 const g = GAME_STRINGS.en;
 mkdirSync(resolve(root, 'docs'), { recursive: true });
+mkdirSync(resolve(root, 'public/og'), { recursive: true });
+const fr = GAME_STRINGS.fr;
 
 const BASE_CSS = `${fontFaces()}
   * { box-sizing: border-box; }
@@ -74,9 +78,9 @@ function socialCard(): string {
 function castSheet(): string {
   const rows = CAMP_IDS.map((camp) => {
     const on = camp === 'centre' ? '#17203f' : '#fffdf6';
-    const figures = CAMPS[camp].roster
+    const figures = [...CAMPS[camp].roster, CAMPS[camp].bench]
       .map(
-        (id) => `<figure>${portraitSvg(id, { size: 132, uid: 'sheet' })}
+        (id) => `<figure>${portraitSvg(id, { size: 122, uid: 'sheet' })}
           <figcaption><b>${g.figures[id].name}</b><i>${g.figures[id].power}</i></figcaption></figure>`,
       )
       .join('');
@@ -104,11 +108,47 @@ function castSheet(): string {
       h2 { display: flex; align-items: center; gap: 18px; margin: 0 0 10px; font-size: 40px; }
       h2 span { padding: 6px 14px 0; border: 4px solid #f3ecdd; transform: rotate(-1.5deg); }
       h2 small { font: italic 600 19px 'Public Sans', sans-serif; text-transform: none; }
-      .row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; align-items: end; }
+      .row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; align-items: end; }
       .extras { display: flex; justify-content: flex-start; gap: 34px; margin-bottom: 14px; }
       figure { margin: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
       figcaption b { display: block; font-size: 16px; }
       figcaption i { display: block; font-size: 13.5px; color: #b9c0dc; }`,
+  );
+}
+
+/** A figure's social card: the puppet, the name, the title and the power (in French, the site's default). */
+function figureCard(id: string): string {
+  const text = fr.figures[id];
+  const unit = UNITS[id];
+  const camp = unit && unit.camp !== 'neutre' ? unit.camp : null;
+  const color = camp ? CAMPS[camp].color : '#ffd23f';
+  const on = camp && camp !== 'centre' ? '#fffdf6' : '#17203f';
+  const label = camp ? fr.camps[camp].name : text.party;
+  return html(
+    `<main>
+      <div class="art" style="--c:${color}">${portraitSvg(id, { size: 360, uid: 'card' })}</div>
+      <div class="copy">
+        <span class="display camp" style="background:${color};color:${on}">${label}</span>
+        <h1 class="display">${text.name}</h1>
+        <p class="title">« ${text.title} »</p>
+        <p class="power">${text.power}</p>
+        <span class="url">Politique 2027 · politique2027.mbonnici.fr</span>
+      </div>
+      <i class="flag"></i>
+    </main>`,
+    `main { position: relative; width: 1200px; height: 630px; display: flex; align-items: center; gap: 56px; padding: 0 70px;
+        background-color: #141a36; background-image: radial-gradient(rgba(243,236,221,.16) 2px, transparent 2.2px); background-size: 16px 16px; overflow: hidden; }
+      .art { flex: none; display: grid; place-items: center; width: 430px; height: 430px; border-radius: 50%;
+        background: radial-gradient(circle, var(--c) 0 62%, transparent 63%); }
+      .art svg { width: 360px; height: auto; }
+      .copy { flex: 1; min-width: 0; }
+      .camp { display: inline-block; padding: 8px 16px 2px; border: 4px solid #f3ecdd; font-size: 30px; transform: rotate(-1.5deg); }
+      h1 { margin: 22px 0 0; font-size: 88px; letter-spacing: .01em; }
+      .title { margin: 14px 0 0; font: italic 600 32px 'Public Sans', sans-serif; color: #b9c0dc; }
+      .power { margin: 18px 0 30px; font-weight: 800; font-size: 34px; color: #ffd23f; }
+      .url { font-weight: 800; font-size: 22px; color: #f3ecdd; }
+      .flag { position: absolute; left: 0; right: 0; bottom: 0; height: 18px; border-top: 5px solid #05081a;
+        background: linear-gradient(90deg, #2f5fe0 0 33.3%, #fffdf6 33.3% 66.6%, #e5383b 66.6%); }`,
   );
 }
 
@@ -136,6 +176,13 @@ try {
   await page.setViewportSize({ width: 1300, height: 1000 });
   await shoot(socialCard(), 'public/og.png');
   await shoot(castSheet(), 'docs/cast.png');
+  for (const id of FIGURE_IDS) {
+    await page.setContent(figureCard(id), { waitUntil: 'load' });
+    await page.evaluate(() => document.fonts.ready);
+    const file = `public/og/${figureSlug(id)}.jpg`;
+    await page.locator('main').screenshot({ path: resolve(root, file), type: 'jpeg', quality: 82 });
+    console.log(file);
+  }
   await shoot(icon(32), 'public/favicon-32.png', true);
   await shoot(icon(180, true), 'public/apple-touch-icon.png');
   await shoot(icon(192, true), 'public/icon-192.png');

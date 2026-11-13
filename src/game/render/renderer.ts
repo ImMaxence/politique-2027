@@ -32,7 +32,7 @@ interface Ring { x: number; y: number; from: number; to: number; life: number; m
 interface LaneFlash { lanes: number[]; fromX: number; toX: number; life: number; max: number; color: string }
 interface Banner { text: string; color: string; life: number; max: number }
 /** A speech bubble follows the puppet that says it. */
-interface Bubble { owner: number; lines: string[]; width: number; life: number; max: number }
+interface Bubble { owner: number; lines: string[]; width: number; life: number; max: number; size: number }
 
 function easeOutBack(t: number): number {
   const c = 1.70158;
@@ -56,6 +56,9 @@ export class Renderer {
   private view = { left: 0, right: VIEW_W, top: 0 };
   /** Whether the level's sign is painted over the top of the scenery. */
   private sign = true;
+  /** Smallest caption, and speech-bubble type size, in canvas units (see resize). */
+  private minLabel = 0;
+  private bubbleSize = 15;
   private ctx: CanvasRenderingContext2D;
   private backdrop: HTMLCanvasElement | null = null;
   private backdropKey = '';
@@ -68,6 +71,8 @@ export class Renderer {
   private rings: Ring[] = [];
   private flashes: LaneFlash[] = [];
   private bubbles: Bubble[] = [];
+  /** Answers to a duo's first line, said a moment later by the partner. */
+  private replies: { owner: number; text: string; at: number }[] = [];
   /** Name plates and health bars, drawn after every lane so that no puppet hides them. */
   private plates: (() => void)[] = [];
   private banner: Banner | null = null;
@@ -91,6 +96,11 @@ export class Renderer {
       this.backdropKey = '';
     }
     this.scale = this.canvas.width / SCENE_W;
+    // Type never shrinks below a readable size, however small the board: on a phone the
+    // scene is drawn at half size, so captions and speech bubbles are drawn bigger.
+    const px = this.canvas.clientWidth ? this.canvas.clientWidth / SCENE_W : 1;
+    this.minLabel = 11 / px;
+    this.bubbleSize = Math.max(15, Math.min(26, 12.5 / px));
 
     // Layout offsets are not affected by the quarter turn of the phone layout either.
     const frame = this.canvas.parentElement;
@@ -125,6 +135,7 @@ export class Renderer {
     this.rings = [];
     this.flashes = [];
     this.bubbles = [];
+    this.replies = [];
     this.banner = null;
     this.shake = 0;
     this.chatter = 4;
@@ -140,8 +151,13 @@ export class Renderer {
     this.backdrop = canvas;
     const g = canvas.getContext('2d')!;
     g.setTransform(this.scale, 0, 0, this.scale, SCENE_LEFT * this.scale, 0);
+    paintBackdrop(g, state.level.scene, state.level.lanes, this.sign ? this.signText(state) : null);
+  }
+
+  /** The sign over the stage set: the night's date and name (or the two-player mode's name). */
+  private signText(state: GameState): string {
     const level = this.strings.levels[state.level.id];
-    paintBackdrop(g, state.level.scene, state.level.lanes, this.sign ? `${level.date} · ${level.name}` : null);
+    return level ? `${level.date} · ${level.name}` : this.strings.ui.versusName;
   }
 
   // ───────────────────────────── effects ─────────────────────────────
@@ -176,12 +192,13 @@ export class Renderer {
   private speak(owner: number, text: string | undefined): void {
     if (!text || this.bubbles.length >= MAX_BUBBLES || this.bubbles.some((b) => b.owner === owner)) return;
     const g = this.ctx;
-    g.font = `700 15px ${BODY}`;
+    const size = this.bubbleSize;
+    g.font = `700 ${size}px ${BODY}`;
     const lines: string[] = [];
     let line = '';
     for (const word of text.split(' ')) {
       const attempt = line ? `${line} ${word}` : word;
-      if (line && g.measureText(attempt).width > 190) {
+      if (line && g.measureText(attempt).width > 190 * (size / 15)) {
         lines.push(line);
         line = word;
       } else {
@@ -189,9 +206,27 @@ export class Renderer {
       }
     }
     if (line) lines.push(line);
-    const width = Math.max(...lines.map((l) => g.measureText(l).width)) + 24;
+    const width = Math.max(...lines.map((l) => g.measureText(l).width)) + 24 * (size / 15);
     const life = 2 + text.length * 0.035;
-    this.bubbles.push({ owner, lines, width, life, max: life });
+    this.bubbles.push({ owner, lines, width, life, max: life, size });
+  }
+
+  /** Finds two neighbours who have a duo and starts it. */
+  private duet(state: GameState): boolean {
+    const near = (a: Unit, b: Unit) => (a.lane === b.lane && Math.abs(a.col - b.col) === 1) || (a.col === b.col && Math.abs(a.lane - b.lane) === 1);
+    const options: { first: Unit; second: Unit; lines: [string, string] }[] = [];
+    for (const duo of this.strings.duos) {
+      for (const first of state.units) {
+        if (first.def.id !== duo.a) continue;
+        const second = state.units.find((u) => u.def.id === duo.b && near(first, u));
+        if (second) options.push({ first, second, lines: duo.lines });
+      }
+    }
+    if (!options.length) return false;
+    const chosen = pick(options);
+    this.speak(chosen.first.id, chosen.lines[0]);
+    this.replies.push({ owner: chosen.second.id, text: chosen.lines[1], at: 1.4 });
+    return true;
   }
 
   private linesOf(enemy: Enemy): string[] | undefined {
@@ -319,6 +354,27 @@ export class Renderer {
         case 'tax':
           this.float(xToPx(e.x), feetY(e.lane) - 122, fmt(a.tax, { n: e.amount }), RED, 22, 1.3);
           break;
+        case 'twist':
+          this.showBanner(e.id === 'manif' ? a.twist_manif : a.twist_force, RED, 3);
+          break;
+        case 'theme':
+          this.showBanner(a[`theme_${e.id}`], '#8a5300', 3.2);
+          break;
+        case 'riposte': {
+          const x = xToPx(e.col + 0.5);
+          const y = laneTop(e.lane) + CELL_H * 0.45;
+          this.ring(x, y, 70, GOLD, 6, 0.4);
+          this.float(x, y - 40, a.riposte, '#1f7a3d', 26, 1.2);
+          if (e.x !== null) {
+            this.confetti(xToPx(e.x), feetY(e.lane) - 70, GOLD, 14);
+            this.flashes.push({ lanes: [e.lane], fromX: x, toX: xToPx(e.x), life: 0.5, max: 0.5, color: GOLD });
+          }
+          break;
+        }
+        case 'punchlineLanded':
+          this.float(xToPx(e.col + 0.5), laneTop(e.lane) + 20, a.landed, RED, 24, 1.3);
+          if (e.hit) this.shake = Math.max(this.shake, 0.15);
+          break;
         case 'interview':
           this.float(xToPx(e.col + 0.5), feetY(e.lane) - 122, a.noComment, INK, 22, 1.6);
           break;
@@ -373,6 +429,14 @@ export class Renderer {
 
   /** Every few seconds somebody on the board says their line. */
   private chat(state: GameState, dt: number): void {
+    // A reply is on its way: the partner answers a moment later.
+    for (let i = this.replies.length - 1; i >= 0; i--) {
+      const reply = this.replies[i];
+      reply.at -= dt;
+      if (reply.at > 0) continue;
+      this.replies.splice(i, 1);
+      if (state.units.some((u) => u.id === reply.owner)) this.speak(reply.owner, reply.text);
+    }
     this.chatter -= dt;
     if (this.chatter > 0 || state.status !== 'playing') return;
     this.chatter = 3.5 + Math.random() * 3;
@@ -386,6 +450,8 @@ export class Renderer {
       }
     }
     if (!speakers.length) return;
+    // Now and then two neighbours of the same camp answer each other.
+    if (Math.random() < 0.45 && this.duet(state)) return;
     const speaker = pick(speakers);
     this.speak(speaker.id, pick(speaker.lines));
   }
@@ -433,6 +499,7 @@ export class Renderer {
   }
 
   private label(text: string, x: number, y: number, size: number, color: string, outline = PAPER): void {
+    size = Math.max(size, this.minLabel);
     const g = this.ctx;
     g.font = `400 ${size}px ${DISPLAY}`;
     g.textAlign = 'center';
@@ -878,7 +945,8 @@ export class Renderer {
       }
       const anchorX = unit ? xToPx(unit.col + 0.5) : xToPx(enemy!.x);
       const lane = unit ? unit.lane : enemy!.lane;
-      const height = bubble.lines.length * 18 + 14;
+      const k = bubble.size / 15;
+      const height = (bubble.lines.length * 18 + 14) * k;
       const anchorY = feetY(lane) - 128;
       const { left, right, top } = this.view;
       const x = Math.max(left + bubble.width / 2 + 6, Math.min(right - bubble.width / 2 - 6, anchorX + (unit ? 34 : -34)));
@@ -908,10 +976,10 @@ export class Renderer {
       g.stroke();
       g.fillRect(tail - 9, -5, 18, 5);
       g.fillStyle = INK;
-      g.font = `700 15px ${BODY}`;
+      g.font = `700 ${bubble.size}px ${BODY}`;
       g.textAlign = 'center';
       g.textBaseline = 'middle';
-      bubble.lines.forEach((line, index) => g.fillText(line, 0, -height + 16 + index * 18));
+      bubble.lines.forEach((line, index) => g.fillText(line, 0, -height + (16 + index * 18) * k));
       g.restore();
     }
   }
@@ -963,7 +1031,6 @@ export class Renderer {
     if (this.compact) return;
     const g = this.ctx;
     const text = this.strings.announce.removeBanner.toUpperCase();
-    const level = this.strings.levels[state.level.id];
     g.save();
     g.translate(VIEW_W / 2, 82);
     g.rotate(-0.012);
@@ -971,7 +1038,7 @@ export class Renderer {
     g.translate(0, bob);
     // Wide enough to cover the sign it is pinned on (see paintBackdrop).
     g.font = `400 26px ${DISPLAY}`;
-    const sign = Math.min(760, g.measureText(`${level.date} · ${level.name}`.toUpperCase()).width + 56);
+    const sign = Math.min(760, g.measureText(this.signText(state).toUpperCase()).width + 56);
     g.font = `400 30px ${DISPLAY}`;
     const width = Math.min(1000, Math.max(sign + 20, g.measureText(text).width + 60));
     g.fillStyle = RED;
@@ -1009,6 +1076,44 @@ export class Renderer {
     g.textBaseline = 'middle';
     g.fillText(text, 0, 2);
     g.restore();
+  }
+
+  /** The debate's soundbites: a speech bubble per square, with the time left as a ring. */
+  private drawPunchlines(state: GameState, now: number): void {
+    const g = this.ctx;
+    for (const line of state.punchlines) {
+      const x = xToPx(line.col + 0.5);
+      const bob = this.reducedMotion ? 0 : Math.sin(now * 6 + line.id) * 4;
+      const y = laneTop(line.lane) + CELL_H * 0.42 + bob;
+      const ratio = Math.max(0, line.life / line.max);
+      g.save();
+      g.translate(x, y);
+      g.fillStyle = PAPER;
+      g.strokeStyle = INK;
+      g.lineWidth = 4;
+      g.beginPath();
+      g.roundRect(-40, -28, 80, 50, 14);
+      g.fill();
+      g.stroke();
+      g.beginPath();
+      g.moveTo(-10, 21);
+      g.lineTo(-18, 36);
+      g.lineTo(4, 21);
+      g.fill();
+      g.stroke();
+      g.fillStyle = ratio < 0.35 ? RED : INK;
+      g.font = `400 30px ${DISPLAY}`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('!?', 0, -2);
+      // Time left before it lands.
+      g.strokeStyle = ratio < 0.35 ? RED : GOLD;
+      g.lineWidth = 6;
+      g.beginPath();
+      g.arc(0, -2, 46, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
+      g.stroke();
+      g.restore();
+    }
   }
 
   /** `now` is a visual clock in seconds that stops while the match is paused. */
@@ -1092,6 +1197,8 @@ export class Renderer {
 
     this.drawEffects(dt);
     this.drawBubbles(state, dt);
+    // The debate's soundbites are targets: nothing may hide them.
+    this.drawPunchlines(state, now);
     if (state.tariff > 1) this.drawTariff();
     if (view.removing) this.drawRemoveRibbon(state, now);
     else this.drawBanner(dt);

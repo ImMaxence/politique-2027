@@ -5,7 +5,7 @@
  */
 import { COLS } from '../data/levels';
 import type { UnitDef } from '../data/types';
-import { canPlace, costOf, placeUnit, ultimateReady, useUltimate, type GameState, type Unit } from './engine';
+import { canPlace, catchPunchline, costOf, placeUnit, ultimateReady, useUltimate, type GameState, type Unit } from './engine';
 
 function freeCol(state: GameState, lane: number, preferred: number[]): number {
   for (const col of preferred) if (!state.grid[lane][col]) return col;
@@ -35,6 +35,10 @@ function tryPlace(state: GameState, def: UnitDef | undefined, lane: number, cols
 /** Call a couple of times per simulated second. Places at most one figure per call. */
 export function botAct(state: GameState): void {
   if (state.status !== 'playing') return;
+  // The debate: an average player sends back three soundbites out of five, after a moment.
+  for (const line of [...state.punchlines]) {
+    if (line.id % 5 < 3 && line.max - line.life > 1.6) catchPunchline(state, line.lane, line.col);
+  }
   const lanes = state.level.lanes;
   const cards = state.cards.map((c) => c.def);
   const roster = cards.filter((d) => d.camp !== 'neutre');

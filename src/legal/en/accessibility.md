@@ -30,7 +30,11 @@ The site has not yet been tested with a screen reader by someone who uses one ev
 - **Orientation**: on a phone the match is shown in landscape by default (turned a quarter turn if the device is held upright). One button in the pause menu switches this off: the game then follows the device's orientation.
 - **Zoom**: pinch-to-zoom always works. Only double-tap zoom is turned off inside the game, so that two quick taps (a card, then a square) do not enlarge the page by accident.
 - **New opponents**: the first time a special opponent appears, the match stops and a dialog explains what it does in text; focus goes to the "Got it!" button, Escape closes it and the match resumes. Each card only appears once.
-- **Keyboard shortcuts**: they are listed in the pause menu (P or Escape).
+- **Keyboard shortcuts**: they are listed in the pause menu (P or Escape). The S key reads a summary of the board (endorsements, polls, opponents per lane).
+- **Pace**: the match can be paused at any time, and a slow speed (×½) joins the normal and fast ones (button or F key).
+- **Debate**: the debate's soundbites are sent back by activating their square (click, tap or Enter); each one is announced with its position.
+- **Card descriptions**: on a touch screen, a long press on a card shows its full description; with a keyboard or a screen reader, the same description is attached to the card.
+- **Two players on one screen**: the attack is played entirely with the keyboard (left-hand keys) or with buttons, the defence with the mouse or a finger.
 - **Difficulty**: a "Hard" mode is offered on the calendar; normal mode stays the default.
 - **Card types**: every card carries its type (Money, Attack, Effect, Defence) in words as well as in colour.
 - **Motion**: with the system "reduce motion" setting, screen shake is removed and effects are toned down. No full-screen flash is used.
@@ -55,7 +59,7 @@ Third-party sites the site links to (GitHub, the author's website) are outside t
 
 ## Preparation of this statement
 
-- Statement prepared on 12 November 2026 with version 1.0.0, updated with version 1.5.0.
+- Statement prepared on 12 November 2026 with version 1.0.0, updated with version 2.0.0.
 - Technologies used: HTML, CSS, JavaScript (Astro), SVG, Canvas and Web Audio.
 - Test environment: a recent Chromium browser driven by Playwright, in desktop and mobile layouts.
 

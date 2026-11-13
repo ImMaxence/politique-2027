@@ -6,6 +6,7 @@ import { GAME_STRINGS, type Lang } from '../i18n/game';
 import { absolute, path } from '../i18n/routes';
 import { SITE_STRINGS } from '../i18n/site';
 import Base from '../layouts/Base.astro';
+import { FIGURE_IDS, figurePath } from '../lib/pages';
 
 interface Props {
   lang: Lang;
@@ -24,12 +25,13 @@ const jsonLd = [
     '@type': 'ItemList',
     name: t.meta.characters.title,
     url: absolute(path(lang, 'characters')),
-    numberOfItems: CAMP_IDS.length * 6,
-    itemListElement: CAMP_IDS.flatMap((camp) => CAMPS[camp].roster).map((id, index) => ({
+    numberOfItems: FIGURE_IDS.length,
+    itemListElement: FIGURE_IDS.map((id, index) => ({
       '@type': 'ListItem',
       position: index + 1,
       name: `${g.figures[id].name} — ${g.figures[id].power}`,
       description: g.figures[id].desc,
+      url: absolute(figurePath(lang, id)),
     })),
   },
 ];
@@ -65,15 +67,16 @@ const jsonLd = [
           </div>
           <ul class="cast" role="list">
             {
-              CAMPS[camp].roster.map((id) => {
+              [...CAMPS[camp].roster, CAMPS[camp].bench].map((id) => {
                 const unit = UNITS[id];
                 const text = g.figures[id];
+                const bench = id === CAMPS[camp].bench;
                 return (
                   <li class="figure-card" data-camp={camp} id={id}>
                     <Puppet id={id} uid="sheet" size={96} />
                     <div>
-                      <p class="figure-card__party">{text.party}</p>
-                      <h3>{text.name}</h3>
+                      <p class="figure-card__party">{text.party}{bench && <> · {g.ui.benchTitle}</>}</p>
+                      <h3><a href={figurePath(lang, id)}>{text.name}</a></h3>
                       <p class="figure-card__title">{text.title}</p>
                     </div>
                     <p class="figure-card__power"><b>{text.power}</b>{text.desc}</p>
@@ -143,7 +146,7 @@ const jsonLd = [
                 <Puppet id={id} uid="sheet" size={96} />
                 <div>
                   <p class="figure-card__party">{text.party}</p>
-                  <h3>{text.name}</h3>
+                  <h3><a href={figurePath(lang, id)}>{text.name}</a></h3>
                   <p class="figure-card__title">{text.title}</p>
                 </div>
                 <p class="figure-card__power"><b>{text.power}</b>{text.desc}</p>

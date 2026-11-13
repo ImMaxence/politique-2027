@@ -5,6 +5,9 @@ import type { Lang } from '../i18n/game';
 import { absolute, path } from '../i18n/routes';
 import { SITE_STRINGS } from '../i18n/site';
 import Base from '../layouts/Base.astro';
+import { GAME_STRINGS } from '../i18n/game';
+import { PAGE_STRINGS } from '../i18n/pages';
+import { NIGHT_IDS, nightPath } from '../lib/pages';
 
 interface Props {
   lang: Lang;
@@ -45,6 +48,26 @@ const jsonLd = [
     <noscript><p class="notice">{play.noscript}</p></noscript>
     <GameApp lang={lang} />
   </div>
+
+  <section class="section container" aria-labelledby="nights-title">
+    <div class="section__head">
+      <h2 id="nights-title">{PAGE_STRINGS[lang].night.listTitle}</h2>
+      <span class="tricolour"></span>
+    </div>
+    <p>{PAGE_STRINGS[lang].night.listLead}</p>
+    <ol class="nights-list" role="list">
+      {
+        NIGHT_IDS.map((id) => (
+          <li>
+            <a href={nightPath(lang, id)}>
+              <b>{GAME_STRINGS[lang].levels[id].date}</b>
+              <span>{GAME_STRINGS[lang].levels[id].name}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
 
   <section class="section container" aria-labelledby="controls-title">
     <div class="section__head">

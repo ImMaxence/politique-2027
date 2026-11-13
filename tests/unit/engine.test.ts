@@ -460,8 +460,8 @@ describe('camp ultimates', () => {
 });
 
 describe('campaign balance', () => {
-  it('ends on the run-off', () => {
-    expect(LAST_LEVEL).toBe(7);
+  it('ends on the run-off, after the debate', () => {
+    expect(LAST_LEVEL).toBe(8);
   });
 
   it('is deterministic for a given seed', () => {

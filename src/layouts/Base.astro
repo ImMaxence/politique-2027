@@ -2,6 +2,10 @@
 import '@fontsource/anton/index.css';
 import '@fontsource-variable/public-sans/index.css';
 import '../styles/global.css';
+// The two Latin faces every page uses, fetched before the stylesheet asks for them:
+// the headings no longer jump when the display font arrives.
+import antonLatin from '@fontsource/anton/files/anton-latin-400-normal.woff2?url';
+import publicSansLatin from '@fontsource-variable/public-sans/files/public-sans-latin-wght-normal.woff2?url';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE } from '../config/site';
@@ -14,28 +18,38 @@ interface Props {
   route: RouteKey;
   /** Extra schema.org objects for this page (the Person/WebSite graph is added automatically). */
   jsonLd?: Record<string, unknown>[];
+  /** A page outside the fixed routes (a figure, a night): its own title, address, alternate and picture. */
+  page?: {
+    title: string;
+    description: string;
+    path: string;
+    altPath: string;
+    image?: string;
+    imageAlt?: string;
+    crumbs: { name: string; path: string }[];
+  };
 }
 
-const { lang, route, jsonLd = [] } = Astro.props;
+const { lang, route, jsonLd = [], page } = Astro.props;
 const t = SITE_STRINGS[lang];
-const meta = t.meta[route];
-const url = absolute(path(lang, route));
+const meta = page ?? t.meta[route];
+const url = absolute(page ? page.path : path(lang, route));
 const other = otherLang(lang);
-const image = absolute('/og.png');
+const altUrl = absolute(page ? page.altPath : path(other, route));
+const frUrl = lang === 'fr' ? url : altUrl;
+const image = absolute(page?.image ?? '/og.png');
+const imageAlt = page?.imageAlt ?? t.home.lead;
 
-const breadcrumb =
-  route === 'home'
-    ? []
-    : [
-        {
-          '@context': 'https://schema.org',
-          '@type': 'BreadcrumbList',
-          itemListElement: [
-            { '@type': 'ListItem', position: 1, name: t.labels.home, item: absolute(path(lang, 'home')) },
-            { '@type': 'ListItem', position: 2, name: t.labels[route], item: url },
-          ],
-        },
-      ];
+const crumbs = page ? page.crumbs : route === 'home' ? [] : [{ name: t.labels.home, path: path(lang, 'home') }, { name: t.labels[route], path: path(lang, route) }];
+const breadcrumb = crumbs.length
+  ? [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: crumbs.map((crumb, index) => ({ '@type': 'ListItem', position: index + 1, name: crumb.name, item: absolute(crumb.path) })),
+      },
+    ]
+  : [];
 const structured = [...breadcrumb, ...jsonLd];
 ---
 
@@ -45,14 +59,16 @@ const structured = [...breadcrumb, ...jsonLd];
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
+    <link rel="preload" href={antonLatin} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={publicSansLatin} as="font" type="font/woff2" crossorigin />
     <title>{meta.title}</title>
     <meta name="description" content={meta.description} />
     <meta name="author" content={SITE.author.name} />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
     <link rel="canonical" href={url} />
     <link rel="alternate" hreflang={lang} href={url} />
-    <link rel="alternate" hreflang={other} href={absolute(path(other, route))} />
-    <link rel="alternate" hreflang="x-default" href={absolute(path('fr', route))} />
+    <link rel="alternate" hreflang={other} href={altUrl} />
+    <link rel="alternate" hreflang="x-default" href={frUrl} />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={SITE.name} />
@@ -64,7 +80,7 @@ const structured = [...breadcrumb, ...jsonLd];
     <meta property="og:image" content={image} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content={t.home.lead} />
+    <meta property="og:image:alt" content={imageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={meta.title} />
     <meta name="twitter:description" content={meta.description} />
@@ -86,7 +102,7 @@ const structured = [...breadcrumb, ...jsonLd];
   </head>
   <body id="top">
     <a class="skip" href="#main">{t.nav.skip}</a>
-    <Header lang={lang} route={route} />
+    <Header lang={lang} route={route} altHref={page?.altPath} />
     <main id="main" tabindex="-1">
       <slot />
     </main>

@@ -7,9 +7,11 @@ import Icon from './Icon.astro';
 interface Props {
   lang: Lang;
   route: RouteKey;
+  /** The same page in the other language, when it is not one of the fixed routes. */
+  altHref?: string;
 }
 
-const { lang, route } = Astro.props;
+const { lang, route, altHref } = Astro.props;
 const t = SITE_STRINGS[lang];
 const other = otherLang(lang);
 const links: RouteKey[] = ['play', 'characters'];
@@ -31,7 +33,7 @@ const links: RouteKey[] = ['play', 'characters'];
         }
       </ul>
       <div class="nav__tools">
-        <a href={path(other, route)} hreflang={other} lang={other} aria-label={t.nav.switchLabel}>
+        <a href={altHref ?? path(other, route)} hreflang={other} lang={other} aria-label={t.nav.switchLabel}>
           <Icon name="globe" /><span>{t.nav.switchTo}</span>
         </a>
       </div>

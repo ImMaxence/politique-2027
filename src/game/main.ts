@@ -6,16 +6,20 @@
  */
 import { GAME_STRINGS, fmt, isLang, type GameStrings, type Lang } from '../i18n/game';
 import { Audio } from './audio';
-import { COLS, LAST_LEVEL, LEVELS, ROWS } from './data/levels';
+import { unlockAchievements } from './achievements';
+import { dailySetup, duelCode, parseDuel, today, type Mode, type Setup } from './modes';
+import { COLS, LAST_LEVEL, LEVELS, ROWS, VERSUS } from './data/levels';
 import { CAMP_IDS, type CampId } from './data/types';
-import { CAMPS, EXTRAS, UNITS, categoryOf } from './data/units';
+import { CAMPS, EXTRAS, UNITS, categoryOf, lineupOf } from './data/units';
 import { enemySvg, portraitSvg } from './render/portraits';
 import { Renderer, type ViewState } from './render/renderer';
 import { SpriteStore } from './render/sprites';
 import {
-  TICK, ULT_CHARGE_TIME, costOf, createGame, placeUnit, removeUnit, spawnEnemy, starsFor, step, ultimateReady, useUltimate,
-  type GameEvent, type GameState, type PlaceError,
+  TICK, ULT_CHARGE_TIME, VERSUS_KINDS, catchPunchline, costOf, createGame, placeUnit, removeUnit, scoreFor, spawnEnemy, starsFor, step,
+  ultimateReady, useUltimate, versusSend, type GameEvent, type GameState, type PlaceError, type VersusKind,
 } from './sim/engine';
+import { registerServiceWorker, setupInstallTip } from './pwa';
+import { resultPicture } from './share';
 import { loadSave, storeSave, type Save } from './storage';
 
 type ScreenName = 'camp' | 'levels' | 'match';
@@ -29,18 +33,20 @@ function $(root: ParentNode, selector: string): HTMLElement {
 /** Opponents that get a "New!" card the first time they turn up: every special extra and guest. */
 const INTRODUCED = new Set(Object.keys(EXTRAS).filter((id) => id !== 'militant' && id !== 'cat'));
 
-interface InstallPrompt extends Event {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: string }>;
-}
-
 interface LastResult {
   headline: string;
   won: boolean;
   stars: number;
   stats: [string, string][];
   notes: string[];
+  /** A duel's link, shared along with the picture. */
+  link?: { text: string; url: string };
 }
+
+/** The attacker's keys, by physical position (the same on AZERTY and QWERTY). */
+const KIND_CODES = ['KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT'];
+const LANE_CODES = ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG'];
+const VERSUS_ORDER = Object.keys(VERSUS_KINDS) as VersusKind[];
 
 function clockText(seconds: number): string {
   const total = Math.round(seconds);
@@ -77,7 +83,11 @@ class GameApp {
   private introFocus: HTMLElement | null = null;
   /** Browser tests drive matches themselves: the cards stay out of their way unless asked for. */
   private introsEnabled = !new URLSearchParams(location.search).has('e2e');
-  private installPrompt: InstallPrompt | null = null;
+  private setup: Setup | null = null;
+  /** A duel opened from a link, waiting on the calendar. */
+  private incomingDuel: Setup | null = null;
+  private versusKind: VersusKind = 'militant';
+  private lastScore = 0;
   private lastResult: LastResult | null = null;
   private lastTaxNotice = -99;
   private lastCell = { lane: 2, col: 2 };
@@ -137,8 +147,12 @@ class GameApp {
     else this.show('camp', false);
     this.root.dataset.ready = 'true';
 
-    this.setupInstallTip();
-    this.registerServiceWorker();
+    this.incomingDuel = parseDuel(new URLSearchParams(location.search).get('duel') ?? '');
+    setupInstallTip($(this.root, '[data-slot="install-tip"]'), this.t, this.save.installTipDismissed, () => {
+      this.save.installTipDismissed = true;
+      storeSave(this.save);
+    });
+    registerServiceWorker();
     new ResizeObserver(() => this.renderer.resize()).observe(this.stage);
     window.addEventListener('resize', () => this.syncPageWidth());
     requestAnimationFrame((now) => this.frame(now));
@@ -168,6 +182,7 @@ class GameApp {
   private renderLevels(): void {
     const camp = this.save.camp;
     if (!camp) return;
+    this.renderModes();
     const progress = this.save.progress[camp];
     for (const button of this.root.querySelectorAll<HTMLButtonElement>('[data-level]')) {
       const id = Number(button.dataset.level);
@@ -188,6 +203,40 @@ class GameApp {
     }
   }
 
+  /** Daily challenge, duel banner and achievements, on the calendar. */
+  private renderModes(): void {
+    const camp = this.save.camp;
+    if (camp) {
+      const bench = CAMPS[camp].bench;
+      const starter = CAMPS[camp].roster.find((id) => UNITS[id].slot === UNITS[bench].slot)!;
+      $(this.root, '[data-slot="bench-text"]').textContent = fmt(this.t.ui.benchSwap, { bench: this.t.figures[bench].short, starter: this.t.figures[starter].short });
+      this.root.querySelector('[data-action="bench"]')?.setAttribute('aria-pressed', String(this.save.bench[camp]));
+    }
+    const daily = dailySetup();
+    const [, month, day] = today().split('-');
+    $(this.root, '[data-slot="daily-date"]').textContent = `${day}/${month}`;
+    $(this.root, '[data-slot="daily-blurb"]').textContent = fmt(this.t.ui.dailyBlurb, { level: this.t.levels[daily.level].name, camp: this.t.camps[daily.camp].name });
+    const best = this.save.daily[today()];
+    $(this.root, '[data-slot="daily-state"]').textContent = best !== undefined ? fmt(this.t.ui.dailyBest, { n: best }) : this.t.ui.play;
+
+    const banner = $(this.root, '[data-slot="duel-banner"]');
+    const duel = this.incomingDuel;
+    banner.hidden = !duel;
+    if (duel) {
+      $(banner, '[data-slot="duel-text"]').textContent = fmt(this.t.ui.duelReceived, {
+        score: duel.rival ?? 0, camp: this.t.camps[duel.camp].name, level: this.t.levels[duel.level].name,
+      });
+    }
+
+    const earned = new Set(this.save.achievements);
+    for (const item of this.root.querySelectorAll<HTMLElement>('[data-achievement]')) {
+      item.classList.toggle('is-earned', earned.has(item.dataset.achievement as never));
+    }
+    $(this.root, '[data-slot="achievements-title"]').textContent = fmt(this.t.ui.achievementsTitle, {
+      n: earned.size, total: this.root.querySelectorAll('[data-achievement]').length,
+    });
+  }
+
   // ───────────────────────────── match setup ─────────────────────────────
 
   private collectCells(): void {
@@ -198,6 +247,13 @@ class GameApp {
   private async startLevel(levelId: number, seed?: number): Promise<void> {
     const camp = this.save.camp;
     if (!camp) return;
+    await this.startMatch({ mode: 'campaign', level: levelId, camp, seed: seed ?? Math.floor(Math.random() * 1e9) });
+  }
+
+  private async startMatch(setup: Setup): Promise<void> {
+    const camp = setup.camp;
+    const levelId = setup.level;
+    this.setup = setup;
     this.audio.unlock();
     this.tryLandscape(); // must run inside the click that started the level
     this.root.classList.add('is-loading');
@@ -205,7 +261,16 @@ class GameApp {
     await document.fonts?.ready;
     this.root.classList.remove('is-loading');
 
-    const state = createGame({ camp, level: levelId, seed: seed ?? Math.floor(Math.random() * 1e9), hard: this.save.hard });
+    // Daily challenges and duels keep the camp's own line-up, so that everybody plays the same match.
+    const personal = setup.mode === 'campaign' || setup.mode === 'versus';
+    const state = createGame({
+      camp, level: levelId, seed: setup.seed, hard: setup.mode === 'campaign' && this.save.hard,
+      roster: personal ? lineupOf(camp, this.save.bench[camp]) : undefined,
+    });
+    this.root.dataset.camp = camp;
+    this.root.dataset.mode = setup.mode;
+    $(this.root, '[data-slot="versus"]').hidden = setup.mode !== 'versus';
+    this.selectKind('militant');
     this.state = state;
     this.view = { hover: null, selected: null, removing: false };
     this.paused = false;
@@ -244,7 +309,10 @@ class GameApp {
       if (board.bottom > window.innerHeight || board.top < 0) this.root.scrollIntoView({ block: 'start', behavior: 'instant' });
     }
     this.updateHud();
-    this.say(fmt(this.t.announce.start, { level: this.t.levels[levelId].name, camp: this.t.camps[camp].name }) + (state.hard ? ` ${this.t.announce.hardMode}` : ''));
+    const name = setup.mode === 'versus' ? this.t.ui.versusName : this.t.levels[levelId].name;
+    const extra = setup.mode === 'versus' ? this.t.announce.versusStart : state.hard ? this.t.announce.hardMode : '';
+    this.say(`${fmt(this.t.announce.start, { level: name, camp: this.t.camps[camp].name })} ${extra}`.trim());
+    this.audio.music(this.save.music);
   }
 
   // ───────────────────────────── phone layout ─────────────────────────────
@@ -333,7 +401,29 @@ class GameApp {
         <span class="card__cost" data-label="${card.def.cost}" aria-hidden="true"></span>
         <span class="card__cd" aria-hidden="true"></span>`;
       const describe = () => this.setInfo(`${text.power} — ${text.desc}`, text.name);
-      button.addEventListener('click', () => this.select(card.def.id));
+      // A long press on a touch screen opens the full card instead of picking the figure.
+      let press = 0;
+      let longPressed = false;
+      button.addEventListener('pointerdown', (event) => {
+        if (event.pointerType === 'mouse') return;
+        longPressed = false;
+        window.clearTimeout(press);
+        press = window.setTimeout(() => {
+          longPressed = true;
+          this.showCardSheet(card.def.id);
+        }, 450);
+      });
+      for (const type of ['pointerup', 'pointerleave', 'pointercancel'] as const) {
+        button.addEventListener(type, () => window.clearTimeout(press));
+      }
+      button.addEventListener('contextmenu', (event) => event.preventDefault());
+      button.addEventListener('click', () => {
+        if (longPressed) {
+          longPressed = false;
+          return;
+        }
+        this.select(card.def.id);
+      });
       button.addEventListener('mouseenter', describe);
       button.addEventListener('focus', describe);
       holder.append(button);
@@ -376,13 +466,41 @@ class GameApp {
     on('[data-action="ultimate"]', () => this.fireUltimate());
     on('[data-action="pause"]', () => this.setPaused(true));
     on('[data-action="resume"]', () => this.setPaused(false));
-    on('[data-action="restart"]', () => this.state && void this.startLevel(this.state.level.id));
-    on('[data-action="retry"]', () => this.state && void this.startLevel(this.state.level.id));
+    on('[data-action="restart"]', () => this.setup && void this.startMatch({ ...this.setup }));
+    on('[data-action="retry"]', () => this.setup && void this.startMatch({ ...this.setup }));
+    on('[data-mode="daily"]', () => void this.startMatch(dailySetup()));
+    on('[data-mode="duel"]', () => {
+      const camp = this.save.camp;
+      if (camp) void this.startMatch({ mode: 'duel', level: 3 + Math.floor(Math.random() * (LAST_LEVEL - 2)), camp, seed: Math.floor(Math.random() * 1e9) });
+    });
+    on('[data-mode="versus"]', () => {
+      const camp = this.save.camp;
+      if (camp) void this.startMatch({ mode: 'versus', level: VERSUS.id, camp, seed: Math.floor(Math.random() * 1e9) });
+    });
+    on('[data-action="duel-accept"]', () => this.incomingDuel && void this.startMatch(this.incomingDuel));
+    on('[data-action="duel-pass"]', () => {
+      if (this.setup?.mode === 'duel') void this.startMatch({ ...this.setup, rival: this.lastScore });
+    });
+    on('[data-action="bench"]', () => {
+      const camp = this.save.camp;
+      if (!camp) return;
+      this.save.bench[camp] = !this.save.bench[camp];
+      storeSave(this.save);
+      this.renderModes();
+    });
+    on('[data-kind]', (el) => this.selectKind(el.dataset.kind as VersusKind));
+    on('[data-lane]', (el) => this.sendTo(Number(el.dataset.lane)));
+    on('[data-action="music"]', () => {
+      this.save.music = !this.save.music;
+      storeSave(this.save);
+      this.audio.music(this.save.music && !!this.state && !this.finished);
+      this.syncToggles();
+    });
     on('[data-action="next"]', () => this.state && void this.startLevel(this.state.level.id + 1));
     on('[data-action="quit"]', () => this.backToCalendar());
     on('[data-action="calendar"]', () => this.backToCalendar());
     on('[data-action="speed"]', () => {
-      this.save.speed = this.save.speed === 1 ? 2 : 1;
+      this.save.speed = this.save.speed === 1 ? 2 : this.save.speed === 2 ? 0.5 : 1;
       storeSave(this.save);
       this.syncToggles();
     });
@@ -394,18 +512,6 @@ class GameApp {
     });
     on('[data-action="intro-ok"]', () => this.closeIntro(true));
     on('[data-action="share"]', () => void this.shareResult());
-    on('[data-action="dismiss-install"]', () => {
-      this.save.installTipDismissed = true;
-      storeSave(this.save);
-      $(this.root, '[data-slot="install-tip"]').hidden = true;
-    });
-    on('[data-action="install"]', () => {
-      const prompt = this.installPrompt;
-      if (!prompt) return;
-      void prompt.prompt().then(() => prompt.userChoice).then((choice) => {
-        if (choice.outcome === 'accepted') $(this.root, '[data-slot="install-tip"]').hidden = true;
-      }).catch(() => undefined);
-    });
     on('[data-action="orientation"]', () => {
       this.save.forceLandscape = !this.save.forceLandscape;
       storeSave(this.save);
@@ -496,6 +602,22 @@ class GameApp {
     }
     if (!this.playing()) return;
 
+    // Two players: the left-hand keys belong to the attacker.
+    if (this.setup?.mode === 'versus') {
+      const kind = KIND_CODES.indexOf(e.code);
+      const lane = LANE_CODES.indexOf(e.code);
+      if (kind >= 0) {
+        e.preventDefault();
+        this.selectKind(VERSUS_ORDER[kind]);
+        return;
+      }
+      if (lane >= 0) {
+        e.preventDefault();
+        this.sendTo(lane);
+        return;
+      }
+    }
+
     if (key >= '1' && key <= '8') {
       const card = this.state.cards[Number(key) - 1];
       if (card) {
@@ -510,6 +632,9 @@ class GameApp {
     } else if (key === 'u') {
       e.preventDefault();
       this.fireUltimate();
+    } else if (key === 's') {
+      e.preventDefault();
+      this.summarise();
     } else if (key === 'm') {
       this.toggleMute();
     } else if (key === 'f') {
@@ -556,6 +681,8 @@ class GameApp {
     const state = this.state;
     if (!state || !this.playing()) return;
     this.view.hover = { lane, col };
+    // The debate: a soundbite on this square is sent back, whatever else was selected.
+    if (catchPunchline(state, lane, col)) return;
 
     if (this.view.removing) {
       const unit = state.grid[lane][col];
@@ -617,8 +744,17 @@ class GameApp {
       mute.setAttribute('aria-label', this.audio.muted ? this.t.ui.soundOff : this.t.ui.soundOn);
       mute.title = this.audio.muted ? this.t.ui.soundOff : this.t.ui.soundOn;
     }
-    this.root.querySelector('[data-action="speed"]')?.setAttribute('aria-pressed', String(this.save.speed === 2));
+    const speed = this.root.querySelector<HTMLElement>('[data-action="speed"]');
+    if (speed) {
+      const badge = this.save.speed === 0.5 ? '×½' : `×${this.save.speed}`;
+      const name = this.save.speed === 0.5 ? this.t.ui.speedSlow : this.save.speed === 2 ? this.t.ui.speedFast : this.t.ui.speedNormal;
+      speed.setAttribute('aria-pressed', String(this.save.speed !== 1));
+      speed.setAttribute('aria-label', fmt(this.t.ui.speedIs, { badge, speed: name }));
+      speed.title = speed.getAttribute('aria-label')!;
+      $(speed, '[data-slot="speed-badge"]').textContent = badge;
+    }
     this.root.querySelector('[data-action="orientation"]')?.setAttribute('aria-pressed', String(this.save.forceLandscape));
+    this.root.querySelector('[data-action="music"]')?.setAttribute('aria-pressed', String(this.save.music));
     for (const option of this.root.querySelectorAll<HTMLElement>('[data-action="difficulty"]')) {
       option.setAttribute('aria-pressed', String((option.dataset.value === 'hard') === this.save.hard));
     }
@@ -641,10 +777,12 @@ class GameApp {
     if (paused) {
       this.resumeFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       const el = this.overlay('pause', true);
+      this.audio.music(false);
       $(el, '[data-action="resume"]').focus();
       this.say(this.t.announce.paused);
     } else {
       this.overlay('pause', false);
+      this.audio.music(this.save.music);
       (this.resumeFocus && this.root.contains(this.resumeFocus) ? this.resumeFocus : this.cells[this.lastCell.lane][this.lastCell.col]).focus({ preventScroll: true });
       this.say(this.t.announce.resumed);
     }
@@ -653,6 +791,11 @@ class GameApp {
   private backToCalendar(): void {
     this.introQueue = [];
     this.closeIntro(false);
+    this.audio.music(false);
+    unlockAchievements(this.save);
+    storeSave(this.save);
+    if (this.save.camp) this.root.dataset.camp = this.save.camp;
+    delete this.root.dataset.mode;
     this.state = null;
     this.paused = false;
     this.overlay('pause', false);
@@ -670,10 +813,15 @@ class GameApp {
     this.finished = true;
     this.introQueue = [];
     this.closeIntro(false);
+    this.audio.music(false);
+    const setup = this.setup ?? { mode: 'campaign' as Mode, level: state.level.id, camp: state.camp, seed: state.seed };
+    const campaign = setup.mode === 'campaign';
     const camp = state.camp;
-    const progress = this.save.progress[camp];
+    const progress = campaign ? this.save.progress[camp] : { ...this.save.progress[camp], stars: { ...this.save.progress[camp].stars } };
     const won = state.status === 'won';
     const level = state.level;
+    const score = scoreFor(state);
+    this.lastScore = score;
     const stars = starsFor(state);
     const wavesHeld = level.endless ? Math.max(0, state.wave.next - 1) : state.stats.wavesCleared;
     let unlockedUnit: string | null = null;
@@ -688,14 +836,23 @@ class GameApp {
       const next = LEVELS.find((l) => l.id === level.id + 1);
       if (next && progress.unlocked < next.id) {
         progress.unlocked = next.id;
-        if (next.slots > level.slots) unlockedUnit = CAMPS[camp].roster[next.slots - 1];
+        if (next.slots > level.slots) unlockedUnit = lineupOf(camp, this.save.bench[camp])[next.slots - 1];
         unlockedReinforcements = next.reinforcements && !level.reinforcements;
       }
     }
+    if (setup.mode === 'daily') {
+      this.save.counters.dailies++;
+      this.save.daily[today()] = Math.max(this.save.daily[today()] ?? 0, score);
+    }
+    if (setup.mode === 'versus') this.save.counters.versus++;
+    if (campaign && won && state.hard && level.id === LAST_LEVEL) this.save.counters.hardRunoff++;
+    const fresh = unlockAchievements(this.save);
     storeSave(this.save);
 
     const pool = level.endless ? this.t.headlines.endless : won ? this.t.headlines.win : this.t.headlines.lose;
-    const headline = fmt(pool[Math.floor(Math.random() * pool.length)], { camp: this.t.camps[camp].name, n: wavesHeld });
+    const headline = setup.mode === 'versus'
+      ? won ? this.t.ui.versusDefender : this.t.ui.versusAttacker
+      : fmt(pool[Math.floor(Math.random() * pool.length)], { camp: this.t.camps[camp].name, n: wavesHeld });
 
     const el = this.overlay('result', true);
     el.dataset.outcome = won ? 'won' : 'lost';
@@ -703,12 +860,13 @@ class GameApp {
     title.textContent = headline;
 
     const starSlot = $(el, '[data-slot="stars"]');
-    starSlot.hidden = !won;
+    starSlot.hidden = !won || setup.mode === 'versus';
     starSlot.textContent = `${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}`;
     starSlot.setAttribute('aria-label', `${stars} ${this.t.ui.stars}`);
 
+    const scored = setup.mode === 'daily' || setup.mode === 'duel';
     const stats: [string, string][] = [
-      [this.t.ui.statTime, clockText(state.time)],
+      scored ? [this.t.ui.statScore, String(score)] : [this.t.ui.statTime, clockText(state.time)],
       [this.t.ui.statKills, String(state.stats.kills)],
       [this.t.ui.statPlaced, String(state.stats.placed)],
       level.endless ? [this.t.ui.statWaves, String(wavesHeld)] : [this.t.ui.statPolls, `${state.polls}/${level.polls}`],
@@ -730,10 +888,22 @@ class GameApp {
     const notes: string[] = [];
     if (state.hard) notes.push(this.t.ui.hardBadge);
     if (level.endless && wavesHeld > previousBest) notes.push(this.t.ui.newRecord);
+    let link: LastResult['link'];
+    if (setup.mode === 'daily') notes.push(this.t.ui.dailyName);
+    if (setup.mode === 'duel') {
+      notes.push(fmt(this.t.ui.duelYou, { score }));
+      if (setup.rival !== undefined) {
+        notes.push(fmt(this.t.ui.duelBeat, { score: setup.rival }), score > setup.rival ? this.t.ui.duelWon : this.t.ui.duelLost);
+      }
+      const code = duelCode(setup, score);
+      notes.push(fmt(this.t.ui.duelCode, { code }));
+      link = { text: fmt(this.t.ui.duelShareText, { headline, score }), url: `${location.origin}${location.pathname}?duel=${code}` };
+    }
+    for (const id of fresh) notes.push(fmt(this.t.ui.achievementNew, { name: this.t.achievements[id].name }));
     const noteSlot = $(el, '[data-slot="notes"]');
     noteSlot.hidden = !notes.length;
     noteSlot.textContent = notes.join(' · ');
-    this.lastResult = { headline, won, stars: won ? stars : 0, stats, notes };
+    this.lastResult = { headline, won, stars: won && setup.mode !== 'versus' ? stars : 0, stats, notes, link };
 
     const unlock = $(el, '[data-slot="unlock"]');
     unlock.hidden = !unlockedUnit && !unlockedReinforcements;
@@ -746,10 +916,35 @@ class GameApp {
     }
 
     const next = $(el, '[data-action="next"]');
-    next.hidden = !(won && !level.endless && level.id < LAST_LEVEL);
+    next.hidden = !(campaign && won && !level.endless && level.id < LAST_LEVEL);
+    $(el, '[data-action="duel-pass"]').hidden = !(setup.mode === 'duel' && setup.rival === undefined);
     this.audio.play(won ? 'win' : 'lose');
     this.say(`${won ? this.t.announce.won : this.t.announce.lost} ${headline} ${notes.join('. ')}`.trim(), true);
     (next.hidden ? $(el, '[data-action="retry"]') : next).focus();
+  }
+
+  // ───────────────────────────── two players ─────────────────────────────
+
+  private selectKind(kind: VersusKind): void {
+    this.versusKind = kind;
+    for (const button of this.root.querySelectorAll<HTMLElement>('[data-kind]')) {
+      button.setAttribute('aria-pressed', String(button.dataset.kind === kind));
+    }
+  }
+
+  /** The attacker sends the chosen opponent down a lane. */
+  private sendTo(lane: number): void {
+    const state = this.state;
+    if (!state?.versus || !this.playing()) return;
+    const error = versusSend(state, this.versusKind, lane);
+    if (error === 'budget') {
+      this.audio.play('error');
+      this.say(this.t.announce.budgetLow);
+    } else if (!error) {
+      this.audio.play('click');
+      const name = this.versusKind === 'star' ? this.t.ui.star : this.t.extras[this.versusKind];
+      this.say(fmt(this.t.announce.sent, { name, lane: lane + 1 }));
+    }
   }
 
   // ───────────────────────────── "New!" cards ─────────────────────────────
@@ -768,6 +963,7 @@ class GameApp {
     if (!next || !state || state.status !== 'playing') return;
     const guest = this.t.figures[next.id];
     const el = this.overlay('intro', true);
+    $(el, '[data-slot="intro-tag"]').textContent = this.t.ui.newOpponent;
     $(el, '[data-slot="intro-art"]').innerHTML = enemySvg(next.id, next.camp, { size: 150, uid: 'intro' });
     $(el, '[data-slot="intro-name"]').textContent = guest ? guest.name : this.t.extras[next.id];
     const power = $(el, '[data-slot="intro-power"]');
@@ -779,6 +975,39 @@ class GameApp {
     this.save.seen.push(next.id);
     storeSave(this.save);
     $(el, '[data-action="intro-ok"]').focus({ preventScroll: true });
+  }
+
+  /** The full card of a figure, opened by a long press (the match waits meanwhile). */
+  private showCardSheet(unitId: string): void {
+    const state = this.state;
+    if (!state || state.status !== 'playing' || this.introOpen || this.paused) return;
+    const text = this.t.figures[unitId];
+    const def = UNITS[unitId];
+    const el = this.overlay('intro', true);
+    $(el, '[data-slot="intro-tag"]').textContent = this.t.ui.cardSheet;
+    $(el, '[data-slot="intro-art"]').innerHTML = portraitSvg(unitId, { size: 150, uid: 'sheet' });
+    $(el, '[data-slot="intro-name"]').textContent = text.name;
+    const power = $(el, '[data-slot="intro-power"]');
+    power.hidden = false;
+    power.textContent = `${this.t.types[categoryOf(def)]} · ${this.t.ui.cost} ${costOf(state, def)} · ${text.power}`;
+    $(el, '[data-slot="intro-desc"]').textContent = text.desc;
+    this.introFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.introOpen = true;
+    $(el, '[data-action="intro-ok"]').focus({ preventScroll: true });
+  }
+
+  /** "S": the state of the board in one sentence, for screen-reader users. */
+  private summarise(): void {
+    const state = this.state;
+    if (!state) return;
+    const a = this.t.announce;
+    const lanes = state.level.lanes.map((lane) => {
+      const marching = state.enemies.filter((e) => e.lane === lane && e.x <= COLS);
+      if (!marching.length) return fmt(a.summaryClear, { lane: lane + 1 });
+      const nearest = Math.max(0, Math.round(Math.min(...marching.map((e) => e.x))));
+      return fmt(a.summaryLane, { lane: lane + 1, n: marching.length, cells: nearest });
+    });
+    this.say(fmt(a.summary, { res: Math.floor(state.resources), polls: state.polls, max: state.level.polls, lanes: lanes.join('. ') }));
   }
 
   /** Closes the card; with `resume`, shows the next one or gives the match back. */
@@ -808,14 +1037,14 @@ class GameApp {
     const result = this.lastResult;
     const camp = this.save.camp;
     if (!result || !camp) return;
-    const blob = await this.resultPicture(result, camp);
+    const blob = await resultPicture(result, camp, this.t, this.sprites.unit(CAMPS[camp].roster[5]));
     if (!blob) return;
     const file = new File([blob], 'politique-2027.png', { type: 'image/png' });
-    const text = fmt(this.t.ui.shareText, { headline: result.headline });
-    const url = `${location.origin}${location.pathname}`;
+    const text = result.link?.text ?? fmt(this.t.ui.shareText, { headline: result.headline });
+    const url = result.link?.url ?? `${location.origin}${location.pathname}`;
     try {
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Politique 2027', text });
+        await navigator.share({ files: [file], title: 'Politique 2027', text: result.link ? `${text} ${url}` : text });
         return;
       }
     } catch (error) {
@@ -835,116 +1064,6 @@ class GameApp {
     }
   }
 
-  private async resultPicture(result: LastResult, camp: CampId): Promise<Blob | null> {
-    const W = 1200;
-    const H = 630;
-    const canvas = document.createElement('canvas');
-    canvas.width = W;
-    canvas.height = H;
-    const g = canvas.getContext('2d');
-    if (!g) return null;
-    await document.fonts?.load("64px 'Anton'").catch(() => undefined);
-    const ink = '#17203f';
-    const display = "'Anton', 'Arial Narrow', Impact, sans-serif";
-    const body = "'Public Sans Variable', 'Public Sans', system-ui, sans-serif";
-    g.fillStyle = '#fbf6e9';
-    g.fillRect(0, 0, W, H);
-    g.fillStyle = CAMPS[camp].color;
-    g.fillRect(0, 0, W, 16);
-    g.fillRect(0, H - 16, W, 16);
-
-    g.fillStyle = ink;
-    g.textAlign = 'left';
-    g.textBaseline = 'alphabetic';
-    g.font = `400 52px ${display}`;
-    g.fillText(this.t.ui.gazette.toUpperCase(), 56, 92);
-    g.fillRect(56, 112, 760, 3);
-    g.fillRect(56, 150, 760, 3);
-    g.font = `700 19px ${body}`;
-    g.fillText(this.t.ui.gazetteTag.toUpperCase(), 56, 139, 760);
-
-    // The headline, wrapped on up to three lines.
-    g.font = `400 62px ${display}`;
-    g.fillStyle = result.won ? '#b0191f' : ink;
-    const lines: string[] = [];
-    let line = '';
-    for (const word of result.headline.toUpperCase().split(' ')) {
-      const attempt = line ? `${line} ${word}` : word;
-      if (g.measureText(attempt).width > 760 && line) {
-        lines.push(line);
-        line = word;
-      } else line = attempt;
-    }
-    if (line) lines.push(line);
-    lines.slice(0, 3).forEach((text, i) => g.fillText(text, 56, 232 + i * 70, 760));
-    let y = 232 + Math.min(3, lines.length) * 70;
-    if (result.stars) {
-      g.font = `400 52px ${body}`;
-      g.fillStyle = '#c98a00';
-      g.fillText(`${'★'.repeat(result.stars)}${'☆'.repeat(3 - result.stars)}`, 56, y + 6);
-      y += 60;
-    }
-    if (result.notes.length) {
-      g.font = `800 22px ${body}`;
-      g.fillStyle = ink;
-      g.fillText(result.notes.join(' · ').toUpperCase(), 56, y);
-    }
-
-    // Four figures from the match along the bottom.
-    result.stats.forEach(([term, value], i) => {
-      const x = 56 + i * 190;
-      g.fillStyle = 'rgba(23,32,63,.25)';
-      g.fillRect(x, 470, 170, 2);
-      g.fillStyle = ink;
-      g.font = `700 16px ${body}`;
-      g.fillText(term.toUpperCase(), x, 500, 170);
-      g.font = `400 44px ${display}`;
-      g.fillText(value, x, 552);
-    });
-
-    // The camp's headliner, as a sticker.
-    const sprite = this.sprites.unit(CAMPS[camp].roster[5]);
-    if (sprite) {
-      const height = 400;
-      const width = (sprite.w / sprite.h) * height;
-      g.drawImage(sprite.image, 860 + (300 - width) / 2, 120, width, height);
-    }
-    g.fillStyle = ink;
-    g.textAlign = 'right';
-    g.font = `800 24px ${body}`;
-    g.fillText(location.host || 'politique2027.mbonnici.fr', W - 56, H - 44);
-    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-  }
-
-  // ───────────────────────────── home screen, offline ─────────────────────────────
-
-  /** On a phone, outside the installed app: how to put the game on the home screen. */
-  private setupInstallTip(): void {
-    const tip = $(this.root, '[data-slot="install-tip"]');
-    const text = $(tip, '[data-slot="install-text"]');
-    const nav = navigator as Navigator & { standalone?: boolean };
-    const installed = window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || nav.standalone === true;
-    const touch = window.matchMedia('(pointer: coarse)').matches;
-    if (installed || !touch || this.save.installTipDismissed || new URLSearchParams(location.search).has('e2e')) return;
-    const apple = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    text.textContent = apple ? this.t.ui.installIos : this.t.ui.installGeneric;
-    tip.hidden = false;
-    // Chrome and Edge on Android offer their own install dialog: put it behind a button.
-    window.addEventListener('beforeinstallprompt', (event) => {
-      event.preventDefault();
-      this.installPrompt = event as InstallPrompt;
-      text.textContent = this.t.ui.installAndroid;
-      $(tip, '[data-action="install"]').hidden = false;
-    });
-    window.addEventListener('appinstalled', () => (tip.hidden = true));
-  }
-
-  /** Keeps a copy of the game on the device so that it opens, and plays, offline. */
-  private registerServiceWorker(): void {
-    if (!('serviceWorker' in navigator) || new URLSearchParams(location.search).has('e2e')) return;
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
-    void navigator.serviceWorker.register('/sw.js').catch(() => undefined);
-  }
 
   // ───────────────────────────── feedback ─────────────────────────────
 
@@ -976,7 +1095,8 @@ class GameApp {
       : this.t.ui.empty;
     const rivals = state.enemies.filter((e) => e.lane === lane).length;
     const suffix = rivals ? ` — ${fmt(this.t.ui.rivalsInLane, { n: rivals })}` : '';
-    return `${where} : ${what}${suffix}`;
+    const soundbite = state.punchlines.some((p) => p.lane === lane && p.col === col) ? `${this.t.ui.punchline} — ` : '';
+    return `${soundbite}${where} : ${what}${suffix}`;
   }
 
   private enemyName(enemyId: string): string {
@@ -1057,10 +1177,36 @@ class GameApp {
           break;
         case 'zucman':
           if (e.adopted) this.audio.play('coin');
+          this.save.counters.exiled += e.exiles.length;
           this.say(e.adopted ? fmt(a.zucmanPassed, { n: e.amount }) : a.zucmanOff);
           break;
         case 'wonOver':
           this.audio.play('coin');
+          this.save.counters.wonOver++;
+          break;
+        case 'enemyDown':
+          if (e.enemyId === 'syndicat') this.save.counters.unionists++;
+          if (e.enemyId === 'lucet') this.save.counters.lucet++;
+          if (e.enemyId === 'lisnard') this.save.counters.lisnard++;
+          break;
+        case 'punchline':
+          this.audio.play('whistle');
+          this.say(fmt(a.punchlineIn, { row: e.lane + 1, col: e.col + 1 }));
+          break;
+        case 'riposte':
+          this.audio.play('coin');
+          this.save.counters.ripostes++;
+          break;
+        case 'punchlineLanded':
+          this.audio.play('error');
+          break;
+        case 'twist':
+          this.audio.play('wave');
+          this.say(e.id === 'manif' ? a.twist_manif : a.twist_force, true);
+          break;
+        case 'theme':
+          this.audio.play('wave');
+          this.say(a[`theme_${e.id}`], true);
           break;
         case 'ultimate':
           this.audio.play('ult');
@@ -1131,6 +1277,22 @@ class GameApp {
       [...holder.children].forEach((pip, i) => pip.classList.toggle('is-lost', i >= state.polls));
     });
 
+    if (state.versus) {
+      const versus = state.versus;
+      const budget = Math.floor(versus.budget);
+      this.put('vs-budget', budget, () => {
+        $(this.root, '[data-slot="vs-budget"]').textContent = String(budget);
+        for (const button of this.root.querySelectorAll<HTMLElement>('[data-kind]')) {
+          button.setAttribute('aria-disabled', String(VERSUS_KINDS[button.dataset.kind as VersusKind] > budget));
+        }
+      });
+      const left = Math.ceil(versus.timeLeft);
+      this.put('wave', `t${left}`, () => {
+        $(this.root, '[data-slot="wave-label"]').textContent = `${this.t.ui.versusTime} ${clockText(left)}`;
+        $(this.root, '[data-slot="wave-bar"]').style.setProperty('--progress', String(1 - versus.timeLeft / VERSUS.versus!.duration));
+      });
+      return;
+    }
     const waveNumber = Math.max(1, state.wave.next);
     this.put('wave', `${waveNumber}`, () => {
       const total = state.level.waves;

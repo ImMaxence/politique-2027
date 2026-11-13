@@ -1,0 +1,113 @@
+---
+/** One campaign night: its story, who turns up, and a link to play it. */
+import { levelDef } from '../game/data/levels';
+import { EXTRAS } from '../game/data/units';
+import { GAME_STRINGS, fmt, type Lang } from '../i18n/game';
+import { PAGE_STRINGS } from '../i18n/pages';
+import { absolute, otherLang, path } from '../i18n/routes';
+import { SITE_STRINGS } from '../i18n/site';
+import Base from '../layouts/Base.astro';
+import { NIGHT_IDS, figurePath, nightImage, nightPath } from '../lib/pages';
+
+interface Props {
+  lang: Lang;
+  id: number;
+}
+
+const { lang, id } = Astro.props;
+const g = GAME_STRINGS[lang];
+const p = PAGE_STRINGS[lang].night;
+const t = SITE_STRINGS[lang];
+const level = levelDef(id);
+const text = g.levels[id];
+const extras = [...level.pool].sort((a, b) => a.from - b.from).map((e) => e.id).filter((e) => e !== 'militant');
+const guests = level.guests ?? [];
+const image = nightImage(id);
+const description = fmt(p.metaDescription, { name: text.name, blurb: text.blurb });
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CreativeWork',
+    name: fmt(p.metaTitle, { date: text.date, name: text.name }),
+    description,
+    url: absolute(nightPath(lang, id)),
+    image: absolute(image),
+    inLanguage: lang,
+    isPartOf: { '@type': 'VideoGame', name: 'Politique 2027', url: absolute(path(lang, 'play')) },
+  },
+];
+---
+
+<Base
+  lang={lang}
+  route="play"
+  jsonLd={jsonLd}
+  page={{
+    title: fmt(p.metaTitle, { date: text.date, name: text.name }),
+    description,
+    path: nightPath(lang, id),
+    altPath: nightPath(otherLang(lang), id),
+    image,
+    imageAlt: fmt(p.sceneAlt, { name: text.name }),
+    crumbs: [
+      { name: t.labels.home, path: path(lang, 'home') },
+      { name: t.labels.play, path: path(lang, 'play') },
+      { name: text.name, path: nightPath(lang, id) },
+    ],
+  }}
+>
+  <div class="container page-head">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href={path(lang, 'home')}>{t.labels.home}</a></li>
+        <li><a href={path(lang, 'play')}>{t.labels.play}</a></li>
+        <li aria-current="page">{text.name}</li>
+      </ol>
+    </nav>
+    <div><span class="kicker">{text.date}</span></div>
+    <h1>{text.name}</h1>
+    <span class="tricolour"></span>
+    <p>{text.blurb}</p>
+  </div>
+
+  <div class="container night-page">
+    {image !== '/og.png' && <img class="night-page__scene" src={image} alt={fmt(p.sceneAlt, { name: text.name })} width="1200" height="675" loading="lazy" decoding="async" />}
+    <ul class="stats">
+      <li>{fmt(p.lanes, { n: level.lanes.length })}</li>
+      <li>{Number.isFinite(level.waves) ? fmt(p.waves, { n: level.waves }) : p.endless}</li>
+    </ul>
+    <h2>{p.cast}</h2>
+    <ul class="night-page__cast" role="list">{extras.map((e) => <li class="chip">{g.extras[e]}</li>)}</ul>
+    {
+      guests.length > 0 && (
+        <>
+          <h2>{p.guests}</h2>
+          <ul class="night-page__cast" role="list">
+            {guests.map((guest) => (
+              <li>
+                <a class="chip" href={figurePath(lang, guest)}>
+                  {g.figures[guest].name}
+                  {EXTRAS[guest].onlyAgainst && <> · {g.camps[EXTRAS[guest].onlyAgainst!].short}</>}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )
+    }
+    <p class="figure-page__cta"><a class="btn btn--primary" href={path(lang, 'play')}>{p.play}</a></p>
+
+    <nav class="night-page__all" aria-label={p.all}>
+      <h2>{p.all}</h2>
+      <ol role="list">
+        {NIGHT_IDS.map((n) => (
+          <li>
+            <a href={nightPath(lang, n)} aria-current={n === id ? 'page' : undefined}>
+              <b>{g.levels[n].date}</b> {g.levels[n].name}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  </div>
+</Base>

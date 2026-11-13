@@ -15,11 +15,11 @@ To remember your progress and settings, the site uses your browser's local stora
 
 | Key | Content | Duration |
 | --- | --- | --- |
-| `politique2027:save` | Chosen camp, unlocked levels, stars, endless-mode record, sound muted or not, game speed, forced landscape on phones or not, hard mode or not, opponents already introduced ("New!" cards), "home screen" tip dismissed or not | Until you delete it |
+| `politique2027:save` | Chosen camp, unlocked levels, stars, endless-mode record, sound muted or not, game speed, forced landscape on phones or not, hard mode or not, opponents already introduced ("New!" cards), "home screen" tip dismissed or not, best daily-challenge scores (last two weeks), achievements and the totals they count, music on or off, substitutes chosen | Until you delete it |
 
 So that the game opens and plays **offline** (in particular once added to the home screen), the browser also keeps a copy of the site's files — pages, scripts, styles, fonts and pictures — in its cache (`Cache Storage`, managed by a *service worker*). This cache only holds the site's public files, no data about you; it is replaced with every new version of the game.
 
-The "Share the result" button makes a picture on your device and hands it to your system's share menu (or saves it): nothing is sent until you pick a recipient yourself.
+The "Share the result" button makes a picture on your device and hands it to your system's share menu (or saves it): nothing is sent until you pick a recipient yourself. A duel link only holds the night, the camp, the match's draw and a score: nothing about you.
 
 This storage is strictly necessary for a feature you ask for (finding your game and preferences again), so it does not require consent. To remove everything (local storage and cache), clear the "site data" for `politique2027.mbonnici.fr` in your browser settings. The game also works when storage is blocked: progress is simply not kept.
 
