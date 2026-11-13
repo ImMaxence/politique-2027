@@ -60,7 +60,13 @@ export type Trait =
   | { kind: 'tax'; interval: number; amount: number }
   /** Investigative reporter: follows the money. Walks past every figure except the money-makers,
    *  and a money-maker being questioned produces nothing until the interview is over. */
-  | { kind: 'investigate' };
+  | { kind: 'investigate' }
+  /** Trade unionist: the figure he is debating with goes on strike and does nothing. */
+  | { kind: 'picket' }
+  /** Undecided voter: walks past everyone to go and vote; convinced on the way, he brings endorsements. */
+  | { kind: 'undecided'; reward: number }
+  /** Red carpet: every opponent walking behind him in his lane moves this much faster. */
+  | { kind: 'carpet'; factor: number };
 
 /** The four families shown on every card. */
 export type Category = 'money' | 'attack' | 'effect' | 'defence';

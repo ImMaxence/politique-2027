@@ -12,6 +12,25 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [1.4.0] — 2026-11-13
+
+Bigger puppets, a board that reaches the edges of every screen, and four newcomers. Saves are untouched.
+
+### Added
+
+- **David Lisnard, "the Mayor of Cannes"**, declared candidate and guest of the Agricultural Show (and of Cohabitation), against every camp. He rolls out **the red carpet**: in his lane, opponents walking behind him move one and a half times faster. Tricolour sash included.
+- **Union marchers** (no union in particular), in the street, the first round, the second round and Cohabitation: whoever they debate with **goes on strike** and does nothing for as long as they stand at its door.
+- **Minimum-wage workers**, everybody's favourite voter, in the street, the first round and Cohabitation: they do not stop to debate, they cross the courtyard to go and vote. Win one over on the way and he brings **15 endorsements** ("One more vote!"); let him reach the steps and you lose a poll point.
+- **The Zucman tax** comes back to the vote now and then while CAC 40 bosses stand in the courtyard (the debate set, the summit, Cohabitation). One time in two it passes: each boss pays his share (+25 endorsements) and leaves into tax exile; otherwise, "Zucman tax rejected".
+- All four appear in the characters page, the cast sheet, `llms.txt` and the legal notice.
+
+### Changed
+
+- **Bigger puppets**: every figure and opponent on the board is drawn 25% bigger (vehicles excepted), with sharper bitmaps on large, dense screens.
+- **Edge to edge on every landscape screen**: the side layout (tickets on the left, board over the rest, controls on the scenery) is now used on laptops and monitors too, not only on phones and short windows. The scene goes on to the left of the steps (more of the building's front), so a wide screen shows more of it instead of a dark margin; tickets and controls grow with the screen. Upright windows keep the toolbar above the board.
+- **Slimmer tickets on phones**: smaller portraits and shorter tickets.
+- **Closed lanes are a public garden** (striped lawn, hedges, flowers) instead of a lawn covered with dark blotches.
+
 ## [1.3.0] — 2026-11-13
 
 A guest who follows the money, a broadcast van that never runs out of pundits, and a bigger board on phones. Saves are untouched.

@@ -294,6 +294,67 @@ describe('money, taxes and guests', () => {
     expect(state.enemies.filter((e) => e.def.id === 'pundit').length).toBeGreaterThanOrEqual(2);
   });
 
+  it('a trade unionist puts the figure he debates with on strike', () => {
+    const state = createGame({ camp: 'gauche', level: 3 });
+    state.resources = 1000;
+    expect(placeUnit(state, 'hollande', 2, 3)).toBeNull();
+    const hollande = state.grid[2][3]!;
+    spawnEnemy(state, 'syndicat', 2, 'droite', 4.3);
+    run(state, 1);
+    expect(state.events.some((e) => e.type === 'picket' && e.col === 3)).toBe(true);
+    const shots = state.projectiles.length;
+    run(state, 3);
+    expect(hollande.silenced).toBeGreaterThan(0);
+    expect(state.projectiles.length).toBeLessThanOrEqual(shots); // no new speech while on strike
+  });
+
+  it('a minimum-wage worker walks past everyone, and winning him over pays', () => {
+    const state = createGame({ camp: 'centre', level: 6 });
+    state.resources = 1000;
+    expect(placeUnit(state, 'philippe', 2, 6)).toBeNull();
+    const voter = spawnEnemy(state, 'smicard', 2, 'droite', 7.2)!;
+    run(state, 4);
+    expect(voter.x).toBeLessThan(6.3); // through the wall without stopping
+    const before = state.resources;
+    voter.hp = 0;
+    run(state, TICK);
+    expect(state.events.some((e) => e.type === 'wonOver' && e.amount === 15)).toBe(true);
+    expect(state.resources - before).toBeGreaterThanOrEqual(15);
+  });
+
+  it('the red carpet speeds up whoever walks behind its owner', () => {
+    const state = createGame({ camp: 'gauche', level: 2 });
+    spawnEnemy(state, 'lisnard', 2, 'droite', 6);
+    const behind = spawnEnemy(state, 'militant', 2, 'droite', 8)!;
+    const elsewhere = spawnEnemy(state, 'militant', 3, 'droite', 8)!;
+    run(state, 2);
+    expect(8 - behind.x).toBeCloseTo((8 - elsewhere.x) * 1.5, 1);
+  });
+
+  it('the Zucman tax, when it passes, sends the CAC 40 bosses on the board away for their share', () => {
+    const outcomes = new Set<boolean>();
+    for (let seed = 1; seed <= 12 && outcomes.size < 2; seed++) {
+      const state = createGame({ camp: 'gauche', level: 4, seed });
+      spawnEnemy(state, 'patron', 1, 'droite', 8.6);
+      spawnEnemy(state, 'patron', 3, 'droite', 8.6);
+      const before = state.resources;
+      run(state, 26); // the first vote comes after 25 s
+      const vote = state.events.find((e) => e.type === 'zucman');
+      expect(vote).toBeDefined();
+      if (vote?.type !== 'zucman') continue;
+      outcomes.add(vote.adopted);
+      const bosses = state.enemies.filter((e) => e.def.id === 'patron').length;
+      if (vote.adopted) {
+        expect(vote.exiles).toHaveLength(2);
+        expect(bosses).toBe(0);
+        expect(state.resources - before).toBeGreaterThanOrEqual(50);
+      } else {
+        expect(bosses).toBe(2);
+      }
+    }
+    expect(outcomes).toEqual(new Set([true, false])); // it passes… or not
+  });
+
   it('the benefits office looks at the file from time to time', () => {
     const state = createGame({ camp: 'gauche', level: 2, seed: 5 });
     run(state, 100); // the first look at the file comes after 32 s, the next 38 to 58 s later

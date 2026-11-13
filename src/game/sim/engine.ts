@@ -22,6 +22,13 @@ export const CENSURE_TARGETS = 3;
 export const CAF_AMOUNT = 50;
 export const CAF_FIRST = 32;
 const CAF_COMPLETE_FILE = 0.75;
+/**
+ * The Zucman tax (a minimum tax on the largest fortunes) comes back to the vote now
+ * and then while CAC 40 bosses are on the board. One time in two it passes: each boss
+ * pays his share and leaves the courtyard.
+ */
+export const ZUCMAN_SHARE = 25;
+const ZUCMAN_ODDS = 0.5;
 const MAX_ENEMIES = 70;
 const BURST_GAP = 0.14;
 
@@ -104,6 +111,10 @@ export type GameEvent =
   | { type: 'censure'; hits: { lane: number; x: number }[] }
   | { type: 'tax'; lane: number; x: number; amount: number }
   | { type: 'interview'; lane: number; col: number }
+  | { type: 'picket'; lane: number; col: number }
+  | { type: 'wonOver'; lane: number; x: number; amount: number }
+  /** The Zucman tax comes to the vote; when it passes, the CAC 40 bosses on the board leave (and pay). */
+  | { type: 'zucman'; adopted: boolean; exiles: { lane: number; x: number }[]; amount: number }
   | { type: 'caf'; amount: number }
   | { type: 'ultimate'; id: UltimateId }
   | { type: 'win' }
@@ -142,6 +153,8 @@ export interface GameState {
   passiveTimer: number;
   /** Seconds until the family-benefits office next looks at the file. */
   cafTimer: number;
+  /** Seconds until the Zucman tax comes back to the vote (only with a CAC 40 boss on the board). */
+  zucmanTimer: number;
   /** Cost multiplier applied to every card (1 unless tariffs are in force). */
   tariff: number;
   status: 'playing' | 'won' | 'lost';
@@ -212,6 +225,7 @@ export function createGame(options: GameOptions): GameState {
     wave: { next: 0, nextAt: level.firstWaveAt, lastStart: 0, pending: [], lastLane: -1 },
     passiveTimer: PASSIVE_INTERVAL,
     cafTimer: CAF_FIRST,
+    zucmanTimer: 25,
     tariff: 1,
     status: 'playing',
     stats: { placed: 0, kills: 0, leaked: 0, produced: 0, wavesCleared: 0 },
@@ -678,6 +692,14 @@ function updateProjectiles(state: GameState, dt: number): void {
 
 function updateEnemies(state: GameState, dt: number): void {
   const onStrike = state.ult.strike > 0;
+  // Red carpets: in a lane where one is rolled out, whoever walks behind its owner goes faster.
+  const carpets = new Map<number, { x: number; factor: number }>();
+  for (const enemy of state.enemies) {
+    const trait = enemy.def.trait;
+    if (trait?.kind !== 'carpet' || enemy.hp <= 0 || enemy.x > COLS) continue;
+    const current = carpets.get(enemy.lane);
+    if (!current || enemy.x < current.x) carpets.set(enemy.lane, { x: enemy.x, factor: trait.factor });
+  }
 
   for (const enemy of state.enemies) {
     if (enemy.hp <= 0) continue;
@@ -703,7 +725,8 @@ function updateEnemies(state: GameState, dt: number): void {
     const investigating = trait?.kind === 'investigate';
     let target: Unit | null = null;
     let best = Infinity;
-    for (let col = 0; col < COLS; col++) {
+    // An undecided voter does not stop to debate: he is on his way to vote.
+    for (let col = 0; col < COLS && trait?.kind !== 'undecided'; col++) {
       const unit = state.grid[enemy.lane][col];
       if (!unit) continue;
       if (investigating && unit.def.ability.kind !== 'generator') continue;
@@ -731,6 +754,10 @@ function updateEnemies(state: GameState, dt: number): void {
         // The interview starts: no comment, and no endorsements either while it lasts.
         if (!enemy.attacking) state.events.push({ type: 'interview', lane: target.lane, col: target.col });
         target.silenced = Math.max(target.silenced, 0.25);
+      } else if (trait?.kind === 'picket' && melee) {
+        // A picket line: the figure downs tools for as long as the union is at its door.
+        if (!enemy.attacking) state.events.push({ type: 'picket', lane: target.lane, col: target.col });
+        target.silenced = Math.max(target.silenced, 0.25);
       }
       enemy.attacking = true;
       hurtUnit(state, target, def.dps * dt);
@@ -749,6 +776,8 @@ function updateEnemies(state: GameState, dt: number): void {
         }
         if (enemy.dry) speed = trait.slowSpeed;
       }
+      const carpet = carpets.get(enemy.lane);
+      if (carpet && enemy.x > carpet.x + 0.05) speed *= carpet.factor;
       enemy.x -= speed * slow * dt;
     }
 
@@ -803,6 +832,12 @@ function cleanup(state: GameState): void {
     if (enemy.hp <= 0) {
       state.enemies.splice(i, 1);
       state.stats.kills++;
+      const trait = enemy.def.trait;
+      if (trait?.kind === 'undecided') {
+        // Convinced on his way to vote: one more voice, and the endorsements that come with it.
+        state.resources += trait.reward;
+        state.events.push({ type: 'wonOver', lane: enemy.lane, x: enemy.x, amount: trait.reward });
+      }
       state.events.push({
         type: 'enemyDown', lane: enemy.lane, x: enemy.x, enemyId: enemy.def.id, camp: enemy.camp, boss: !!enemy.def.boss,
       });
@@ -824,6 +859,28 @@ function cleanup(state: GameState): void {
   }
 }
 
+/** The Zucman tax comes back to the vote while CAC 40 bosses stand in the courtyard. */
+function updateZucman(state: GameState, dt: number): void {
+  state.zucmanTimer -= dt;
+  if (state.zucmanTimer > 0) return;
+  const bosses = state.enemies.filter((e) => e.def.id === 'patron' && e.hp > 0 && e.x <= COLS);
+  if (!bosses.length) {
+    state.zucmanTimer = 4; // nobody to tax yet: look again shortly
+    return;
+  }
+  state.zucmanTimer = 40 + rand(state) * 25;
+  const adopted = rand(state) < ZUCMAN_ODDS;
+  if (adopted) {
+    // Each boss pays his share and packs his briefcase.
+    for (const boss of bosses) state.enemies.splice(state.enemies.indexOf(boss), 1);
+    state.resources += ZUCMAN_SHARE * bosses.length;
+  }
+  state.events.push({
+    type: 'zucman', adopted, amount: adopted ? ZUCMAN_SHARE * bosses.length : 0,
+    exiles: adopted ? bosses.map((b) => ({ lane: b.lane, x: b.x })) : [],
+  });
+}
+
 /** Advance the match by one fixed tick. */
 export function step(state: GameState, dt: number = TICK): void {
   if (state.status !== 'playing') return;
@@ -843,6 +900,7 @@ export function step(state: GameState, dt: number = TICK): void {
     state.resources += amount;
     state.events.push({ type: 'caf', amount });
   }
+  updateZucman(state, dt);
   for (const card of state.cards) if (card.cooldown > 0) card.cooldown = Math.max(0, card.cooldown - dt);
   if (state.ult.charge < ULT_CHARGE_TIME) state.ult.charge = Math.min(ULT_CHARGE_TIME, state.ult.charge + dt);
   if (state.ult.strike > 0) state.ult.strike -= dt;

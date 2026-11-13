@@ -28,7 +28,7 @@ export const LEVELS: LevelDef[] = [
       { id: 'pundit', weight: 2, from: 3 },
       { id: 'tracteur', weight: 1, from: 4 },
     ],
-    starsFrom: 6, bosses: 0, firstWaveAt: 24, waveGap: 25, slots: 4, reinforcements: false,
+    starsFrom: 6, bosses: 0, guests: ['lisnard'], firstWaveAt: 24, waveGap: 25, slots: 4, reinforcements: false,
   },
   {
     // The street: school blockades, burning bins and motorists who have seen the price of petrol.
@@ -39,6 +39,8 @@ export const LEVELS: LevelDef[] = [
       { id: 'militant', weight: 1, from: 0 },
       { id: 'gilet', weight: 3, from: 1 },
       { id: 'poubelle', weight: 2, from: 1 },
+      { id: 'syndicat', weight: 2, from: 2 },
+      { id: 'smicard', weight: 1, from: 3 },
       { id: 'auto', weight: 2, from: 2 },
       { id: 'impots', weight: 1.5, from: 3 },
       { id: 'placard', weight: 1, from: 3 },
@@ -82,6 +84,8 @@ export const LEVELS: LevelDef[] = [
       { id: 'lyceen', weight: 2, from: 2 },
       { id: 'gilet', weight: 1.5, from: 1 },
       { id: 'agriculteur', weight: 1.5, from: 2 },
+      { id: 'smicard', weight: 2, from: 1 },
+      { id: 'syndicat', weight: 1, from: 3 },
       { id: 'bus', weight: 1, from: 5 },
     ],
     starsFrom: 2, bosses: 1, guests: ['lucet'], firstWaveAt: 24, waveGap: 27, slots: 6, reinforcements: true,
@@ -94,6 +98,7 @@ export const LEVELS: LevelDef[] = [
       { id: 'placard', weight: 3, from: 0 },
       { id: 'pundit', weight: 3, from: 1 },
       { id: 'impots', weight: 1, from: 2 },
+      { id: 'syndicat', weight: 1, from: 3 },
       { id: 'poubelle', weight: 1, from: 3 },
       { id: 'bus', weight: 1.2, from: 4 },
       { id: 'cnews', weight: 0.8, from: 5 },
@@ -115,6 +120,8 @@ export const ENDLESS: LevelDef = {
     { id: 'pundit', weight: 3, from: 2 },
     { id: 'lyceen', weight: 3, from: 3 },
     { id: 'gilet', weight: 2, from: 3 },
+    { id: 'syndicat', weight: 2, from: 3 },
+    { id: 'smicard', weight: 1.5, from: 2 },
     { id: 'poubelle', weight: 1, from: 4 },
     { id: 'auto', weight: 1.5, from: 5 },
     { id: 'agriculteur', weight: 2, from: 2 },
@@ -124,7 +131,7 @@ export const ENDLESS: LevelDef = {
     { id: 'tracteur', weight: 1, from: 7 },
     { id: 'cnews', weight: 1, from: 8 },
   ],
-  starsFrom: 3, bosses: 1, guests: ['trump', 'hugo', 'lucet', 'squeezie', 'durif'], firstWaveAt: 24, waveGap: 25, slots: 6, reinforcements: true, endless: true,
+  starsFrom: 3, bosses: 1, guests: ['trump', 'hugo', 'lucet', 'squeezie', 'durif', 'lisnard'], firstWaveAt: 24, waveGap: 25, slots: 6, reinforcements: true, endless: true,
 };
 
 export function levelDef(id: number): LevelDef {

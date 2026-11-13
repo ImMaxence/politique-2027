@@ -162,6 +162,13 @@ const PROPS: Record<string, string> = {
     <rect x="90.500" y="99" width="20" height="13" rx="2" fill="#e5383b" ${s(2.2)}/>
     <text x="100.500" y="109.500" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="11" fill="${PAPER}">?</text>
     <circle cx="100.500" cy="90" r="9" fill="#aab6cc" ${s(2.4)}/><path d="M93 90h15M100.500 82.500v15" ${thin('rgba(23,32,63,.35)', 1.6)}/></g>`,
+  // David Lisnard: the mayor's tricolour sash, and the red carpet rolled under his arm.
+  mayor: `<path d="M38 97l54 36" fill="none" stroke="${INK}" stroke-width="18" stroke-linecap="butt"/>
+    <path d="M40.500 93.300l54 36" fill="none" stroke="#2f5fe0" stroke-width="5"/><path d="M38 97l54 36" fill="none" stroke="${PAPER}" stroke-width="5"/>
+    <path d="M35.500 100.700l54 36" fill="none" stroke="#e5383b" stroke-width="5"/>
+    <circle cx="90" cy="131" r="4.500" fill="#ffd23f" ${s(1.8)}/><path d="M87 135l-2 7M90 136v7M93 135l2 7" ${thin('#c98a00', 2)}/>
+    <g transform="rotate(-62 104 108)"><rect x="84" y="99" width="42" height="17" rx="8" fill="#c62f3a" ${s(2.4)}/>
+    <ellipse cx="124" cy="107.500" rx="4.500" ry="8.500" fill="#e5383b" ${s(2)}/><path d="M124 103.500a3 4 0 0 1 0 8" ${thin('#8b1c24', 1.6)}/></g>`,
   // Sylvain Durif: the pan flute.
   panflute: `<g transform="rotate(-8 100 108)" ${s(2.2)}>${[0, 1, 2, 3, 4].map((i) => `<rect x="${84 + i * 7}" y="${92 + i * 2}" width="6.500" height="${34 - i * 4}" rx="2" fill="#d9b382"/>`).join('')}
     <path d="M82 104h38" fill="none" stroke="#8a5a3c" stroke-width="4"/></g><path d="M118 88c3-3 6-1 5 2s-5 3-5-2zM124 100c3-2 5 0 4 2" ${thin(INK, 2)}/>`,
@@ -212,6 +219,7 @@ const LOOKS: Record<string, Look> = {
   // ── The guests
   squeezie: { skin: '#f3c9a5', face: 'oval', hair: 'quiff', hairColor: '#5a3d2b', brows: '#3f2a1c', nose: 'small', mouth: 'grin', stubble: true, outfit: 'casual', jacket: '#2b2f3a', shirt: '#e5383b', prop: 'story' },
   durif: { skin: '#efc19c', face: 'long', hair: 'long', hairColor: '#6b5a4a', brows: '#4a3d30', nose: 'long', mouth: 'smile', beard: '#6b5a4a', outfit: 'coat', jacket: '#fbfaf5', shirt: '#e9e2d0', prop: 'panflute' },
+  lisnard: { skin: '#efc19c', face: 'long', hair: 'side', hairColor: '#3b2e26', brows: '#2e2520', nose: 'long', mouth: 'smile', ears: 5.5, outfit: 'open', jacket: NAVY, shirt: WHITE, prop: 'mayor' },
   lucet: { skin: '#f4cfae', face: 'oval', hair: 'swept', hairColor: '#e8d29c', brows: '#a88a50', browStyle: 'arched', nose: 'small', mouth: 'smirk', outfit: 'open', jacket: '#232733', shirt: WHITE, prop: 'doorstep' },
   hugo: { skin: '#f4cfae', face: 'oval', hair: 'side', hairColor: '#4a3626', brows: '#3a2a1c', eyes: 'wide', eyeColor: '#5b4030', nose: 'small', mouth: 'smile', stubble: true, outfit: 'open', jacket: '#3a4a6b', shirt: WHITE, prop: 'mic' },
   trump: { skin: '#f3a96b', face: 'square', hair: 'swoop', hairColor: '#f6cf62', brows: '#e9c46a', browStyle: 'angry', eyes: 'narrow', eyePatch: '#fbe0c6', nose: 'round', mouth: 'pout', wrinkles: true, jacket: NAVY, shirt: WHITE, tie: '#e5383b', longTie: true, prop: 'pricetag' },
@@ -548,6 +556,40 @@ const STREET: Record<string, () => string> = {
     <path d="M43 52l12 2M65 54l12-2" ${thin('#3a2c20', 3)}/>
     <ellipse cx="60" cy="76" rx="7" ry="5" fill="#5b1220" ${s(2.2)}/>
     <path d="M40 68q20 26 40 0" fill="rgba(60,45,35,.2)"/>`,
+
+  // Trade unionist (no union in particular): red bib, cap and a strike flag.
+  syndicat: () => `${stick}
+    <path d="M24 134c0-24 12-36 27-38h18c15 2 27 14 27 38z" fill="#4a5263" ${s()}/>
+    <path d="M36 100c4-3 9-5 15-5l9 12 9-12c6 0 11 2 15 5l4 34H32z" fill="#e5383b" ${s(2.6)}/>
+    <path d="M60 107v27" fill="none" ${s(2.2)}/><path d="M38 116h44" fill="none" stroke="${PAPER}" stroke-width="4"/>
+    <rect x="52" y="82" width="16" height="14" rx="4" fill="#f0c7a4" ${s(2.4)}/>
+    <ellipse cx="60" cy="61" rx="24" ry="26" fill="#f0c7a4" ${s()}/>
+    <path d="M36 52c0-14 10-23 24-23s24 9 24 23z" fill="#e5383b" ${s()}/><path d="M60 52h30c3 0 5 2 5 4H60z" fill="#e5383b" ${s(2.4)}/>
+    <ellipse cx="51" cy="62" rx="2.800" ry="3.600" fill="${INK}"/><ellipse cx="69" cy="62" rx="2.800" ry="3.600" fill="${INK}"/>
+    <path d="M44 56l11 1M65 57l11-1" ${thin('#4a3626', 2.8)}/>
+    <ellipse cx="60" cy="76" rx="7" ry="5.500" fill="#5b1220" ${s(2.2)}/>
+    <path d="M40 68q20 24 40 0" fill="rgba(60,45,35,.18)"/>
+    <path d="M104 142V58" fill="none" stroke="${INK}" stroke-width="6" stroke-linecap="round"/><path d="M104 142V58" fill="none" stroke="${WOOD}" stroke-width="2.800" stroke-linecap="round"/>
+    <path d="M104 60h14c-3 7-3 14 0 21h-14z" fill="#e5383b" ${s(2.4)}/>
+    <g transform="rotate(-8 92 78)"><rect x="70" y="60" width="44" height="22" rx="3" fill="#e5383b" ${s(2.4)}/>
+    <text x="92" y="76" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="12" fill="${PAPER}">GRÈVE</text></g>`,
+
+  // Minimum-wage worker: work jacket, lunchbox, and the pay slip that does not stretch to the end of the month.
+  smicard: () => `${stick}
+    <path d="M24 134c0-24 12-36 27-38h18c15 2 27 14 27 38z" fill="#2f4a7a" ${s()}/>
+    <path d="M49 96l11 14 11-14" fill="#d9d2c2" ${s(2.2)}/><path d="M60 110v24" fill="none" ${s(2)}/>
+    <rect x="66" y="114" width="14" height="10" rx="2" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2"/>
+    <rect x="52" y="82" width="16" height="14" rx="4" fill="#e9b48f" ${s(2.4)}/>
+    <ellipse cx="60" cy="61" rx="24" ry="26" fill="#e9b48f" ${s()}/>
+    <path d="M35 54c-1-15 10-25 25-25s26 10 25 25c-8-4-16-6-25-6s-17 2-25 6z" fill="#5b6270" ${s()}/>
+    <path d="M36 52h48" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2.400"/>
+    <ellipse cx="51" cy="62" rx="2.800" ry="3.600" fill="${INK}"/><ellipse cx="69" cy="62" rx="2.800" ry="3.600" fill="${INK}"/>
+    <path d="M46 68q5 3 10 0M64 68q5 3 10 0" fill="none" stroke="rgba(23,32,63,.4)" stroke-width="1.800" stroke-linecap="round"/>
+    <path d="M52 77q8 4 16-1" fill="none" ${s(2.4)}/>
+    <g transform="rotate(-6 22 116)"><rect x="4" y="104" width="34" height="24" rx="5" fill="#aab6cc" ${s(2.4)}/><path d="M4 112h34" fill="none" ${s(2)}/><path d="M14 104v-5h14v5" fill="none" ${s(2.4)}/></g>
+    <g transform="rotate(10 100 104)"><path d="M84 84h32v40H84z" fill="${PAPER}" ${s(2.4)}/>
+    <text x="100" y="97" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="9.500" fill="${INK}">SMIC</text>
+    <path d="M89 104h22M89 110h22M89 116h14" ${thin('#9aa3b8', 2)}/></g>`,
 
   // Farmer: straw hat, overalls and a pitchfork (a prop, nobody gets hurt).
   agriculteur: () => `${stick}

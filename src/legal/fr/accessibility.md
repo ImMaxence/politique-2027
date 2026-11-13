@@ -52,7 +52,7 @@ Les sites tiers vers lesquels le site renvoie (GitHub, site de l'auteur) sont ho
 
 ## Établissement de cette déclaration
 
-- Déclaration établie le 12 novembre 2026 avec la version 1.0.0, mise à jour avec la version 1.3.0.
+- Déclaration établie le 12 novembre 2026 avec la version 1.0.0, mise à jour avec la version 1.4.0.
 - Technologies utilisées : HTML, CSS, JavaScript (Astro), SVG, Canvas et Web Audio.
 - Environnement de test : navigateur Chromium récent piloté par Playwright, en affichage ordinateur et mobile.
 

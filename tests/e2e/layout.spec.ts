@@ -131,32 +131,35 @@ for (const [width, height] of [
   });
 }
 
-// Desktop: the fullest toolbar (eight cards, the longest trump-card name) stays on one row,
-// and the whole match — toolbar, board, keyboard help — is in view once it starts.
-for (const [width, height, rows] of [
-  [1440, 900, 1],
-  [1920, 1080, 1],
-  [1280, 720, 2],
-  [1024, 768, 2],
+// Any landscape window, from a phone to a monitor: the tickets on the left and the board
+// fill the window from edge to edge, the whole match is in view and nothing is cut short.
+for (const [width, height] of [
+  [1440, 900],
+  [1920, 1080],
+  [1280, 720],
+  [1024, 768],
+  [937, 382],
 ]) {
-  test(`${width}×${height}: the toolbar takes ${rows} row(s) and the match fits the window`, async ({ page }) => {
+  test(`${width}×${height}: tickets and board fill the window edge to edge`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await openGame(page, 'fr');
     await startMatch(page, 'droite', 7);
-    await expect(page.locator('#game')).not.toHaveClass(/is-compact/);
-    const tops = await page
-      .locator('.hud__res, .hud .card, .hud .tool, .hud__status, .hud__sys')
-      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2)));
-    // Controls on the same row share (roughly) the same centre line.
-    const lines = tops.sort((a, b) => a - b).filter((top, i, all) => i === 0 || top - all[i - 1] > 30);
-    expect(lines).toHaveLength(rows);
-    expect(await page.locator('.hud__cards').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await expect(page.locator('#game')).toHaveClass(/is-compact/);
+    const page_w = await page.evaluate(() => document.documentElement.clientWidth);
+    const stage = (await page.locator('.stage').boundingBox())!;
+    const tickets = (await page.locator('.hud__cards').boundingBox())!;
+    expect(tickets.x).toBeLessThanOrEqual(8);
+    expect(stage.x + stage.width).toBeGreaterThanOrEqual(page_w - 8);
+    expect(tickets.x + tickets.width).toBeLessThanOrEqual(stage.x);
+    // The board uses (nearly) the whole height or the whole width, whichever runs out first.
+    expect(stage.y).toBeGreaterThanOrEqual(-1);
+    expect(stage.y + stage.height).toBeLessThanOrEqual(height + 1);
     for (const chip of await page.locator('.card__type').all()) {
       expect(await chip.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     }
-    const game = (await page.locator('#game').boundingBox())!;
-    expect(game.y).toBeGreaterThanOrEqual(-1);
-    expect(game.y + game.height).toBeLessThanOrEqual(height);
+    const last = (await page.locator('[data-cell]').last().boundingBox())!;
+    expect(last.x + last.width).toBeLessThanOrEqual(stage.x + stage.width);
+    expect(last.y + last.height).toBeLessThanOrEqual(stage.y + stage.height);
     expect(await overflow(page)).toBeLessThanOrEqual(0);
   });
 }

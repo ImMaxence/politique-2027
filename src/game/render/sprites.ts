@@ -11,7 +11,13 @@ export interface Sprite {
   h: number;
 }
 
-const RASTER_SCALE = 2;
+/**
+ * Bitmap resolution of the puppets. A big, dense screen (a Retina laptop, a 4K
+ * monitor) shows them much larger than a phone does: rasterise them finer there,
+ * and keep phones on the lighter setting.
+ */
+const RASTER_SCALE =
+  typeof window !== 'undefined' && (window.devicePixelRatio || 1) * Math.max(window.screen.width, window.screen.height) > 2600 ? 3 : 2;
 
 /** Logical sprite widths; heights follow each SVG's aspect ratio. */
 const WIDTH: Record<string, number> = { bus: 184, tracteur: 172, cnews: 176, auto: 150, cat: 62, poubelle: 76 };

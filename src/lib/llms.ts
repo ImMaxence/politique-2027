@@ -14,7 +14,7 @@ import { SITE_STRINGS } from '../i18n/site';
 const SUMMARY =
   'Politique 2027 is a free, open-source satirical lane-defense (tower defense) browser game about the 2027 French presidential race. ' +
   'The player picks one of four camps — the Left, the Centre, the Right or "the Others" — and places caricatures of French public figures, each with a power and catchphrases based on their famous lines, to stop the three other camps from reaching the steps of the Élysée palace. ' +
-  'Events from the news join in as generic twists — school blockades, burning bins, motorists facing high petrol prices, farmers and tractors, taxes withheld at source, family-benefit transfers, CAC 40 bosses, a rolling-news broadcast van — along with five guests: Donald Trump and his tariffs, the interviewer HugoDécrypte, the investigative journalist Élise Lucet, the video maker Squeezie and the self-styled "Cosmic Christ" candidate Sylvain Durif. ' +
+  'Events from the news join in as generic twists — school blockades, burning bins, motorists facing high petrol prices, farmers and tractors, taxes withheld at source, family-benefit transfers, CAC 40 bosses and the Zucman tax, union marches, minimum-wage workers to win over, a rolling-news broadcast van — along with six guests: Donald Trump and his tariffs, the interviewer HugoDécrypte, the investigative journalist Élise Lucet, the video maker Squeezie, the self-styled "Cosmic Christ" candidate Sylvain Durif and the mayor of Cannes and declared candidate David Lisnard. ' +
   'It is available in French and English, needs no account, has no ads, cookies or trackers, and is playable with a mouse, touch, keyboard or screen reader.';
 
 function links(): string {
@@ -52,7 +52,7 @@ const FACTS = [
   '- Languages: French (default) and English',
   '- Price: free. No sign-up, no ads, no in-app purchases',
   '- Platforms: any recent desktop or mobile browser; nothing to install. On phones the match is played in landscape',
-  '- Content: 4 camps, 24 playable characters, 2 shared reinforcements, 5 guests, 7 campaign levels with their own stage sets, 1 endless mode',
+  '- Content: 4 camps, 24 playable characters, 2 shared reinforcements, 6 guests, 7 campaign levels with their own stage sets, 1 endless mode',
   '- Card types: Money, Attack, Effect, Defence',
   `- Author: ${SITE.author.name} (${SITE.author.url})`,
   `- Licence: MIT. Source: ${SITE.repo}`,

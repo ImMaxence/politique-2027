@@ -94,9 +94,10 @@ function castSheet(): string {
       .join('');
   return html(
     `<main>${rows}<section><h2 class="display"><span style="background:#f3ecdd;color:#141a36">Guests, reinforcements and extras</span></h2>
-      <div class="row extras">${sheet(['trump', 'hugo', 'lucet', 'squeezie', 'durif', 'crs', 'pompiers'])}</div>
-      <div class="row extras">${sheet(['lyceen', 'gilet', 'agriculteur', 'impots', 'patron', 'auto', 'poubelle'])}</div>
-      <div class="row extras">${sheet(['militant', 'placard', 'pundit', 'cnews', 'tracteur', 'bus', 'cat'])}</div></section></main>`,
+      <div class="row extras">${sheet(['trump', 'hugo', 'lucet', 'squeezie', 'durif', 'lisnard', 'crs'])}</div>
+      <div class="row extras">${sheet(['pompiers', 'lyceen', 'gilet', 'syndicat', 'smicard', 'agriculteur', 'impots'])}</div>
+      <div class="row extras">${sheet(['patron', 'militant', 'placard', 'pundit', 'auto', 'poubelle', 'cat'])}</div>
+      <div class="row extras">${sheet(['cnews', 'tracteur', 'bus'])}</div></section></main>`,
     `main { width: 1280px; padding: 36px 40px 28px; background-color: #141a36;
         background-image: radial-gradient(rgba(243,236,221,.13) 1.6px, transparent 1.8px); background-size: 14px 14px; }
       section { margin-bottom: 26px; }

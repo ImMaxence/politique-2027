@@ -6,7 +6,10 @@
  */
 import { COLS, ROWS } from '../data/levels';
 import type { SceneId } from '../data/types';
-import { BOARD_H, BOARD_W, BOARD_X, BOARD_Y, CELL_H, CELL_W, VIEW_H, VIEW_W, laneTop } from './layout';
+import { BOARD_H, BOARD_W, BOARD_X, BOARD_Y, CELL_H, CELL_W, SCENE_LEFT, SCENE_W, VIEW_H, VIEW_W, laneTop } from './layout';
+
+/** Left edge of the painted scene: the building's front goes on beyond the steps. */
+const X0 = -SCENE_LEFT;
 import { INK } from './portraits';
 
 type Ctx = CanvasRenderingContext2D;
@@ -77,10 +80,10 @@ function box(g: Ctx, x: number, y: number, w: number, h: number, fill: string, r
 function bunting(g: Ctx): void {
   const colors = [BLUE, PAPER, RED];
   g.beginPath();
-  g.moveTo(0, 6);
+  g.moveTo(X0, 6);
   g.lineTo(VIEW_W, 6);
   outline(g, 2);
-  for (let i = 0; i < 43; i++) {
+  for (let i = -6; i < 43; i++) {
     const x = i * 30;
     g.beginPath();
     g.moveTo(x, 6);
@@ -95,10 +98,10 @@ function bunting(g: Ctx): void {
 
 function wallBand(g: Ctx, pal: Palette, from = 34): void {
   g.fillStyle = pal.wall;
-  g.fillRect(0, from, VIEW_W, BOARD_Y - from);
+  g.fillRect(X0, from, SCENE_W, BOARD_Y - from);
   g.fillStyle = pal.wallShade;
-  g.fillRect(0, from, VIEW_W, 10);
-  g.fillRect(0, BOARD_Y - 12, VIEW_W, 12);
+  g.fillRect(X0, from, SCENE_W, 10);
+  g.fillRect(X0, BOARD_Y - 12, SCENE_W, 12);
 }
 
 // ───────────────────────────── stage sets ─────────────────────────────
@@ -107,7 +110,7 @@ function palace(g: Ctx, pal: Palette): void {
   if (pal.dark) {
     const rnd = noise(5);
     g.fillStyle = 'rgba(255,255,255,.8)';
-    for (let i = 0; i < 40; i++) g.fillRect(rnd() * VIEW_W, rnd() * 34, 2, 2);
+    for (let i = 0; i < 46; i++) g.fillRect(X0 + rnd() * SCENE_W, rnd() * 34, 2, 2);
   }
   wallBand(g, pal);
   for (let i = 0; i < COLS; i++) {
@@ -137,7 +140,7 @@ function village(g: Ctx): void {
   const fronts = ['#f6e6c8', '#f3cdbd', '#dfe9d2', '#f9efd9', '#e6d7ee', '#f6e6c8', '#f3cdbd', '#dfe9d2', '#f9efd9', '#e6d7ee'];
   const roofs = ['#b5533c', '#8a5a44', '#a8463a'];
   // A row of village houses…
-  for (let i = 0; i < 11; i++) {
+  for (let i = -2; i < 11; i++) {
     const x = i * 122 - 30;
     const top = 58 + (i % 3) * 7;
     box(g, x, top, 122, BOARD_Y - top, fronts[i % fronts.length]);
@@ -232,14 +235,14 @@ function show(g: Ctx, pal: Palette): void {
   g.strokeStyle = '#8a6a3a';
   g.lineWidth = 8;
   g.beginPath();
-  for (let x = 60; x < VIEW_W; x += 160) {
+  for (let x = -260; x < VIEW_W; x += 160) {
     g.moveTo(x, 0);
     g.lineTo(x + 80, 30);
     g.lineTo(x + 160, 0);
   }
   g.stroke();
   const pennants = ['#3c8a57', GOLD, PAPER];
-  for (let i = 0; i < 43; i++) {
+  for (let i = -6; i < 43; i++) {
     g.beginPath();
     g.moveTo(i * 30, 34);
     g.lineTo(i * 30 + 26, 34);
@@ -253,9 +256,9 @@ function show(g: Ctx, pal: Palette): void {
   [250, 470, 820, 1040].forEach((x, i) => cow(g, x, 82, i % 2 === 1));
   // Fence
   g.fillStyle = '#a8744e';
-  for (let x = 0; x < VIEW_W; x += 58) box(g, x + 4, 88, 12, BOARD_Y - 88, '#a8744e', 2, 2.5);
-  box(g, 0, 98, VIEW_W, 10, '#b98558', 0, 2.5);
-  box(g, 0, 114, VIEW_W, 10, '#b98558', 0, 2.5);
+  for (let x = -174; x < VIEW_W; x += 58) box(g, x + 4, 88, 12, BOARD_Y - 88, '#a8744e', 2, 2.5);
+  box(g, X0, 98, SCENE_W, 10, '#b98558', 0, 2.5);
+  box(g, X0, 114, SCENE_W, 10, '#b98558', 0, 2.5);
   // Hay bales
   for (const x of [20, 1150]) {
     box(g, x, 74, 96, 52, '#e6c15a', 10);
@@ -273,15 +276,15 @@ function show(g: Ctx, pal: Palette): void {
 function street(g: Ctx, pal: Palette): void {
   // Zinc roofs and chimneys
   g.fillStyle = '#8f9bb0';
-  g.fillRect(0, 0, VIEW_W, 26);
-  for (let x = 70; x < VIEW_W; x += 190) box(g, x, 2, 26, 22, '#b5533c', 2, 2.5);
+  g.fillRect(X0, 0, SCENE_W, 26);
+  for (let x = -120; x < VIEW_W; x += 190) box(g, x, 2, 26, 22, '#b5533c', 2, 2.5);
   g.beginPath();
-  g.moveTo(0, 26);
+  g.moveTo(X0, 26);
   g.lineTo(VIEW_W, 26);
   outline(g);
   wallBand(g, pal, 26);
   // Tall windows with wrought-iron balconies
-  for (let i = 0; i < 22; i++) {
+  for (let i = -3; i < 22; i++) {
     const x = 14 + i * 58;
     box(g, x, 38, 30, 40, '#5f6f8f', [8, 8, 2, 2], 2.5);
     g.strokeStyle = pal.wall;
@@ -303,7 +306,7 @@ function street(g: Ctx, pal: Palette): void {
   }
   // Shop fronts and striped awnings
   const awnings = [RED, '#3c8a57', BLUE, GOLD];
-  for (let i = 0; i < 8; i++) {
+  for (let i = -1; i < 8; i++) {
     const x = 10 + i * 160;
     box(g, x, 96, 140, BOARD_Y - 96, '#3a3f4b', 0, 2.5);
     box(g, x + 8, 104, 124, BOARD_Y - 108, '#dff1ff', 0, 2);
@@ -418,7 +421,7 @@ function flag(g: Ctx, x: number, y: number, kind: number): void {
 function summit(g: Ctx, pal: Palette): void {
   wallBand(g, pal);
   // Colonnade
-  for (let x = 30; x < VIEW_W; x += 116) box(g, x, 44, 22, BOARD_Y - 56, '#fffaf0', 4, 2.5);
+  for (let x = -202; x < VIEW_W; x += 116) box(g, x, 44, 22, BOARD_Y - 56, '#fffaf0', 4, 2.5);
   // One flag per lane column
   for (let i = 0; i < COLS; i++) {
     const x = BOARD_X + i * CELL_W + CELL_W / 2;
@@ -542,11 +545,77 @@ function entrance(g: Ctx, pal: Palette): void {
 
 // ───────────────────────────── entry point ─────────────────────────────
 
+/**
+ * A closed lane is a public garden: a mown lawn in stripes, a low hedge along each
+ * edge and a bed of flowers. (Scenes that are not outdoors get the stripes only.)
+ */
+function closedLane(g: Ctx, scene: SceneId, pal: Palette, lane: number): void {
+  const top = laneTop(lane);
+  g.fillStyle = pal.closed;
+  g.fillRect(BOARD_X, top, BOARD_W, CELL_H);
+  for (let col = 0; col < COLS; col++) {
+    g.fillStyle = col % 2 ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.08)';
+    g.fillRect(BOARD_X + col * CELL_W, top, CELL_W, CELL_H);
+  }
+  const garden = scene === 'mairie' || scene === 'elysee' || scene === 'elysee-nuit';
+  if (!garden) return;
+  const hedge = pal.dark ? '#24553a' : '#3f7d45';
+  for (const y of [top + 4, top + CELL_H - 22]) {
+    box(g, BOARD_X + 8, y, BOARD_W - 16, 18, hedge, 9, 2.5);
+    g.fillStyle = 'rgba(255,255,255,.18)';
+    for (let x = BOARD_X + 22; x < BOARD_X + BOARD_W - 20; x += 26) g.fillRect(x, y + 5, 10, 3);
+  }
+  // A row of flowers down the middle of the bed.
+  const petals = [RED, GOLD, PAPER, '#ff8fb1'];
+  const rnd = noise(lane + 31);
+  for (let x = BOARD_X + 30; x < BOARD_X + BOARD_W - 20; x += 38) {
+    const y = top + CELL_H / 2 + (rnd() - 0.5) * 14;
+    g.fillStyle = petals[Math.floor(rnd() * petals.length)];
+    for (let p = 0; p < 5; p++) {
+      const a = (p * Math.PI * 2) / 5;
+      g.beginPath();
+      g.arc(x + Math.cos(a) * 5, y + Math.sin(a) * 5, 4, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.fillStyle = GOLD;
+    g.beginPath();
+    g.arc(x, y, 3, 0, Math.PI * 2);
+    g.fill();
+  }
+}
+
+/** The building's front, to the left of the doors: pilasters and tall windows. */
+function facade(g: Ctx, pal: Palette): void {
+  g.fillStyle = pal.wall;
+  g.fillRect(X0, BOARD_Y, 40 - X0, BOARD_H);
+  for (const x of [X0 + 12, X0 + 92]) {
+    g.fillStyle = pal.wallShade;
+    g.fillRect(x, BOARD_Y, 16, BOARD_H);
+    g.beginPath();
+    g.moveTo(x, BOARD_Y);
+    g.lineTo(x, BOARD_Y + BOARD_H);
+    g.moveTo(x + 16, BOARD_Y);
+    g.lineTo(x + 16, BOARD_Y + BOARD_H);
+    outline(g, 2);
+  }
+  for (let lane = 0; lane < ROWS; lane++) {
+    for (const x of [X0 + 42, X0 + 122]) {
+      box(g, x, laneTop(lane) + 18, 34, CELL_H - 36, pal.dark ? '#f6d77a' : '#9fc3e0', [16, 16, 2, 2], 2.5);
+      g.strokeStyle = pal.wall;
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(x + 17, laneTop(lane) + 22);
+      g.lineTo(x + 17, laneTop(lane) + CELL_H - 18);
+      g.stroke();
+    }
+  }
+}
+
 /** Paints a full backdrop in logical coordinates (the caller sets the scale). */
 export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: string | null): void {
   const pal = PALETTES[scene];
   g.fillStyle = pal.sky;
-  g.fillRect(0, 0, VIEW_W, VIEW_H);
+  g.fillRect(X0, 0, SCENE_W, VIEW_H);
 
   switch (scene) {
     case 'mairie': village(g); break;
@@ -557,7 +626,7 @@ export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: st
     default: palace(g, pal);
   }
   g.beginPath();
-  g.moveTo(0, BOARD_Y);
+  g.moveTo(X0, BOARD_Y);
   g.lineTo(VIEW_W, BOARD_Y);
   outline(g);
 
@@ -570,17 +639,7 @@ export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: st
   }
   floorDetails(g, scene, lanes);
   for (let lane = 0; lane < ROWS; lane++) {
-    if (lanes.includes(lane)) continue;
-    // Closed lanes are hedged off.
-    g.fillStyle = pal.closed;
-    g.fillRect(BOARD_X, laneTop(lane), BOARD_W, CELL_H);
-    g.fillStyle = 'rgba(0,0,0,.12)';
-    const rnd = noise(lane + 11);
-    for (let i = 0; i < 70; i++) {
-      g.beginPath();
-      g.arc(BOARD_X + rnd() * BOARD_W, laneTop(lane) + rnd() * CELL_H, 10 + rnd() * 16, 0, Math.PI * 2);
-      g.fill();
-    }
+    if (!lanes.includes(lane)) closedLane(g, scene, pal, lane);
   }
   g.strokeStyle = pal.line;
   g.lineWidth = 2;
@@ -591,6 +650,7 @@ export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: st
     g.lineTo(BOARD_X + col * CELL_W, BOARD_Y + BOARD_H);
   }
   for (let lane = 1; lane < ROWS; lane++) {
+    if (!lanes.includes(lane) && !lanes.includes(lane - 1)) continue;
     g.moveTo(BOARD_X, laneTop(lane));
     g.lineTo(BOARD_X + BOARD_W, laneTop(lane));
   }
@@ -602,8 +662,7 @@ export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: st
     g.fillStyle = color;
     g.fillRect(40 + i * 44, BOARD_Y, 44, BOARD_H);
   });
-  g.fillStyle = pal.wall;
-  g.fillRect(0, BOARD_Y, 40, BOARD_H);
+  facade(g, pal);
   for (const lane of lanes) {
     g.fillStyle = pal.carpet;
     g.fillRect(40, laneTop(lane) + 36, BOARD_X - 40, CELL_H - 72);
@@ -622,9 +681,9 @@ export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: st
 
   // Bottom border
   g.fillStyle = pal.border;
-  g.fillRect(0, BOARD_Y + BOARD_H, VIEW_W, VIEW_H - BOARD_Y - BOARD_H);
+  g.fillRect(X0, BOARD_Y + BOARD_H, SCENE_W, VIEW_H - BOARD_Y - BOARD_H);
   g.beginPath();
-  g.moveTo(0, BOARD_Y + BOARD_H);
+  g.moveTo(X0, BOARD_Y + BOARD_H);
   g.lineTo(VIEW_W, BOARD_Y + BOARD_H);
   outline(g);
 
@@ -646,8 +705,8 @@ export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: st
 
   // Paper grain
   const rnd = noise(2027);
-  for (let i = 0; i < 2200; i++) {
+  for (let i = 0; i < 2500; i++) {
     g.fillStyle = rnd() > 0.5 ? 'rgba(255,255,255,.05)' : 'rgba(23,32,63,.035)';
-    g.fillRect(rnd() * VIEW_W, rnd() * VIEW_H, 2, 2);
+    g.fillRect(X0 + rnd() * SCENE_W, rnd() * VIEW_H, 2, 2);
   }
 }

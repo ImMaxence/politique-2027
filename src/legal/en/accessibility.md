@@ -52,7 +52,7 @@ Third-party sites the site links to (GitHub, the author's website) are outside t
 
 ## Preparation of this statement
 
-- Statement prepared on 12 November 2026 with version 1.0.0, updated with version 1.3.0.
+- Statement prepared on 12 November 2026 with version 1.0.0, updated with version 1.4.0.
 - Technologies used: HTML, CSS, JavaScript (Astro), SVG, Canvas and Web Audio.
 - Test environment: a recent Chromium browser driven by Playwright, in desktop and mobile layouts.
 

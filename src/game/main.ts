@@ -46,10 +46,11 @@ class GameApp {
   /** A phone held upright: the match is then drawn sideways so that it must be turned. */
   private phonePortrait = window.matchMedia('(orientation: portrait) and (max-width: 44rem) and (pointer: coarse)');
   /**
-   * A phone held sideways, or any short and wide window (a small laptop): the cards
-   * become a side column and the board takes the whole height.
+   * Any window wider than it is tall — a phone held sideways, a laptop, a monitor:
+   * the cards become a side column and the board fills the rest of the screen.
+   * (Upright windows keep the toolbar above the board.)
    */
-  private shortLandscape = window.matchMedia('(max-height: 42rem) and (orientation: landscape)');
+  private shortLandscape = window.matchMedia('(orientation: landscape)');
   private clock = 0;
   private lastFrame = 0;
   private accumulator = 0;
@@ -113,6 +114,7 @@ class GameApp {
     this.root.dataset.ready = 'true';
 
     new ResizeObserver(() => this.renderer.resize()).observe(this.stage);
+    window.addEventListener('resize', () => this.syncPageWidth());
     requestAnimationFrame((now) => this.frame(now));
     this.installTestHook();
   }
@@ -255,10 +257,19 @@ class GameApp {
     this.root.classList.toggle('is-forced', forced);
     this.root.classList.toggle('is-compact', compact);
     document.documentElement.classList.toggle('game-locked', forced);
+    this.syncPageWidth();
     this.renderer.setCompact(compact);
-    // Bring the board to the top of short screens, then match the canvas to its new box.
-    if (compact && !forced) this.screens.match.scrollIntoView({ block: 'start', behavior: 'instant' });
+    // The match takes the whole screen (see game.css): bring it into view, then match the canvas to its new box.
+    if (compact && !forced) this.root.scrollIntoView({ block: 'start', behavior: 'instant' });
     this.renderer.resize();
+  }
+
+  /**
+   * The side layout spans the whole page, edge to edge. CSS viewport units count the
+   * scrollbar of a desktop browser, so the usable width is measured here instead.
+   */
+  private syncPageWidth(): void {
+    this.root.style.setProperty('--page-w', `${document.documentElement.clientWidth}px`);
   }
 
   private buildCards(state: GameState): void {
@@ -777,6 +788,13 @@ class GameApp {
         case 'caf':
           if (e.amount > 0) this.audio.play('coin');
           this.say(e.amount > 0 ? fmt(a.cafPaid, { n: e.amount }) : a.cafLate);
+          break;
+        case 'zucman':
+          if (e.adopted) this.audio.play('coin');
+          this.say(e.adopted ? fmt(a.zucmanPassed, { n: e.amount }) : a.zucmanOff);
+          break;
+        case 'wonOver':
+          this.audio.play('coin');
           break;
         case 'ultimate':
           this.audio.play('ult');

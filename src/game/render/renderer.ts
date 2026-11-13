@@ -3,11 +3,11 @@
  * It reads the simulation state, never writes to it.
  */
 import { fmt, type GameStrings } from '../../i18n/game';
-import { ROWS } from '../data/levels';
+import { COLS, ROWS } from '../data/levels';
 import type { ProjectileKind } from '../data/types';
 import { CAMPS, UNITS } from '../data/units';
-import { canPlace, type Enemy, type GameEvent, type GameState, type Projectile, type Unit } from '../sim/engine';
-import { BOARD_W, BOARD_X, CELL_H, CELL_W, VIEW_H, VIEW_W, feetY, laneTop, xToPx } from './layout';
+import { ZUCMAN_SHARE, canPlace, type Enemy, type GameEvent, type GameState, type Projectile, type Unit } from '../sim/engine';
+import { BOARD_W, BOARD_X, CELL_H, CELL_W, FIGURE_SCALE, SCENE_LEFT, SCENE_W, VIEW_H, VIEW_W, feetY, laneTop, xToPx } from './layout';
 import { INK } from './portraits';
 import { paintBackdrop } from './scenes';
 import type { Sprite, SpriteStore } from './sprites';
@@ -54,6 +54,8 @@ export class Renderer {
    * captions and speech bubbles are kept inside this window rather than the canvas.
    */
   private view = { left: 0, right: VIEW_W, top: 0 };
+  /** Whether the level's sign is painted over the top of the scenery. */
+  private sign = true;
   private ctx: CanvasRenderingContext2D;
   private backdrop: HTMLCanvasElement | null = null;
   private backdropKey = '';
@@ -66,6 +68,8 @@ export class Renderer {
   private rings: Ring[] = [];
   private flashes: LaneFlash[] = [];
   private bubbles: Bubble[] = [];
+  /** Name plates and health bars, drawn after every lane so that no puppet hides them. */
+  private plates: (() => void)[] = [];
   private banner: Banner | null = null;
 
   constructor(
@@ -83,22 +87,29 @@ export class Renderer {
     const width = Math.max(480, Math.min(2560, Math.round(this.canvas.clientWidth * dpr)));
     if (this.canvas.width !== width) {
       this.canvas.width = width;
-      this.canvas.height = Math.round((width * VIEW_H) / VIEW_W);
+      this.canvas.height = Math.round((width * VIEW_H) / SCENE_W);
       this.backdropKey = '';
     }
-    this.scale = this.canvas.width / VIEW_W;
+    this.scale = this.canvas.width / SCENE_W;
 
     // Layout offsets are not affected by the quarter turn of the phone layout either.
     const frame = this.canvas.parentElement;
     const stage = frame?.parentElement;
-    const units = this.canvas.clientWidth ? VIEW_W / this.canvas.clientWidth : 1;
+    const units = this.canvas.clientWidth ? SCENE_W / this.canvas.clientWidth : 1;
     if (frame && stage && stage.clientWidth) {
-      const left = Math.max(0, -frame.offsetLeft * units);
+      const left = -SCENE_LEFT + Math.max(0, -frame.offsetLeft * units);
       this.view = {
         left,
         right: Math.min(VIEW_W, left + stage.clientWidth * units),
         top: Math.max(0, -frame.offsetTop * units),
       };
+      // The level's sign hangs in the middle of the top strip: on a wide board there is
+      // room for it between the two groups of controls, on a phone there is not.
+      const sign = !this.compact || (stage.clientWidth >= 960 && this.view.top < 50);
+      if (sign !== this.sign) {
+        this.sign = sign;
+        this.backdropKey = '';
+      }
     }
   }
 
@@ -120,7 +131,7 @@ export class Renderer {
   }
 
   private buildBackdrop(state: GameState): void {
-    const key = `${state.level.id}|${this.canvas.width}|${this.compact}`;
+    const key = `${state.level.id}|${this.canvas.width}|${this.sign}`;
     if (key === this.backdropKey && this.backdrop) return;
     this.backdropKey = key;
     const canvas = this.backdrop ?? document.createElement('canvas');
@@ -128,9 +139,9 @@ export class Renderer {
     canvas.height = this.canvas.height;
     this.backdrop = canvas;
     const g = canvas.getContext('2d')!;
-    g.setTransform(this.scale, 0, 0, this.scale, 0, 0);
+    g.setTransform(this.scale, 0, 0, this.scale, SCENE_LEFT * this.scale, 0);
     const level = this.strings.levels[state.level.id];
-    paintBackdrop(g, state.level.scene, state.level.lanes, this.compact ? null : `${level.date} · ${level.name}`);
+    paintBackdrop(g, state.level.scene, state.level.lanes, this.sign ? `${level.date} · ${level.name}` : null);
   }
 
   // ───────────────────────────── effects ─────────────────────────────
@@ -311,6 +322,20 @@ export class Renderer {
         case 'interview':
           this.float(xToPx(e.col + 0.5), feetY(e.lane) - 122, a.noComment, INK, 22, 1.6);
           break;
+        case 'picket':
+          this.float(xToPx(e.col + 0.5), feetY(e.lane) - 122, a.picket, RED, 24, 1.4);
+          break;
+        case 'wonOver':
+          this.confetti(xToPx(e.x), feetY(e.lane) - 60, GOLD, 12);
+          this.float(xToPx(e.x), feetY(e.lane) - 120, fmt(a.wonOver, { n: e.amount }), '#1f7a3d', 22, 1.6);
+          break;
+        case 'zucman':
+          this.showBanner(e.adopted ? a.zucmanOn : a.zucmanOff, e.adopted ? '#1f7a3d' : INK, 2.6);
+          for (const exile of e.exiles) {
+            this.confetti(xToPx(exile.x), feetY(exile.lane) - 60, GOLD, 16);
+            this.float(xToPx(exile.x), feetY(exile.lane) - 120, fmt(a.exile, { n: ZUCMAN_SHARE }), '#8a5300', 22, 1.8);
+          }
+          break;
         case 'caf':
           // A transfer lands by the steps… or a letter says the file is incomplete.
           if (e.amount > 0) {
@@ -431,7 +456,7 @@ export class Renderer {
     const x = xToPx(unit.col + 0.5);
     const y = feetY(unit.lane);
     const ability = unit.def.ability;
-    this.shadow(x, y - 2, 36);
+    this.shadow(x, y - 2, 36 * FIGURE_SCALE);
 
     if (state.ult.frenzy > 0) {
       g.fillStyle = 'rgba(255,210,63,.45)';
@@ -462,11 +487,11 @@ export class Renderer {
     const hit = state.time - unit.lastHit;
     const flash = hit >= 0 && hit < 0.1 ? (this.reducedMotion ? 0.18 : 0.12 + 0.3 * Math.abs(Math.sin(now * 9))) : 0;
     // Removal mode: every figure is washed out and tagged with a red cross.
-    this.blit(sprite, x, y, sx, sy, rot, removing ? 0.55 : flash, removing ? 0.9 : 1);
+    this.blit(sprite, x, y, sx * FIGURE_SCALE, sy * FIGURE_SCALE, rot, removing ? 0.55 : flash, removing ? 0.9 : 1);
     if (removing) {
       const pulse = this.reducedMotion ? 1 : 1 + 0.12 * Math.sin(now * 7 + unit.id);
       g.save();
-      g.translate(x + 30, y - 104);
+      g.translate(x + 34, y - 128);
       g.scale(pulse, pulse);
       g.fillStyle = RED;
       g.strokeStyle = INK;
@@ -490,7 +515,7 @@ export class Renderer {
     if (unit.silenced > 0) {
       // Microphone cut: a crossed-out speech bubble.
       g.save();
-      g.translate(x + 30, y - 122);
+      g.translate(x + 34, y - 146);
       g.fillStyle = PAPER;
       g.strokeStyle = INK;
       g.lineWidth = 3;
@@ -534,7 +559,8 @@ export class Renderer {
     const g = this.ctx;
     const figureId = enemy.def.unitId ?? enemy.def.portrait;
     const vehicle = enemy.def.id === 'bus' || enemy.def.id === 'auto' || enemy.def.id === 'tracteur' || enemy.def.id === 'cnews';
-    const size = enemy.def.boss ? 1.22 : 1;
+    // Puppets are drawn bigger than their bitmap; vehicles already fill a square.
+    const size = (enemy.def.boss ? 1.12 : 1) * (vehicle ? 1 : FIGURE_SCALE);
     const y = feetY(enemy.lane);
     const striking = state.ult.strike > 0;
     const stunned = enemy.stunT > 0;
@@ -611,10 +637,14 @@ export class Renderer {
     if (figureId) {
       const name = this.strings.figures[figureId].short.toUpperCase();
       const ink = enemy.def.unitId ? CAMPS[enemy.camp].ink : '#8a5300';
-      this.label(name, x, top - (striking ? 28 : 10), enemy.def.boss ? 20 : 15, ink);
-      this.bar(x, y + 2, enemy.def.boss ? 96 : 62, enemy.hp / enemy.def.hp, RED);
+      const ratio = enemy.hp / enemy.def.hp;
+      this.plates.push(() => {
+        this.label(name, x, top - (striking ? 28 : 10), enemy.def.boss ? 20 : 15, ink);
+        this.bar(x, y + 2, enemy.def.boss ? 96 : 62, ratio, RED);
+      });
     } else if (enemy.hp < enemy.def.hp && enemy.def.hp > 200) {
-      this.bar(x, y + 2, 46, enemy.hp / enemy.def.hp, RED);
+      const ratio = enemy.hp / enemy.def.hp;
+      this.plates.push(() => this.bar(x, y + 2, 46, ratio, RED));
     }
   }
 
@@ -765,7 +795,7 @@ export class Renderer {
         }
         g.globalAlpha = 1;
         const sprite = this.sprites.unit(def.id);
-        if (sprite) this.blit(sprite, cellX + CELL_W / 2, feetY(hover.lane), 1, 1, 0, 0, 0.6);
+        if (sprite) this.blit(sprite, cellX + CELL_W / 2, feetY(hover.lane), FIGURE_SCALE, FIGURE_SCALE, 0, 0, 0.6);
       } else {
         g.fillStyle = 'rgba(229,56,59,.22)';
         g.fillRect(cellX, cellY, CELL_W, CELL_H);
@@ -901,7 +931,7 @@ export class Renderer {
     const slide = this.reducedMotion ? 0 : (1 - easeOutBack(enter)) * -90;
     g.save();
     g.globalAlpha = Math.min(enter * 1.5, leave);
-    g.translate(VIEW_W / 2, 208 + slide);
+    g.translate((this.view.left + this.view.right) / 2, 208 + slide);
     g.rotate(-0.02);
     g.font = `400 46px ${DISPLAY}`;
     const text = banner.text.toUpperCase();
@@ -986,13 +1016,13 @@ export class Renderer {
     const g = this.ctx;
     const dt = Math.max(0, Math.min(0.05, now - this.last));
     this.last = now;
-    g.setTransform(this.scale, 0, 0, this.scale, 0, 0);
+    g.setTransform(this.scale, 0, 0, this.scale, SCENE_LEFT * this.scale, 0);
     // Sprites are drawn smaller than they were rasterised: ask for the smooth resampler.
     g.imageSmoothingEnabled = true;
     g.imageSmoothingQuality = 'high';
     if (!state) {
       g.fillStyle = '#f3ecdd';
-      g.fillRect(0, 0, VIEW_W, VIEW_H);
+      g.fillRect(-SCENE_LEFT, 0, SCENE_W, VIEW_H);
       return;
     }
     this.buildBackdrop(state);
@@ -1005,7 +1035,7 @@ export class Renderer {
         g.translate((Math.random() - 0.5) * amount, (Math.random() - 0.5) * amount);
       }
     }
-    g.drawImage(this.backdrop!, 0, 0, VIEW_W, VIEW_H);
+    g.drawImage(this.backdrop!, -SCENE_LEFT, 0, SCENE_W, VIEW_H);
 
     // Lane flashes sit under the puppets.
     for (let i = this.flashes.length - 1; i >= 0; i--) {
@@ -1021,6 +1051,21 @@ export class Renderer {
     }
     g.globalAlpha = 1;
 
+    // A red carpet rolls out behind whoever brought one, under the puppets.
+    for (const enemy of state.enemies) {
+      if (enemy.def.trait?.kind !== 'carpet' || enemy.x > COLS) continue;
+      const from = xToPx(enemy.x);
+      const to = BOARD_X + BOARD_W;
+      if (to <= from) continue;
+      const top = laneTop(enemy.lane) + 34;
+      const height = CELL_H - 62;
+      g.fillStyle = 'rgba(198,47,58,.6)';
+      g.fillRect(from, top, to - from, height);
+      g.fillStyle = 'rgba(255,210,63,.85)';
+      g.fillRect(from, top, to - from, 3);
+      g.fillRect(from, top + height - 3, to - from, 3);
+    }
+
     // Warn when someone is about to reach the steps.
     for (const lane of state.level.lanes) {
       if (!state.enemies.some((e) => e.lane === lane && e.x < 1.6)) continue;
@@ -1032,7 +1077,7 @@ export class Renderer {
     // Removal mode: a dark veil falls over the board so that it is obvious something changed.
     if (view.removing) {
       g.fillStyle = 'rgba(20,26,54,.5)';
-      g.fillRect(0, 0, VIEW_W, VIEW_H);
+      g.fillRect(-SCENE_LEFT, 0, SCENE_W, VIEW_H);
     }
     this.drawSelection(state, view);
 
@@ -1042,6 +1087,8 @@ export class Renderer {
       for (const enemy of marching) this.drawEnemy(state, enemy, now, view.removing);
       for (const shot of state.projectiles) if (shot.lane === lane) this.drawProjectile(shot, now);
     }
+    for (const plate of this.plates) plate();
+    this.plates.length = 0;
 
     this.drawEffects(dt);
     this.drawBubbles(state, dt);

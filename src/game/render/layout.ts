@@ -8,6 +8,17 @@ import { COLS, ROWS } from '../data/levels';
 export const VIEW_W = 1280;
 export const VIEW_H = 720;
 
+/**
+ * The scenery goes on to the left of the steps (more of the building's front), so
+ * that a wide, short screen can be filled edge to edge. The game itself lives in
+ * 0…VIEW_W; the painted scene spans -SCENE_LEFT…VIEW_W.
+ */
+export const SCENE_LEFT = 160;
+export const SCENE_W = VIEW_W + SCENE_LEFT;
+
+/** Puppets on the board are drawn this much bigger than their rasterised size. */
+export const FIGURE_SCALE = 1.25;
+
 export const BOARD_X = 170;
 export const BOARD_Y = 128;
 export const CELL_W = 116;
@@ -29,10 +40,10 @@ export function laneTop(lane: number): number {
   return BOARD_Y + lane * CELL_H;
 }
 
-/** CSS percentages used to align the DOM grid of buttons with the canvas. */
+/** CSS percentages used to align the DOM grid of buttons with the painted scene (see game.css). */
 export const GRID_BOX = {
-  left: (BOARD_X / VIEW_W) * 100,
+  left: ((BOARD_X + SCENE_LEFT) / SCENE_W) * 100,
   top: (BOARD_Y / VIEW_H) * 100,
-  width: (BOARD_W / VIEW_W) * 100,
+  width: (BOARD_W / SCENE_W) * 100,
   height: (BOARD_H / VIEW_H) * 100,
 };
