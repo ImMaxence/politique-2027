@@ -28,6 +28,7 @@ The site has not yet been tested with a screen reader by someone who uses one ev
 - **Keyboard**: every action goes through real buttons. Keys 1 to 8 pick a figure, arrows move around the field, Enter or Space places, and R, U, P, F and M drive the tools. Shortcuts only work while focus is inside the game.
 - **Screen readers**: each square of the field is a button that describes its content (figure present, credibility, number of opponents in the lane). Waves, lost points, incoming heavyweights, tariffs and the end of the match are announced in live regions; a figure's catchphrase is read out when it is placed.
 - **Orientation**: on a phone the match is shown in landscape by default (turned a quarter turn if the device is held upright). One button in the pause menu switches this off: the game then follows the device's orientation.
+- **Zoom**: pinch-to-zoom always works. Only double-tap zoom is turned off inside the game, so that two quick taps (a card, then a square) do not enlarge the page by accident.
 - **Card types**: every card carries its type (Money, Attack, Effect, Defence) in words as well as in colour.
 - **Motion**: with the system "reduce motion" setting, screen shake is removed and effects are toned down. No full-screen flash is used.
 - **Colour**: the site has a single, dark theme, whose contrast is checked. Camps are told apart by name and not by colour alone; danger information is backed by an announcement.
@@ -51,7 +52,7 @@ Third-party sites the site links to (GitHub, the author's website) are outside t
 
 ## Preparation of this statement
 
-- Statement prepared on 12 November 2026 with version 1.0.0, updated with version 1.2.0.
+- Statement prepared on 12 November 2026 with version 1.0.0, updated with version 1.3.0.
 - Technologies used: HTML, CSS, JavaScript (Astro), SVG, Canvas and Web Audio.
 - Test environment: a recent Chromium browser driven by Playwright, in desktop and mobile layouts.
 

@@ -1,6 +1,10 @@
 import { COLS, ROWS } from '../data/levels';
 
-/** Logical canvas size; the backing store is scaled to the device. */
+/**
+ * Logical canvas size; the backing store is scaled to the device.
+ * The phone layout shows a crop of it (see `.stage__view` in game.css): keep the
+ * courtyard, the floor strip under it and room for the controls above it in view.
+ */
 export const VIEW_W = 1280;
 export const VIEW_H = 720;
 

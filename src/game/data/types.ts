@@ -57,7 +57,10 @@ export type Trait =
   /** Tariffs: every card costs more while this opponent is on the board. */
   | { kind: 'tariff'; factor: number }
   /** Tax inspector: withholds endorsements at source for as long as he is on the board. */
-  | { kind: 'tax'; interval: number; amount: number };
+  | { kind: 'tax'; interval: number; amount: number }
+  /** Investigative reporter: follows the money. Walks past every figure except the money-makers,
+   *  and a money-maker being questioned produces nothing until the interview is over. */
+  | { kind: 'investigate' };
 
 /** The four families shown on every card. */
 export type Category = 'money' | 'attack' | 'effect' | 'defence';

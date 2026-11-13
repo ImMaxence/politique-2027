@@ -12,6 +12,24 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [1.3.0] — 2026-11-13
+
+A guest who follows the money, a broadcast van that never runs out of pundits, and a bigger board on phones. Saves are untouched.
+
+### Added
+
+- **Élise Lucet, "the Investigator"**, guest of the first round (and of Cohabitation). She questions every camp the same way and follows the money: she walks straight past defenders and attackers to the figures that bring in endorsements, and while the interview lasts ("No comment!") they bring in nothing.
+- **The CNews broadcast van**, on the TV debate set, in the second round and in Cohabitation: slow, unmoved by roaring, and it drops off a fresh pundit every 4.5 seconds. "Off air!" when it is stopped.
+- Both appear in the characters page, the cast sheet, `llms.txt` and the legal notice (a television journalist and a rolling-news channel, shown against every camp alike; no channel logo is reproduced).
+
+### Changed
+
+- **A bigger board on phones**: the phone layout now crops the scenery around the courtyard (part of the building on the left, the end of the street on the right and, on short screens, some sky) instead of shrinking the whole picture. Squares are about 12% bigger each way. Captions and speech bubbles stay inside the visible part.
+
+### Fixed
+
+- **No more zooming by accident on iPhone**: two quick taps (a card, then a square) were read by Safari as a double-tap and zoomed the page. The whole game opts out of double-tap zoom; pinch-to-zoom still works.
+
 ## [1.2.0] — 2026-11-12
 
 One look — dark — and a phone layout redrawn from scratch. Saves are untouched.

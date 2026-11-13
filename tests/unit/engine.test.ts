@@ -264,6 +264,36 @@ describe('money, taxes and guests', () => {
     expect(state.resources).toBe(before - 20);
   });
 
+  it('the investigative reporter walks past every figure to question the money-makers', () => {
+    const state = createGame({ camp: 'centre', level: 6 });
+    state.resources = 1000;
+    expect(placeUnit(state, 'bayrou', 2, 0)).toBeNull(); // money
+    expect(placeUnit(state, 'philippe', 2, 4)).toBeNull(); // a wall she does not stop for
+    const reporter = spawnEnemy(state, 'lucet', 2, 'droite', 5.2)!;
+    const bayrou = state.grid[2][0]!;
+    const wall = state.grid[2][4]!;
+    run(state, 5);
+    expect(reporter.x).toBeLessThan(4.5); // straight past the wall…
+    expect(wall.hp).toBe(wall.def.hp); // …without a word to it
+    run(state, 16);
+    expect(reporter.attacking).toBe(true); // …and on to the money
+    expect(state.events.some((e) => e.type === 'interview' && e.lane === 2 && e.col === 0)).toBe(true);
+    // While the interview lasts the money-maker brings in nothing.
+    // (Unquestioned, it would have paid out within these three seconds: see the 7.5 s interval.)
+    const produced = state.stats.produced;
+    run(state, 3);
+    expect(bayrou.hp).toBeGreaterThan(0);
+    expect(bayrou.silenced).toBeGreaterThan(0);
+    expect(state.stats.produced).toBe(produced);
+  });
+
+  it('the rolling-news van keeps bringing pundits', () => {
+    const state = createGame({ camp: 'gauche', level: 4 });
+    spawnEnemy(state, 'cnews', 2, 'droite', 8.5);
+    run(state, 12);
+    expect(state.enemies.filter((e) => e.def.id === 'pundit').length).toBeGreaterThanOrEqual(2);
+  });
+
   it('the benefits office looks at the file from time to time', () => {
     const state = createGame({ camp: 'gauche', level: 2, seed: 5 });
     run(state, 100); // the first look at the file comes after 32 s, the next 38 to 58 s later

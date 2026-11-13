@@ -83,7 +83,7 @@ function castSheet(): string {
     return `<section><h2 class="display"><span style="background:${CAMPS[camp].color};color:${on}">${g.camps[camp].name}</span>
       <small>${g.camps[camp].motto}</small></h2><div class="row">${figures}</div></section>`;
   }).join('');
-  const width: Record<string, number> = { bus: 170, tracteur: 160, auto: 150, cat: 70, poubelle: 84 };
+  const width: Record<string, number> = { bus: 170, tracteur: 160, cnews: 164, auto: 150, cat: 70, poubelle: 84 };
   const sheet = (ids: string[]) =>
     ids
       .map(
@@ -94,9 +94,9 @@ function castSheet(): string {
       .join('');
   return html(
     `<main>${rows}<section><h2 class="display"><span style="background:#f3ecdd;color:#141a36">Guests, reinforcements and extras</span></h2>
-      <div class="row extras">${sheet(['trump', 'hugo', 'squeezie', 'durif', 'crs', 'pompiers'])}</div>
+      <div class="row extras">${sheet(['trump', 'hugo', 'lucet', 'squeezie', 'durif', 'crs', 'pompiers'])}</div>
       <div class="row extras">${sheet(['lyceen', 'gilet', 'agriculteur', 'impots', 'patron', 'auto', 'poubelle'])}</div>
-      <div class="row extras">${sheet(['militant', 'placard', 'pundit', 'tracteur', 'bus', 'cat'])}</div></section></main>`,
+      <div class="row extras">${sheet(['militant', 'placard', 'pundit', 'cnews', 'tracteur', 'bus', 'cat'])}</div></section></main>`,
     `main { width: 1280px; padding: 36px 40px 28px; background-color: #141a36;
         background-image: radial-gradient(rgba(243,236,221,.13) 1.6px, transparent 1.8px); background-size: 14px 14px; }
       section { margin-bottom: 26px; }

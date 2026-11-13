@@ -14,7 +14,7 @@ export interface Sprite {
 const RASTER_SCALE = 2;
 
 /** Logical sprite widths; heights follow each SVG's aspect ratio. */
-const WIDTH: Record<string, number> = { bus: 184, tracteur: 172, auto: 150, cat: 62, poubelle: 76 };
+const WIDTH: Record<string, number> = { bus: 184, tracteur: 172, cnews: 176, auto: 150, cat: 62, poubelle: 76 };
 const FIGURE_WIDTH = 104;
 
 function rasterise(svg: string): Promise<Sprite> {

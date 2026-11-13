@@ -15,10 +15,11 @@ Le site est auto-hébergé sur un serveur personnel situé en France. Il est exp
 
 ## Satire, parodie et caricature
 
-Politique 2027 est une œuvre humoristique. Les personnages qui y figurent sont des **caricatures de personnalités publiques** — responsables politiques français, candidats déclarés (dont un sportif et un vidéaste connu sous le nom de « Christ cosmique »), un chef d'État étranger, l'épouse du président de la République et deux autres vidéastes — représentées uniquement dans le cadre de leur vie publique. Leurs pouvoirs, titres et situations sont inventés pour faire rire : ils ne constituent ni des informations, ni l'expression des opinions de l'auteur.
+Politique 2027 est une œuvre humoristique. Les personnages qui y figurent sont des **caricatures de personnalités publiques** — responsables politiques français, candidats déclarés (dont un sportif et un vidéaste connu sous le nom de « Christ cosmique »), un chef d'État étranger, l'épouse du président de la République, deux autres vidéastes et une journaliste de télévision — représentées uniquement dans le cadre de leur vie publique. Leurs pouvoirs, titres et situations sont inventés pour faire rire : ils ne constituent ni des informations, ni l'expression des opinions de l'auteur.
 
 - **Répliques.** Les bulles reprennent pour partie des formules publiques devenues célèbres (« De la poudre de perlimpinpin », « La République, c'est moi ! », « Moi président »…), citées pour ce qu'elles sont : des répliques cultes. Les autres sont inventées dans l'esprit du personnage. Aucune n'a valeur de citation documentaire.
-- **Invités.** Les deux vidéastes apparaissent comme invités, sans qu'aucun propos leur soit prêté au-delà de répliques anodines. L'un interroge tous les camps de la même façon. L'autre a pris publiquement position, en 2024, contre l'extrême droite : il n'apparaît donc que face au camp de la Droite, ce qui reflète cette prise de position et non un parti pris du jeu.
+- **Invités.** Les deux vidéastes et la journaliste apparaissent comme invités, sans qu'aucun propos leur soit prêté au-delà de répliques anodines. L'un des vidéastes et la journaliste interrogent tous les camps de la même façon ; le pouvoir de la journaliste (« suivre l'argent ») évoque le genre de l'enquête télévisée et ne renvoie à aucun reportage en particulier. L'autre vidéaste a pris publiquement position, en 2024, contre l'extrême droite : il n'apparaît donc que face au camp de la Droite, ce qui reflète cette prise de position et non un parti pris du jeu.
+- **Médias.** Une chaîne d'information en continu apparaît sous la forme d'un car régie, face à tous les camps de la même façon. Le gag porte sur le format de l'info en continu (des débats et des éditorialistes à la chaîne) ; il ne prête aucune position, aucun propos ni aucun fait à la chaîne ou à ses équipes.
 - **Actualité.** Les blocus lycéens, feux de poubelles, automobilistes, agriculteurs, impôts, allocations, forces de l'ordre, pompiers et droits de douane apparaissent comme des péripéties de jeu génériques. Ils ne renvoient à aucun fait, lieu, date ou personne en particulier, et le jeu ne met en scène aucune violence : une figure « démissionne », un lycéen « retourne en cours », un feu « s'éteint ».
 - Le jeu n'est affilié à aucun parti, candidat, élu, institution ou service public, et n'est soutenu ni financé par aucun d'eux.
 - Il ne constitue ni un sondage, ni une publicité politique, ni un appel au vote. La jauge « Sondages » est une mécanique de jeu entièrement fictive.
@@ -31,7 +32,7 @@ Toute personne représentée qui estimerait qu'un élément dépasse les limites
 
 L'ensemble du projet (code source, illustrations générées par ce code et textes) est publié sous **licence MIT** sur [GitHub](https://github.com/ImMaxence/politique-2027). Vous pouvez le réutiliser dans les conditions de cette licence.
 
-Les noms des personnalités et les sigles des partis sont cités uniquement pour identifier les caricatures ; ils appartiennent à leurs titulaires respectifs.
+Les noms des personnalités, les sigles des partis et les noms des médias et émissions sont cités uniquement pour identifier les caricatures ; ils appartiennent à leurs titulaires respectifs. Aucun logo de chaîne n'est reproduit.
 
 Politique 2027 est un jeu original du genre « défense en couloirs ». Il n'est lié à aucun éditeur de jeux vidéo et ne reprend aucun élément (nom, personnages, graphismes, musique, niveaux) d'un jeu existant.
 

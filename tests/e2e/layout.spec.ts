@@ -74,12 +74,19 @@ test('a phone held sideways shows the whole courtyard', async ({ page }) => {
       expect(apart).toBe(true);
     }
   }
+  const firstLane = (await page.locator('[data-cell]').first().boundingBox())!;
   for (const action of ['remove', 'ultimate', 'speed', 'mute', 'pause']) {
     const box = (await page.locator(`[data-action="${action}"]`).boundingBox())!;
     expect(box.x).toBeGreaterThanOrEqual(stage.x);
     expect(box.x + box.width).toBeLessThanOrEqual(stage.x + stage.width);
-    expect(box.y + box.height).toBeLessThan(stage.y + stage.height * 0.19); // above the first lane
+    expect(box.y + box.height).toBeLessThanOrEqual(firstLane.y); // above the first lane
   }
+  // The scenery is cropped around the courtyard: the squares get the room, and every one stays in view.
+  const last = (await page.locator('[data-cell]').last().boundingBox())!;
+  expect(firstLane.x).toBeGreaterThanOrEqual(stage.x);
+  expect(last.x + last.width).toBeLessThanOrEqual(stage.x + stage.width);
+  expect(last.y + last.height).toBeLessThanOrEqual(stage.y + stage.height);
+  expect(cell.width).toBeGreaterThanOrEqual(60);
   expect(await overflow(page)).toBeLessThanOrEqual(0);
 });
 

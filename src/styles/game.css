@@ -11,6 +11,13 @@
   position: relative;
   padding-bottom: 1rem;
 }
+/* Two quick taps (a card, then a square) must never be read as a double-tap zoom:
+   iPhone Safari zooms on any element that does not opt out. Pinch-to-zoom stays available.
+   Set on every element, because the browser stops looking up the tree at a scroll container. */
+.game,
+.game * {
+  touch-action: manipulation;
+}
 .game[data-camp='centre'] {
   --camp: var(--centre);
   --camp-on: #17203f;
@@ -611,14 +618,17 @@
   border-radius: 0 0 var(--radius) var(--radius);
   background: var(--paper-3);
   overflow: hidden;
-  touch-action: manipulation;
+}
+.stage__view {
+  position: absolute;
+  inset: 0;
 }
 .stage canvas {
   display: block;
   width: 100%;
   height: 100%;
 }
-/* 170/1280, 128/720, 1044/1280, 560/720 — see layout.ts */
+/* 170/1280, 128/720, 1044/1280, 560/720 of the scene — see layout.ts */
 .grid {
   position: absolute;
   left: 13.28125%;
@@ -904,14 +914,26 @@
 .game.is-compact {
   --avail-h: 100dvh;
   --avail-w: 100dvw;
-  /* The board is as big as the height allows; the tickets take the width that is
-     left, within reason; on a narrow phone the board gives way to the tickets. */
-  --board-max: calc((var(--avail-h) - 0.6rem) * 16 / 9);
+  --bw: 3px; /* the board's frame */
+  /* Controls grow with the window: a small laptop gets bigger buttons than a phone. */
+  --btn: clamp(2.3rem, calc((var(--avail-w) - 13rem) * 0.052), 2.9rem);
+  /*
+   * On a phone every pixel goes to the courtyard. The board crops the scenery around
+   * it: 96 units of the building on the left and 56 of the street on the right are
+   * cut, and at the top only what the controls bar needs is kept. --u is the size of
+   * one unit of the scene (1280 × 720 units, see layout.ts) in CSS pixels.
+   * Height first: the lanes and the floor strip under them (592 units) plus the bar.
+   */
+  --u-h: calc((var(--avail-h) - 0.6rem - 2 * var(--bw) - var(--btn) - 0.8rem) / 592);
+  --board-max: calc(1128 * var(--u-h) + 2 * var(--bw));
+  /* The tickets take the width that is left, within reason; on a narrow phone the
+     board gives way to the tickets. */
   --tickets: clamp(9rem, calc(var(--avail-w) - var(--board-max) - 0.9rem), 13rem);
-  --stage-w: min(calc(var(--avail-w) - var(--tickets) - 0.9rem), var(--board-max));
-  /* Everything on a ticket is a share of its width, and every control of the bar a
-     share of the board's: a small laptop gets bigger type than a phone, same fit. */
-  --btn: clamp(2.3rem, calc(var(--stage-w) * 0.052), 2.9rem);
+  --u: min(var(--u-h), calc((var(--avail-w) - var(--tickets) - 0.9rem - 2 * var(--bw)) / 1128));
+  --stage-w: calc(1128 * var(--u) + 2 * var(--bw));
+  /* The whole scene when it fits; otherwise the sky above the controls is cut. */
+  --stage-h: min(calc(var(--avail-h) - 0.6rem), calc(720 * var(--u) + 2 * var(--bw)));
+  /* Everything on a ticket is a share of its width, and the type of the bar a share of the board's. */
   --bar-font: clamp(0.68rem, calc(var(--stage-w) * 0.0155), 0.85rem);
   margin-inline: calc(var(--gutter) * -1);
   padding-bottom: 0;
@@ -961,9 +983,22 @@ html.game-locked body {
   grid-column: 2;
   grid-row: 1 / -1;
   width: var(--stage-w);
+  height: var(--stage-h);
   min-width: 0;
   margin: 0;
+  aspect-ratio: auto;
+  border-width: var(--bw);
   border-radius: var(--radius);
+}
+/* The scene, larger than the board and pinned to its bottom edge: the sides and,
+   if need be, the sky are cropped. The renderer reads this offset to keep captions
+   and speech bubbles inside the visible part. */
+.game.is-compact .stage__view {
+  inset: auto;
+  left: calc(var(--u) * -96);
+  bottom: 0;
+  width: calc(var(--u) * 1280);
+  height: calc(var(--u) * 720);
 }
 .game.is-compact .match__help {
   display: none;
@@ -1168,7 +1203,7 @@ html.game-locked body {
   max-width: calc(var(--stage-w) - 1rem);
   min-height: 0;
   /* Board height, less the line itself (1.5 × its type + padding) and a small gap. */
-  margin-top: calc(var(--stage-w) * 9 / 16 - var(--bar-font) * 1.5 - 0.45rem);
+  margin-top: calc(var(--stage-h) - var(--bar-font) * 1.5 - 0.45rem);
   padding: 0.05rem 0.6rem;
   border-radius: 99px;
   background: rgba(20, 26, 54, 0.88);

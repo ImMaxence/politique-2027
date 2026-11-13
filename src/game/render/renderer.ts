@@ -48,6 +48,12 @@ export class Renderer {
 
   /** Phone layout: the controls sit over the top of the scenery, so the level banner is left out. */
   private compact = false;
+  /**
+   * Part of the scene the player actually sees, in canvas units. The phone layout
+   * crops the scenery around the courtyard (see `.stage__view` in game.css), so
+   * captions and speech bubbles are kept inside this window rather than the canvas.
+   */
+  private view = { left: 0, right: VIEW_W, top: 0 };
   private ctx: CanvasRenderingContext2D;
   private backdrop: HTMLCanvasElement | null = null;
   private backdropKey = '';
@@ -81,6 +87,19 @@ export class Renderer {
       this.backdropKey = '';
     }
     this.scale = this.canvas.width / VIEW_W;
+
+    // Layout offsets are not affected by the quarter turn of the phone layout either.
+    const frame = this.canvas.parentElement;
+    const stage = frame?.parentElement;
+    const units = this.canvas.clientWidth ? VIEW_W / this.canvas.clientWidth : 1;
+    if (frame && stage && stage.clientWidth) {
+      const left = Math.max(0, -frame.offsetLeft * units);
+      this.view = {
+        left,
+        right: Math.min(VIEW_W, left + stage.clientWidth * units),
+        top: Math.max(0, -frame.offsetTop * units),
+      };
+    }
   }
 
   setCompact(compact: boolean): void {
@@ -215,6 +234,9 @@ export class Renderer {
           } else if (e.enemyId === 'patron') {
             this.confetti(x, y, GOLD, 18);
             this.float(x, y - 50, a.goldenParachute, '#8a5300', 22, 1.5);
+          } else if (e.enemyId === 'cnews') {
+            this.confetti(x, y, '#aab6cc', 18);
+            this.float(x, y - 50, a.offAir, INK, 24, 1.5);
           } else {
             this.confetti(x, y, e.enemyId === 'auto' || e.enemyId === 'trump' ? GOLD : CAMPS[e.camp].color, e.boss ? 40 : 12, e.boss ? 1.5 : 1);
           }
@@ -285,6 +307,9 @@ export class Renderer {
           break;
         case 'tax':
           this.float(xToPx(e.x), feetY(e.lane) - 122, fmt(a.tax, { n: e.amount }), RED, 22, 1.3);
+          break;
+        case 'interview':
+          this.float(xToPx(e.col + 0.5), feetY(e.lane) - 122, a.noComment, INK, 22, 1.6);
           break;
         case 'caf':
           // A transfer lands by the steps… or a letter says the file is incomplete.
@@ -392,7 +417,8 @@ export class Renderer {
     g.strokeStyle = outline;
     // A long caption next to an edge stays whole instead of being cut by the frame.
     const half = g.measureText(text).width / 2 + g.lineWidth + 6;
-    if (half * 2 < VIEW_W) x = Math.max(half, Math.min(VIEW_W - half, x));
+    const { left, right } = this.view;
+    if (half * 2 < right - left) x = Math.max(left + half, Math.min(right - half, x));
     g.strokeText(text, x, y);
     g.fillStyle = color;
     g.fillText(text, x, y);
@@ -507,7 +533,7 @@ export class Renderer {
     if (!sprite) return;
     const g = this.ctx;
     const figureId = enemy.def.unitId ?? enemy.def.portrait;
-    const vehicle = enemy.def.id === 'bus' || enemy.def.id === 'auto' || enemy.def.id === 'tracteur';
+    const vehicle = enemy.def.id === 'bus' || enemy.def.id === 'auto' || enemy.def.id === 'tracteur' || enemy.def.id === 'cnews';
     const size = enemy.def.boss ? 1.22 : 1;
     const y = feetY(enemy.lane);
     const striking = state.ult.strike > 0;
@@ -824,8 +850,9 @@ export class Renderer {
       const lane = unit ? unit.lane : enemy!.lane;
       const height = bubble.lines.length * 18 + 14;
       const anchorY = feetY(lane) - 128;
-      const x = Math.max(bubble.width / 2 + 6, Math.min(VIEW_W - bubble.width / 2 - 6, anchorX + (unit ? 34 : -34)));
-      const y = Math.max(height + 6, anchorY);
+      const { left, right, top } = this.view;
+      const x = Math.max(left + bubble.width / 2 + 6, Math.min(right - bubble.width / 2 - 6, anchorX + (unit ? 34 : -34)));
+      const y = Math.max(top + height + 6, anchorY);
       const p = 1 - bubble.life / bubble.max;
       const pop = this.reducedMotion ? 1 : p < 0.08 ? easeOutBack(p / 0.08) : 1;
 
@@ -936,10 +963,10 @@ export class Renderer {
     const g = this.ctx;
     const text = this.strings.announce.tariffBanner.toUpperCase();
     g.save();
-    g.translate(VIEW_W - 150, 100);
-    g.rotate(0.04);
     g.font = `400 20px ${DISPLAY}`;
     const width = g.measureText(text).width + 30;
+    g.translate(Math.min(VIEW_W - 150, this.view.right - width / 2 - 12), 100);
+    g.rotate(0.04);
     g.fillStyle = RED;
     g.strokeStyle = INK;
     g.lineWidth = 3;

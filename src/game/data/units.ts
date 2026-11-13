@@ -216,6 +216,8 @@ export const EXTRAS: Record<string, EnemyDef> = {
   impots: { id: 'impots', hp: 380, speed: 0.17, dps: 20, threat: 3, leak: 1, trait: { kind: 'tax', interval: 4, amount: 10 } },
   // A CAC 40 boss (nobody in particular): slow, well padded, and he brings his own pundits.
   patron: { id: 'patron', hp: 700, speed: 0.16, dps: 26, threat: 5, leak: 1, resist: 0.3, trait: { kind: 'summon', what: 'pundit', interval: 9 } },
+  // A rolling news channel's broadcast van: slow, unmoved by roaring, and a fresh pundit for every debate.
+  cnews: { id: 'cnews', hp: 1000, speed: 0.13, dps: 30, threat: 7, leak: 2, resist: 1, trait: { kind: 'summon', what: 'pundit', interval: 4.5 } },
   // The guests
   trump: { id: 'trump', portrait: 'trump', boss: true, hp: 2600, speed: 0.14, dps: 40, threat: 16, leak: 2, resist: 0.6, trait: { kind: 'tariff', factor: 1.25 } },
   // The video maker publicly called to vote against the far right in 2024: he only shows up
@@ -225,13 +227,16 @@ export const EXTRAS: Record<string, EnemyDef> = {
   hugo: { id: 'hugo', portrait: 'hugo', hp: 850, speed: 0.19, dps: 18, threat: 8, leak: 1, resist: 0.3, trait: { kind: 'silence', interval: 5, duration: 2, range: 3 } },
   // A declared candidate also hunting for his 500 signatures: when he plays the pan flute, people stop to listen.
   durif: { id: 'durif', portrait: 'durif', hp: 600, speed: 0.2, dps: 16, threat: 6, leak: 1, resist: 0.3, trait: { kind: 'silence', interval: 6, duration: 1.6, range: 2.4 } },
+  // The investigative reporter questions every camp the same way: she follows the money, walks past
+  // everyone else and keeps the money-makers busy until she gets an answer.
+  lucet: { id: 'lucet', portrait: 'lucet', hp: 800, speed: 0.21, dps: 20, threat: 8, leak: 1, resist: 0.3, trait: { kind: 'investigate' } },
 };
 
 /** Named guests, in the order the characters page lists them. */
-export const GUESTS = ['trump', 'hugo', 'squeezie', 'durif'];
+export const GUESTS = ['trump', 'hugo', 'lucet', 'squeezie', 'durif'];
 
 /** Extras that belong to no camp (drawn in their own colours). */
-export const NEUTRAL_EXTRAS = ['lyceen', 'gilet', 'poubelle', 'auto', 'agriculteur', 'tracteur', 'impots', 'patron', 'trump', 'squeezie', 'hugo', 'durif', 'cat'];
+export const NEUTRAL_EXTRAS = ['lyceen', 'gilet', 'poubelle', 'auto', 'agriculteur', 'tracteur', 'impots', 'patron', 'cnews', 'trump', 'squeezie', 'hugo', 'lucet', 'durif', 'cat'];
 
 /** Which of the four families a card belongs to: money, attack, effect or defence. */
 export function categoryOf(def: UnitDef): Category {

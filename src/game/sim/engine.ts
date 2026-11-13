@@ -103,6 +103,7 @@ export type GameEvent =
   | { type: 'tariff'; on: boolean }
   | { type: 'censure'; hits: { lane: number; x: number }[] }
   | { type: 'tax'; lane: number; x: number; amount: number }
+  | { type: 'interview'; lane: number; col: number }
   | { type: 'caf'; amount: number }
   | { type: 'ultimate'; id: UltimateId }
   | { type: 'win' }
@@ -698,11 +699,14 @@ function updateEnemies(state: GameState, dt: number): void {
 
     const trait = def.trait;
     const reach = trait?.kind === 'ranged' ? trait.range : 0.62;
+    // Following the money: only the money-makers are worth stopping for.
+    const investigating = trait?.kind === 'investigate';
     let target: Unit | null = null;
     let best = Infinity;
     for (let col = 0; col < COLS; col++) {
       const unit = state.grid[enemy.lane][col];
       if (!unit) continue;
+      if (investigating && unit.def.ability.kind !== 'generator') continue;
       const gap = enemy.x - unitX(unit);
       if (gap >= -0.35 && gap <= reach && gap < best) {
         best = gap;
@@ -722,6 +726,11 @@ function updateEnemies(state: GameState, dt: number): void {
         state.events.push({ type: 'blast', lane: enemy.lane, x: enemy.x });
         enemy.hp = 0;
         continue;
+      }
+      if (investigating) {
+        // The interview starts: no comment, and no endorsements either while it lasts.
+        if (!enemy.attacking) state.events.push({ type: 'interview', lane: target.lane, col: target.col });
+        target.silenced = Math.max(target.silenced, 0.25);
       }
       enemy.attacking = true;
       hurtUnit(state, target, def.dps * dt);

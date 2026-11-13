@@ -155,6 +155,13 @@ const PROPS: Record<string, string> = {
   // HugoDécrypte: one question for everybody.
   mic: `<g transform="rotate(-22 100 110)"><rect x="96" y="102" width="9" height="30" rx="3" fill="#3a3f4b" ${s(2.2)}/>
     <circle cx="100.500" cy="95" r="9.500" fill="#aab6cc" ${s(2.4)}/><path d="M93 95h15M100.500 87.500v15" ${thin('rgba(23,32,63,.35)', 1.6)}/></g>`,
+  // Élise Lucet: the microphone held out at the door, and the file on the money.
+  doorstep: `<g transform="rotate(-10 22 114)"><path d="M4 100h12l3 4h17v28H4z" fill="#f2d98b" ${s(2.2)}/><path d="M4 106h32" fill="none" ${s(1.8)}/>
+    <text x="20" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="13" fill="#8a5300">€</text></g>
+    <g transform="rotate(-26 100 110)"><rect x="96" y="104" width="9" height="30" rx="3" fill="#3a3f4b" ${s(2.2)}/>
+    <rect x="90.500" y="99" width="20" height="13" rx="2" fill="#e5383b" ${s(2.2)}/>
+    <text x="100.500" y="109.500" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="11" fill="${PAPER}">?</text>
+    <circle cx="100.500" cy="90" r="9" fill="#aab6cc" ${s(2.4)}/><path d="M93 90h15M100.500 82.500v15" ${thin('rgba(23,32,63,.35)', 1.6)}/></g>`,
   // Sylvain Durif: the pan flute.
   panflute: `<g transform="rotate(-8 100 108)" ${s(2.2)}>${[0, 1, 2, 3, 4].map((i) => `<rect x="${84 + i * 7}" y="${92 + i * 2}" width="6.500" height="${34 - i * 4}" rx="2" fill="#d9b382"/>`).join('')}
     <path d="M82 104h38" fill="none" stroke="#8a5a3c" stroke-width="4"/></g><path d="M118 88c3-3 6-1 5 2s-5 3-5-2zM124 100c3-2 5 0 4 2" ${thin(INK, 2)}/>`,
@@ -205,6 +212,7 @@ const LOOKS: Record<string, Look> = {
   // ── The guests
   squeezie: { skin: '#f3c9a5', face: 'oval', hair: 'quiff', hairColor: '#5a3d2b', brows: '#3f2a1c', nose: 'small', mouth: 'grin', stubble: true, outfit: 'casual', jacket: '#2b2f3a', shirt: '#e5383b', prop: 'story' },
   durif: { skin: '#efc19c', face: 'long', hair: 'long', hairColor: '#6b5a4a', brows: '#4a3d30', nose: 'long', mouth: 'smile', beard: '#6b5a4a', outfit: 'coat', jacket: '#fbfaf5', shirt: '#e9e2d0', prop: 'panflute' },
+  lucet: { skin: '#f4cfae', face: 'oval', hair: 'swept', hairColor: '#e8d29c', brows: '#a88a50', browStyle: 'arched', nose: 'small', mouth: 'smirk', outfit: 'open', jacket: '#232733', shirt: WHITE, prop: 'doorstep' },
   hugo: { skin: '#f4cfae', face: 'oval', hair: 'side', hairColor: '#4a3626', brows: '#3a2a1c', eyes: 'wide', eyeColor: '#5b4030', nose: 'small', mouth: 'smile', stubble: true, outfit: 'open', jacket: '#3a4a6b', shirt: WHITE, prop: 'mic' },
   trump: { skin: '#f3a96b', face: 'square', hair: 'swoop', hairColor: '#f6cf62', brows: '#e9c46a', browStyle: 'angry', eyes: 'narrow', eyePatch: '#fbe0c6', nose: 'round', mouth: 'pout', wrinkles: true, jacket: NAVY, shirt: WHITE, tie: '#e5383b', longTie: true, prop: 'pricetag' },
 };
@@ -282,6 +290,13 @@ function hair(look: Look): HairParts {
         back: `<path d="M26 52C20 22 44 8 61 8s41 14 35 44l2 26c-3 8-13 7-15 1V50H39v29c-2 6-12 7-15-1z" ${f}/>`,
         front: `<path d="M32 53c-2-23 13-34 29-34s30 11 27 34c-2-6-5-10-9-12-6 3-12 4-18 4s-13-1-19-4c-5 2-8 6-10 12z" ${f}/>
           ${strand('M50 26v13M60 25v15M70 26v13', 'rgba(23,32,63,.18)')}`,
+      };
+    case 'swept':
+      // Light and layered, down to the jaw, with a long fringe swept to one side.
+      return {
+        back: `<path d="M27 52C21 23 43 9 61 9s40 14 34 43l2 24c-3 7-12 7-14 1V50H39v27c-2 6-11 6-14-1z" ${f}/>`,
+        front: `<path d="M32 57c-4-25 10-37 29-37s33 12 28 37c-2-9-6-15-11-18-13 1-27 4-38 11-4 2-6 4-8 7z" ${f}/>
+          ${strand('M44 29c10-6 24-6 35 1', 'rgba(255,255,255,.4)')}${strand('M40 45c9-5 20-7 32-7', 'rgba(23,32,63,.16)')}`,
       };
     case 'shoulder':
       // Dark, shoulder length, parted on the side.
@@ -662,6 +677,24 @@ function tracteurSvg(): string {
     <path d="M96 52c14-6 30-2 40 8" fill="none" stroke="#2f6a45" stroke-width="9" stroke-linecap="round"/>`;
 }
 
+/** A rolling news channel's broadcast van, nose to the left, dish up: on air around the clock. */
+function cnewsSvg(): string {
+  return `
+    <path d="M126 30l6-14" fill="none" ${s(3)}/>
+    <g transform="rotate(-24 132 14)"><path d="M114 12a18 9 0 0 0 36 0z" fill="#dfe3ea" ${s(2.6)}/><path d="M132 16v-9" fill="none" ${s(2.2)}/><circle cx="132" cy="6" r="2.600" fill="#e5383b" ${s(1.6)}/></g>
+    <path d="M10 72c0-6 4-11 9-13l13-4 13-21c2-3 5-5 9-5h104c6 0 10 4 10 10v67H10z" fill="#f2f3f6" ${s(3)}/>
+    <path d="M38 56l12-19c1-2 3-3 5-3h14v22z" fill="#dff1ff" ${s(2.4)}/>
+    <circle cx="57" cy="47" r="7" fill="#f0bf9a" ${s(2)}/><path d="M50 44c1-5 4-7 7-7s7 2 8 7c-5-2-10-2-15 0z" fill="#3b2a20" ${s(1.6)}/>
+    <rect x="76" y="40" width="88" height="24" rx="2" fill="#17203f" ${s(2.2)}/>
+    <text x="120" y="57.500" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="16" letter-spacing="1" fill="${PAPER}">CNEWS</text>
+    <rect x="88" y="69" width="64" height="15" rx="4" fill="#e5383b" ${s(2)}/>
+    <circle cx="97" cy="76.500" r="3" fill="${PAPER}"/>
+    <text x="124" y="80.500" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="10" fill="${PAPER}">DIRECT</text>
+    <path d="M10 88h160v10H10z" fill="rgba(0,0,0,.16)"/>
+    <path d="M12 74h9" fill="none" stroke="#ffd23f" stroke-width="6" stroke-linecap="round"/>
+    <g ${s(3)}><circle cx="44" cy="100" r="13" fill="${INK}"/><circle cx="44" cy="100" r="5" fill="#aab6cc"/><circle cx="138" cy="100" r="13" fill="${INK}"/><circle cx="138" cy="100" r="5" fill="#aab6cc"/></g>`;
+}
+
 /** A wheelie bin on fire. The canvas adds the flicker. */
 function poubelleSvg(): string {
   return `
@@ -734,6 +767,7 @@ export function extraSvg(kind: string, camp: CampId, options: PortraitOptions = 
   if (kind === 'bus') return wrap(busSvg(camp), [180, 124], `bus-${camp}`, options);
   if (kind === 'auto') return wrap(autoSvg(), [164, 104], 'auto', options);
   if (kind === 'tracteur') return wrap(tracteurSvg(), [166, 120], 'tracteur', options);
+  if (kind === 'cnews') return wrap(cnewsSvg(), [172, 114], 'cnews', options);
   if (kind === 'poubelle') return wrap(poubelleSvg(), [96, 118], 'poubelle', options);
   if (kind === 'cat') return wrap(catSvg(), [80, 72], 'cat', options);
   if (STREET[kind] || LOOKS[kind]) return portraitSvg(kind, options);

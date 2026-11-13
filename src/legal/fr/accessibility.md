@@ -28,6 +28,7 @@ Le site n'a pas encore été testé avec un lecteur d'écran par une personne qu
 - **Clavier** : toutes les actions passent par de vrais boutons. Touches 1 à 8 pour choisir une figure, flèches pour se déplacer sur le terrain, Entrée ou Espace pour placer, R, U, P, F et M pour les outils. Les raccourcis ne s'activent que lorsque le focus est dans le jeu.
 - **Lecteurs d'écran** : chaque case du terrain est un bouton qui décrit son contenu (figure présente, crédibilité, nombre d'adversaires dans le couloir). Les vagues, les pertes de points, les arrivées de ténors, les droits de douane et la fin de partie sont annoncés dans des zones dynamiques ; la réplique d'une figure est lue quand on la place.
 - **Orientation** : sur téléphone, la partie s'affiche par défaut en paysage (tournée d'un quart de tour si l'appareil est tenu droit). Ce comportement se désactive d'un bouton dans le menu pause : le jeu suit alors l'orientation de l'appareil.
+- **Zoom** : le zoom à deux doigts reste toujours possible. Seul le zoom par double tap est désactivé dans le jeu, pour qu'un enchaînement rapide de touchers (une carte, puis une case) n'agrandisse pas la page par erreur.
 - **Types de cartes** : chaque carte porte son type (Argent, Attaque, Effet, Défense) en toutes lettres, en plus de la couleur.
 - **Mouvement** : avec le réglage système « réduire les animations », les tremblements d'écran sont supprimés et les effets sont atténués. Aucun flash plein écran n'est utilisé.
 - **Couleurs** : le site n'a qu'un thème, sombre, dont les contrastes sont vérifiés. Les camps se distinguent par leur nom et pas seulement par leur couleur ; l'information de danger est doublée d'une annonce.
@@ -51,7 +52,7 @@ Les sites tiers vers lesquels le site renvoie (GitHub, site de l'auteur) sont ho
 
 ## Établissement de cette déclaration
 
-- Déclaration établie le 12 novembre 2026 avec la version 1.0.0, mise à jour avec la version 1.2.0.
+- Déclaration établie le 12 novembre 2026 avec la version 1.0.0, mise à jour avec la version 1.3.0.
 - Technologies utilisées : HTML, CSS, JavaScript (Astro), SVG, Canvas et Web Audio.
 - Environnement de test : navigateur Chromium récent piloté par Playwright, en affichage ordinateur et mobile.
 

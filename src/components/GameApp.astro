@@ -145,18 +145,22 @@ const cells = Array.from({ length: ROWS * COLS }, (_, i) => ({ lane: Math.floor(
     </div>
 
     <div class="stage" data-slot="stage">
-      <canvas data-slot="canvas" width="1280" height="720" aria-hidden="true"></canvas>
-      <div class="grid" role="group" aria-label={t.ui.board} data-slot="grid">
-        {
-          cells.map(({ lane, col }) => (
-            <button
-              type="button"
-              data-cell
-              tabindex="-1"
-              aria-label={`${fmt(t.ui.rowLabel, { row: lane + 1, col: col + 1 })} : ${t.ui.empty}`}
-            />
-          ))
-        }
+      <!-- The whole scene. On a desktop it fills the board; the phone layout crops the
+           scenery around the courtyard so that the squares get bigger (see game.css). -->
+      <div class="stage__view">
+        <canvas data-slot="canvas" width="1280" height="720" aria-hidden="true"></canvas>
+        <div class="grid" role="group" aria-label={t.ui.board} data-slot="grid">
+          {
+            cells.map(({ lane, col }) => (
+              <button
+                type="button"
+                data-cell
+                tabindex="-1"
+                aria-label={`${fmt(t.ui.rowLabel, { row: lane + 1, col: col + 1 })} : ${t.ui.empty}`}
+              />
+            ))
+          }
+        </div>
       </div>
 
       <div class="overlay" data-overlay="pause" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden>
