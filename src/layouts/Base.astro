@@ -43,7 +43,7 @@ const structured = [...breadcrumb, ...jsonLd];
 <html lang={lang}>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
     <title>{meta.title}</title>
     <meta name="description" content={meta.description} />
@@ -75,6 +75,11 @@ const structured = [...breadcrumb, ...jsonLd];
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <!-- Installed on an iPhone home screen: full screen, under a dark status bar. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content={SITE.name} />
     <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
 
     {structured.map((data) => <script is:inline type="application/ld+json" set:html={JSON.stringify(data)} />)}

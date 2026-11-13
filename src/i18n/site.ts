@@ -1,5 +1,5 @@
 /** Site copy (everything outside the game itself), in French and English. */
-import type { Lang } from './game';
+import { GAME_STRINGS, type Lang } from './game';
 import type { RouteKey } from './routes';
 
 export interface Faq {
@@ -186,24 +186,7 @@ const fr: SiteStrings = {
     guestLead: "Ils n'appartiennent à aucun camp, mais ils s'invitent dans la campagne : un président étranger, un intervieweur, une journaliste d'investigation, un vidéaste, un candidat pas comme les autres et un maire qui déroule le tapis rouge.",
     extrasTitle: 'Les figurants',
     extrasLead: "Ils n'ont pas de nom, mais ils sont nombreux. Les militants prennent la couleur du camp qui les envoie ; la rue, elle, n'appartient à personne.",
-    extras: {
-      militant: 'Distribue des tracts et avance tout droit. Toujours en bande.',
-      placard: 'Sa pancarte encaisse deux fois plus que lui.',
-      pundit: 'A un avis sur tout et court très vite le donner.',
-      bus: 'Lent, énorme, insensible aux coups de gueule.',
-      cat: 'Petit, rapide, vise les mollets. Accompagne une certaine éleveuse.',
-      lyceen: 'Rapide, nombreux, pancarte « BLOCUS » à la main. Retourne en cours une fois convaincu.',
-      gilet: 'Plus coriace qu’un militant, et difficile à faire reculer : il tient son rond-point.',
-      syndicat: 'Chasuble, casquette et drapeau : la figure avec qui il débat se met en grève et ne fait plus rien tant qu’il est à sa porte.',
-      smicard: 'Il ne vient pas débattre : il traverse la cour pour aller voter. Convaincu en chemin, il vous rapporte 15 parrainages ; s’il atteint le perron, c’est un point de sondage perdu.',
-      poubelle: "Roule lentement et roussit toutes les figures voisines. Les pompiers l'éteignent d'un coup.",
-      auto: 'Démarre en trombe, puis tombe en panne sèche à mi-chemin : à 2 € le litre, on ne va pas loin.',
-      agriculteur: 'Chapeau de paille, bleu de travail et fourche à la main. Solide, et il ne rentre à la ferme que convaincu.',
-      tracteur: 'Lent et quasi inarrêtable. Son moteur couvre les discours : les figures proches restent sans voix.',
-      impots: 'Prélève vos parrainages à la source, toutes les quatre secondes, tant qu’il est sur le terrain.',
-      patron: 'Costume à rayures, cravate dorée, mallette bien remplie. Lent, coriace, et il arrive avec ses éditorialistes.',
-      cnews: "L'info en continu, parabole déployée : lent, insensible aux coups de gueule, il débarque un éditorialiste toutes les quatre secondes et demie.",
-    },
+    extras: GAME_STRINGS.fr.about,
     cta: 'Essayer en partie',
   },
   legalLayout: {
@@ -363,24 +346,7 @@ const en: SiteStrings = {
     guestLead: 'They belong to no camp, but they invite themselves into the campaign: a foreign president, an interviewer, an investigative journalist, a video maker, a candidate unlike any other and a mayor who rolls out the red carpet.',
     extrasTitle: 'The extras',
     extrasLead: 'They have no name, but there are a lot of them. Activists wear the colour of the camp that sends them; the street belongs to nobody.',
-    extras: {
-      militant: 'Hands out leaflets and walks straight ahead. Always in a pack.',
-      placard: 'The sign takes twice as much punishment as its bearer.',
-      pundit: 'Has an opinion on everything and runs very fast to share it.',
-      bus: 'Slow, huge, unmoved by roaring.',
-      cat: 'Small, fast, goes for the ankles. Travels with a certain breeder.',
-      lyceen: 'Fast, numerous, "BLOCUS" sign in hand. Goes back to class once convinced.',
-      gilet: 'Tougher than an activist and hard to push back: he holds his roundabout.',
-      syndicat: 'Bib, cap and flag: the figure he debates with goes on strike and does nothing for as long as he stands at its door.',
-      smicard: 'He does not come to debate: he crosses the courtyard to go and vote. Win him over on the way and he brings you 15 endorsements; if he reaches the steps, you lose a poll point.',
-      poubelle: 'Rolls slowly and scorches every figure nearby. The fire brigade puts it out in one go.',
-      auto: 'Races off, then runs out of petrol halfway: at €2 a litre, you do not get far.',
-      agriculteur: 'Straw hat, overalls and a pitchfork in hand. Sturdy, and only goes back to the farm once convinced.',
-      tracteur: 'Slow and nearly unstoppable. Its engine drowns out every speech: nearby figures are lost for words.',
-      impots: 'Withholds your endorsements at source, every four seconds, for as long as he is on the field.',
-      patron: 'Pinstripes, gold tie, a well-filled briefcase. Slow, tough, and he brings his own pundits.',
-      cnews: 'Rolling news, dish up: slow, unmoved by roaring, and it drops off a fresh pundit every four and a half seconds.',
-    },
+    extras: GAME_STRINGS.en.about,
     cta: 'Try it in a match',
   },
   legalLayout: {

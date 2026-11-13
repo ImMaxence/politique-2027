@@ -921,30 +921,44 @@
   /* The page's width without its scrollbar, measured by the game (100dvw counts it). */
   --avail-w: var(--page-w, 100dvw);
   --bw: 3px; /* the board's frame */
+  /* The notch of a phone held sideways (viewport-fit=cover): the tickets keep clear of
+     it on the left; on the right only scenery may slip under it. */
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
   /* Controls grow with the window: a monitor gets bigger buttons than a phone. */
   --btn: clamp(2.3rem, calc((var(--avail-w) - 13rem) * 0.042), 3.3rem);
   /*
    * Every pixel goes to the courtyard. --u is the size of one unit of the scene
    * (1440 × 720 units, see layout.ts) in CSS pixels, as big as the screen allows:
-   * - in height, the lanes and the floor strip under them (592 units), the top of the
-   *   first lane's heads (24) and the controls bar must fit;
+   * - in height, the lanes and the floor strip under them (592 units), the heads of the
+   *   first lane (40, so that the controls bar does not hide them) and the bar must fit;
    * - in width, the nine squares and a little of the steps (1128 units) must fit.
    * Width to spare shows more of the scene (up to all 1440 units) instead of a margin;
    * height to spare shows the sky, otherwise the sky is cut.
    */
-  --u-h: calc((var(--avail-h) - 0.6rem - 2 * var(--bw) - var(--btn) - 0.8rem) / 616);
+  --u-h: calc((var(--avail-h) - 0.6rem - 2 * var(--bw) - var(--btn) - 0.8rem) / 632);
   /* A slim column of tickets, about an eighth of the screen; on a very wide, short
      screen it also takes whatever the board, at its widest, leaves over. */
-  --tickets: clamp(9rem, max(calc(var(--avail-w) * 0.12), calc(var(--avail-w) - 0.9rem - 1440 * var(--u-h) - 2 * var(--bw))), 15rem);
-  --room: calc(var(--avail-w) - var(--tickets) - 0.9rem);
+  --tickets: clamp(
+    9rem,
+    max(
+      calc(var(--avail-w) * 0.12),
+      calc(var(--avail-w) - var(--safe-l) - 0.9rem - 1440 * var(--u-h) - 2 * var(--bw) - max(0px, var(--safe-r) - 56 * var(--u-h)))
+    ),
+    15rem
+  );
+  /* The width the squares may use: clear of the notch on both sides. */
+  --room: calc(var(--avail-w) - var(--safe-l) - var(--safe-r) - var(--tickets) - 0.9rem);
   --u: min(var(--u-h), calc((var(--room) - 2 * var(--bw)) / 1128));
-  --stage-w: min(var(--room), calc(1440 * var(--u) + 2 * var(--bw)));
+  /* The board itself may run under the right-hand notch by the width of the gate. */
+  --stage-w: min(calc(var(--room) + min(var(--safe-r), 56 * var(--u))), calc(1440 * var(--u) + 2 * var(--bw)));
   --stage-h: min(calc(var(--avail-h) - 0.6rem), calc(720 * var(--u) + 2 * var(--bw)));
   /* Everything on a ticket is a share of its width, and the type of the bar a share of the board's. */
   --bar-font: clamp(0.68rem, calc(var(--stage-w) * 0.0125), 1rem);
   /* Edge to edge, whatever the width of the page around it. */
   width: var(--avail-w);
   margin-inline: calc((100% - var(--avail-w)) / 2);
+  padding-left: var(--safe-l);
   padding-bottom: 0;
   overflow-x: clip;
 }
@@ -958,6 +972,9 @@
 .game.is-forced {
   --avail-h: 100dvw;
   --avail-w: 100dvh;
+  /* Turned a quarter: the status bar is on the left of the match, the home bar on its right. */
+  --safe-l: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-bottom, 0px);
   position: fixed;
   top: 0;
   left: 100dvw;
@@ -1158,7 +1175,7 @@ html.game-locked body {
   align-items: center;
   gap: 0.3rem;
   min-width: 0;
-  padding: 0.35rem 0.45rem;
+  padding: 0.35rem calc(0.45rem + min(var(--safe-r), 56 * var(--u))) 0.35rem 0.45rem;
   /* The bar overlaps the board: only its buttons catch taps. */
   pointer-events: none;
 }
@@ -1334,4 +1351,225 @@ html.game-locked body {
     animation: none;
     box-shadow: 0 0 0 4px var(--focus);
   }
+}
+
+/* ───────────────────────────── calendar extras ───────────────────────────── */
+
+.screen__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+}
+.difficulty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+.difficulty__label {
+  margin-right: 0.3rem;
+  font-weight: 800;
+}
+.difficulty__option {
+  min-height: 2.75rem;
+  padding: 0.35rem 0.9rem;
+  border: var(--border);
+  border-radius: 8px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+.difficulty__option[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.difficulty__option[aria-pressed='true']::before {
+  content: '✓ ';
+}
+.difficulty__hint {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+/* Who turns up on that night. A guest who only comes against one camp is only listed for it. */
+.level-card__cast {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+.level-card__cast small {
+  margin-right: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.chip {
+  padding: 0.05rem 0.45rem;
+  border: 1.5px solid var(--ink-soft);
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.chip[data-only] {
+  display: none;
+  border-color: var(--camp);
+}
+.game[data-camp='gauche'] .chip[data-only='gauche'],
+.game[data-camp='centre'] .chip[data-only='centre'],
+.game[data-camp='droite'] .chip[data-only='droite'],
+.game[data-camp='autres'] .chip[data-only='autres'] {
+  display: inline-block;
+}
+.level-card.is-locked .level-card__cast {
+  opacity: 0.6;
+}
+
+/* Phones only, outside a match: how to get the game on the home screen. */
+.install-tip {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.25rem;
+  padding: 0.8rem 0.9rem;
+  border: var(--border);
+  border-radius: var(--radius);
+  background: var(--paper-2);
+}
+.install-tip[hidden],
+.game[data-view='match'] .install-tip {
+  display: none;
+}
+.install-tip > svg {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+}
+.install-tip__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+.install-tip__text p {
+  margin: 0;
+}
+.install-tip__title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  text-transform: uppercase;
+}
+.install-tip__go {
+  flex: none;
+}
+
+/* ───────────────────────────── pause, cards, gazette extras ───────────────────────────── */
+
+/* The keyboard shortcuts, for keyboard users (no keyboard on a touch screen). */
+.panel__keys {
+  margin-top: 0.3rem;
+  padding-top: 0.6rem;
+  border-top: 2px solid rgba(23, 32, 63, 0.2);
+  font-size: 0.85rem;
+  text-align: left;
+}
+.panel__keys p {
+  margin: 0;
+}
+.panel__keys-title {
+  font-weight: 800;
+}
+@media (pointer: coarse) {
+  .panel__keys {
+    display: none;
+  }
+}
+
+/* "New!": a portrait, a name and what this opponent does. */
+.panel.intro {
+  position: relative;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    'tag tag'
+    'art text'
+    'ok ok';
+  align-items: center;
+  gap: 0.6rem 1rem;
+  width: min(100%, 34rem);
+  text-align: left;
+}
+.intro__tag {
+  grid-area: tag;
+  justify-self: start;
+  margin: 0;
+  padding: 0.2rem 0.7rem 0.05rem;
+  border: 2px solid #17203f;
+  border-radius: 6px;
+  background: var(--gauche);
+  color: #fffdf6;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+.intro__art {
+  grid-area: art;
+  line-height: 0;
+}
+.intro__art svg {
+  width: 8rem;
+  height: auto;
+}
+.intro__text {
+  grid-area: text;
+}
+.intro__text h2 {
+  margin: 0;
+  font-size: 1.7rem;
+  line-height: 1.05;
+}
+.intro__text p {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+}
+.intro__power {
+  font-weight: 800;
+  color: #8a5300;
+}
+.panel.intro .btn {
+  grid-area: ok;
+}
+.game.is-compact .panel.intro {
+  gap: 0.4rem 0.8rem;
+}
+.game.is-compact .intro__art svg {
+  width: 5.5rem;
+}
+.game.is-compact .intro__text h2 {
+  font-size: 1.3rem;
+}
+.game.is-compact .intro__text p {
+  font-size: 0.85rem;
+}
+
+.gazette__notes {
+  margin: 0 0 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #b0191f;
+}
+.gazette .btn--share {
+  gap: 0.4rem;
+}
+.gazette .btn--share svg {
+  width: 1.1rem;
+  height: 1.1rem;
 }

@@ -29,6 +29,9 @@ Le site n'a pas encore été testé avec un lecteur d'écran par une personne qu
 - **Lecteurs d'écran** : chaque case du terrain est un bouton qui décrit son contenu (figure présente, crédibilité, nombre d'adversaires dans le couloir). Les vagues, les pertes de points, les arrivées de ténors, les droits de douane et la fin de partie sont annoncés dans des zones dynamiques ; la réplique d'une figure est lue quand on la place.
 - **Orientation** : sur téléphone, la partie s'affiche par défaut en paysage (tournée d'un quart de tour si l'appareil est tenu droit). Ce comportement se désactive d'un bouton dans le menu pause : le jeu suit alors l'orientation de l'appareil.
 - **Zoom** : le zoom à deux doigts reste toujours possible. Seul le zoom par double tap est désactivé dans le jeu, pour qu'un enchaînement rapide de touchers (une carte, puis une case) n'agrandisse pas la page par erreur.
+- **Nouveaux adversaires** : la première fois qu'un adversaire spécial apparaît, la partie s'arrête et une fenêtre de dialogue présente son effet en texte ; le focus va sur le bouton « Compris ! », Échap la ferme et la partie reprend. Chaque fiche n'apparaît qu'une fois.
+- **Raccourcis clavier** : ils sont rappelés dans le menu pause (touche P ou Échap).
+- **Difficulté** : un mode « Difficile » est proposé sur le calendrier ; le mode normal reste celui par défaut.
 - **Types de cartes** : chaque carte porte son type (Argent, Attaque, Effet, Défense) en toutes lettres, en plus de la couleur.
 - **Mouvement** : avec le réglage système « réduire les animations », les tremblements d'écran sont supprimés et les effets sont atténués. Aucun flash plein écran n'est utilisé.
 - **Couleurs** : le site n'a qu'un thème, sombre, dont les contrastes sont vérifiés. Les camps se distinguent par leur nom et pas seulement par leur couleur ; l'information de danger est doublée d'une annonce.
@@ -52,7 +55,7 @@ Les sites tiers vers lesquels le site renvoie (GitHub, site de l'auteur) sont ho
 
 ## Établissement de cette déclaration
 
-- Déclaration établie le 12 novembre 2026 avec la version 1.0.0, mise à jour avec la version 1.4.0.
+- Déclaration établie le 12 novembre 2026 avec la version 1.0.0, mise à jour avec la version 1.5.0.
 - Technologies utilisées : HTML, CSS, JavaScript (Astro), SVG, Canvas et Web Audio.
 - Environnement de test : navigateur Chromium récent piloté par Playwright, en affichage ordinateur et mobile.
 

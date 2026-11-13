@@ -355,6 +355,24 @@ describe('money, taxes and guests', () => {
     expect(outcomes).toEqual(new Set([true, false])); // it passes… or not
   });
 
+  it('hard mode sends bigger waves, and nothing else changes', () => {
+    const spawned = (hard: boolean) => {
+      const state = createGame({ camp: 'centre', level: 6, seed: 3, hard });
+      let count = 0;
+      while (state.time < 150) {
+        step(state);
+        count += state.events.filter((e) => e.type === 'spawn').length;
+        state.events.length = 0;
+        state.polls = 99; // keep the idle match going
+      }
+      return { count, start: state.level.startResources };
+    };
+    const normal = spawned(false);
+    const hard = spawned(true);
+    expect(hard.count).toBeGreaterThan(normal.count * 1.15);
+    expect(hard.start).toBe(normal.start);
+  });
+
   it('the benefits office looks at the file from time to time', () => {
     const state = createGame({ camp: 'gauche', level: 2, seed: 5 });
     run(state, 100); // the first look at the file comes after 32 s, the next 38 to 58 s later

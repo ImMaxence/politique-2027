@@ -8,8 +8,8 @@ import { GAME_STRINGS, fmt, isLang, type GameStrings, type Lang } from '../i18n/
 import { Audio } from './audio';
 import { COLS, LAST_LEVEL, LEVELS, ROWS } from './data/levels';
 import { CAMP_IDS, type CampId } from './data/types';
-import { CAMPS, UNITS, categoryOf } from './data/units';
-import { portraitSvg } from './render/portraits';
+import { CAMPS, EXTRAS, UNITS, categoryOf } from './data/units';
+import { enemySvg, portraitSvg } from './render/portraits';
 import { Renderer, type ViewState } from './render/renderer';
 import { SpriteStore } from './render/sprites';
 import {
@@ -24,6 +24,22 @@ function $(root: ParentNode, selector: string): HTMLElement {
   const el = root.querySelector<HTMLElement>(selector);
   if (!el) throw new Error(`Missing element: ${selector}`);
   return el;
+}
+
+/** Opponents that get a "New!" card the first time they turn up: every special extra and guest. */
+const INTRODUCED = new Set(Object.keys(EXTRAS).filter((id) => id !== 'militant' && id !== 'cat'));
+
+interface InstallPrompt extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: string }>;
+}
+
+interface LastResult {
+  headline: string;
+  won: boolean;
+  stars: number;
+  stats: [string, string][];
+  notes: string[];
 }
 
 function clockText(seconds: number): string {
@@ -55,6 +71,14 @@ class GameApp {
   private lastFrame = 0;
   private accumulator = 0;
   private ultAnnounced = false;
+  /** "New!" cards waiting to be shown, and whether one is on screen (the match stops meanwhile). */
+  private introQueue: { id: string; camp: CampId }[] = [];
+  private introOpen = false;
+  private introFocus: HTMLElement | null = null;
+  /** Browser tests drive matches themselves: the cards stay out of their way unless asked for. */
+  private introsEnabled = !new URLSearchParams(location.search).has('e2e');
+  private installPrompt: InstallPrompt | null = null;
+  private lastResult: LastResult | null = null;
   private lastTaxNotice = -99;
   private lastCell = { lane: 2, col: 2 };
   private resumeFocus: HTMLElement | null = null;
@@ -113,6 +137,8 @@ class GameApp {
     else this.show('camp', false);
     this.root.dataset.ready = 'true';
 
+    this.setupInstallTip();
+    this.registerServiceWorker();
     new ResizeObserver(() => this.renderer.resize()).observe(this.stage);
     window.addEventListener('resize', () => this.syncPageWidth());
     requestAnimationFrame((now) => this.frame(now));
@@ -179,13 +205,15 @@ class GameApp {
     await document.fonts?.ready;
     this.root.classList.remove('is-loading');
 
-    const state = createGame({ camp, level: levelId, seed: seed ?? Math.floor(Math.random() * 1e9) });
+    const state = createGame({ camp, level: levelId, seed: seed ?? Math.floor(Math.random() * 1e9), hard: this.save.hard });
     this.state = state;
     this.view = { hover: null, selected: null, removing: false };
     this.paused = false;
     this.finished = false;
     this.accumulator = 0;
     this.ultAnnounced = false;
+    this.introQueue = [];
+    this.closeIntro(false);
     this.lastTaxNotice = -99;
     this.shown = {};
     this.renderer.reset();
@@ -216,7 +244,7 @@ class GameApp {
       if (board.bottom > window.innerHeight || board.top < 0) this.root.scrollIntoView({ block: 'start', behavior: 'instant' });
     }
     this.updateHud();
-    this.say(fmt(this.t.announce.start, { level: this.t.levels[levelId].name, camp: this.t.camps[camp].name }));
+    this.say(fmt(this.t.announce.start, { level: this.t.levels[levelId].name, camp: this.t.camps[camp].name }) + (state.hard ? ` ${this.t.announce.hardMode}` : ''));
   }
 
   // ───────────────────────────── phone layout ─────────────────────────────
@@ -359,6 +387,25 @@ class GameApp {
       this.syncToggles();
     });
     on('[data-action="mute"]', () => this.toggleMute());
+    on('[data-action="difficulty"]', (el) => {
+      this.save.hard = el.dataset.value === 'hard';
+      storeSave(this.save);
+      this.syncToggles();
+    });
+    on('[data-action="intro-ok"]', () => this.closeIntro(true));
+    on('[data-action="share"]', () => void this.shareResult());
+    on('[data-action="dismiss-install"]', () => {
+      this.save.installTipDismissed = true;
+      storeSave(this.save);
+      $(this.root, '[data-slot="install-tip"]').hidden = true;
+    });
+    on('[data-action="install"]', () => {
+      const prompt = this.installPrompt;
+      if (!prompt) return;
+      void prompt.prompt().then(() => prompt.userChoice).then((choice) => {
+        if (choice.outcome === 'accepted') $(this.root, '[data-slot="install-tip"]').hidden = true;
+      }).catch(() => undefined);
+    });
     on('[data-action="orientation"]', () => {
       this.save.forceLandscape = !this.save.forceLandscape;
       storeSave(this.save);
@@ -394,7 +441,7 @@ class GameApp {
   }
 
   private playing(): boolean {
-    return !!this.state && this.state.status === 'playing' && !this.screens.match.hidden && !this.paused;
+    return !!this.state && this.state.status === 'playing' && !this.screens.match.hidden && !this.paused && !this.introOpen;
   }
 
   private rememberCell(lane: number, col: number): void {
@@ -434,6 +481,13 @@ class GameApp {
     if (!this.root.contains(document.activeElement)) return;
     const key = e.key.toLowerCase();
 
+    if (this.introOpen) {
+      if (key === 'escape') {
+        e.preventDefault();
+        this.closeIntro(true);
+      }
+      return;
+    }
     if (key === 'escape' || key === 'p') {
       if (this.finished) return;
       e.preventDefault();
@@ -565,11 +619,14 @@ class GameApp {
     }
     this.root.querySelector('[data-action="speed"]')?.setAttribute('aria-pressed', String(this.save.speed === 2));
     this.root.querySelector('[data-action="orientation"]')?.setAttribute('aria-pressed', String(this.save.forceLandscape));
+    for (const option of this.root.querySelectorAll<HTMLElement>('[data-action="difficulty"]')) {
+      option.setAttribute('aria-pressed', String((option.dataset.value === 'hard') === this.save.hard));
+    }
   }
 
   // ───────────────────────────── pause / result ─────────────────────────────
 
-  private overlay(name: 'pause' | 'result', visible: boolean): HTMLElement {
+  private overlay(name: 'pause' | 'result' | 'intro', visible: boolean): HTMLElement {
     const el = $(this.root, `[data-overlay="${name}"]`);
     el.hidden = !visible;
     const anyOpen = [...this.root.querySelectorAll<HTMLElement>('[data-overlay]')].some((o) => !o.hidden);
@@ -594,6 +651,8 @@ class GameApp {
   }
 
   private backToCalendar(): void {
+    this.introQueue = [];
+    this.closeIntro(false);
     this.state = null;
     this.paused = false;
     this.overlay('pause', false);
@@ -609,6 +668,8 @@ class GameApp {
 
   private finish(state: GameState): void {
     this.finished = true;
+    this.introQueue = [];
+    this.closeIntro(false);
     const camp = state.camp;
     const progress = this.save.progress[camp];
     const won = state.status === 'won';
@@ -618,6 +679,7 @@ class GameApp {
     let unlockedUnit: string | null = null;
     let unlockedReinforcements = false;
 
+    const previousBest = progress.endlessBest;
     if (level.endless) {
       progress.endlessBest = Math.max(progress.endlessBest, wavesHeld);
     } else if (won) {
@@ -664,6 +726,15 @@ class GameApp {
       }),
     );
 
+    // Hard mode and a new endless record get a line of their own.
+    const notes: string[] = [];
+    if (state.hard) notes.push(this.t.ui.hardBadge);
+    if (level.endless && wavesHeld > previousBest) notes.push(this.t.ui.newRecord);
+    const noteSlot = $(el, '[data-slot="notes"]');
+    noteSlot.hidden = !notes.length;
+    noteSlot.textContent = notes.join(' · ');
+    this.lastResult = { headline, won, stars: won ? stars : 0, stats, notes };
+
     const unlock = $(el, '[data-slot="unlock"]');
     unlock.hidden = !unlockedUnit && !unlockedReinforcements;
     if (unlockedUnit) {
@@ -677,8 +748,202 @@ class GameApp {
     const next = $(el, '[data-action="next"]');
     next.hidden = !(won && !level.endless && level.id < LAST_LEVEL);
     this.audio.play(won ? 'win' : 'lose');
-    this.say(`${won ? this.t.announce.won : this.t.announce.lost} ${headline}`, true);
+    this.say(`${won ? this.t.announce.won : this.t.announce.lost} ${headline} ${notes.join('. ')}`.trim(), true);
     (next.hidden ? $(el, '[data-action="retry"]') : next).focus();
+  }
+
+  // ───────────────────────────── "New!" cards ─────────────────────────────
+
+  /** Queues a short introduction the first time a special opponent turns up. */
+  private introduce(enemyId: string, camp: CampId): void {
+    if (!this.introsEnabled || !INTRODUCED.has(enemyId) || this.save.seen.includes(enemyId)) return;
+    if (this.introQueue.some((q) => q.id === enemyId)) return;
+    this.introQueue.push({ id: enemyId, camp });
+    if (!this.introOpen) this.showNextIntro();
+  }
+
+  private showNextIntro(): void {
+    const next = this.introQueue.shift();
+    const state = this.state;
+    if (!next || !state || state.status !== 'playing') return;
+    const guest = this.t.figures[next.id];
+    const el = this.overlay('intro', true);
+    $(el, '[data-slot="intro-art"]').innerHTML = enemySvg(next.id, next.camp, { size: 150, uid: 'intro' });
+    $(el, '[data-slot="intro-name"]').textContent = guest ? guest.name : this.t.extras[next.id];
+    const power = $(el, '[data-slot="intro-power"]');
+    power.hidden = !guest;
+    power.textContent = guest ? `${guest.title} · ${guest.power}` : '';
+    $(el, '[data-slot="intro-desc"]').textContent = guest ? guest.desc : (this.t.about[next.id] ?? '');
+    if (!this.introOpen) this.introFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.introOpen = true;
+    this.save.seen.push(next.id);
+    storeSave(this.save);
+    $(el, '[data-action="intro-ok"]').focus({ preventScroll: true });
+  }
+
+  /** Closes the card; with `resume`, shows the next one or gives the match back. */
+  private closeIntro(resume: boolean): void {
+    if (!this.introOpen) return;
+    if (resume && this.introQueue.length) {
+      this.showNextIntro();
+      return;
+    }
+    this.introOpen = false;
+    this.overlay('intro', false);
+    if (resume) {
+      const back = this.introFocus && this.root.contains(this.introFocus) ? this.introFocus : this.cells[this.lastCell.lane][this.lastCell.col];
+      back.focus({ preventScroll: true });
+    }
+    this.introFocus = null;
+  }
+
+  // ───────────────────────────── share ─────────────────────────────
+
+  /**
+   * Draws the front page of the result as a picture and hands it to the system share
+   * sheet; where files cannot be shared, the picture is downloaded instead. Nothing
+   * leaves the device unless the player sends it somewhere.
+   */
+  private async shareResult(): Promise<void> {
+    const result = this.lastResult;
+    const camp = this.save.camp;
+    if (!result || !camp) return;
+    const blob = await this.resultPicture(result, camp);
+    if (!blob) return;
+    const file = new File([blob], 'politique-2027.png', { type: 'image/png' });
+    const text = fmt(this.t.ui.shareText, { headline: result.headline });
+    const url = `${location.origin}${location.pathname}`;
+    try {
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Politique 2027', text });
+        return;
+      }
+    } catch (error) {
+      if ((error as DOMException).name === 'AbortError') return;
+    }
+    // No file sharing here: save the picture, and put the headline and the link on the clipboard.
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = file.name;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      this.say(`${this.t.announce.shareSaved} ${this.t.announce.shareCopied}`);
+    } catch {
+      this.say(this.t.announce.shareSaved);
+    }
+  }
+
+  private async resultPicture(result: LastResult, camp: CampId): Promise<Blob | null> {
+    const W = 1200;
+    const H = 630;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const g = canvas.getContext('2d');
+    if (!g) return null;
+    await document.fonts?.load("64px 'Anton'").catch(() => undefined);
+    const ink = '#17203f';
+    const display = "'Anton', 'Arial Narrow', Impact, sans-serif";
+    const body = "'Public Sans Variable', 'Public Sans', system-ui, sans-serif";
+    g.fillStyle = '#fbf6e9';
+    g.fillRect(0, 0, W, H);
+    g.fillStyle = CAMPS[camp].color;
+    g.fillRect(0, 0, W, 16);
+    g.fillRect(0, H - 16, W, 16);
+
+    g.fillStyle = ink;
+    g.textAlign = 'left';
+    g.textBaseline = 'alphabetic';
+    g.font = `400 52px ${display}`;
+    g.fillText(this.t.ui.gazette.toUpperCase(), 56, 92);
+    g.fillRect(56, 112, 760, 3);
+    g.fillRect(56, 150, 760, 3);
+    g.font = `700 19px ${body}`;
+    g.fillText(this.t.ui.gazetteTag.toUpperCase(), 56, 139, 760);
+
+    // The headline, wrapped on up to three lines.
+    g.font = `400 62px ${display}`;
+    g.fillStyle = result.won ? '#b0191f' : ink;
+    const lines: string[] = [];
+    let line = '';
+    for (const word of result.headline.toUpperCase().split(' ')) {
+      const attempt = line ? `${line} ${word}` : word;
+      if (g.measureText(attempt).width > 760 && line) {
+        lines.push(line);
+        line = word;
+      } else line = attempt;
+    }
+    if (line) lines.push(line);
+    lines.slice(0, 3).forEach((text, i) => g.fillText(text, 56, 232 + i * 70, 760));
+    let y = 232 + Math.min(3, lines.length) * 70;
+    if (result.stars) {
+      g.font = `400 52px ${body}`;
+      g.fillStyle = '#c98a00';
+      g.fillText(`${'★'.repeat(result.stars)}${'☆'.repeat(3 - result.stars)}`, 56, y + 6);
+      y += 60;
+    }
+    if (result.notes.length) {
+      g.font = `800 22px ${body}`;
+      g.fillStyle = ink;
+      g.fillText(result.notes.join(' · ').toUpperCase(), 56, y);
+    }
+
+    // Four figures from the match along the bottom.
+    result.stats.forEach(([term, value], i) => {
+      const x = 56 + i * 190;
+      g.fillStyle = 'rgba(23,32,63,.25)';
+      g.fillRect(x, 470, 170, 2);
+      g.fillStyle = ink;
+      g.font = `700 16px ${body}`;
+      g.fillText(term.toUpperCase(), x, 500, 170);
+      g.font = `400 44px ${display}`;
+      g.fillText(value, x, 552);
+    });
+
+    // The camp's headliner, as a sticker.
+    const sprite = this.sprites.unit(CAMPS[camp].roster[5]);
+    if (sprite) {
+      const height = 400;
+      const width = (sprite.w / sprite.h) * height;
+      g.drawImage(sprite.image, 860 + (300 - width) / 2, 120, width, height);
+    }
+    g.fillStyle = ink;
+    g.textAlign = 'right';
+    g.font = `800 24px ${body}`;
+    g.fillText(location.host || 'politique2027.mbonnici.fr', W - 56, H - 44);
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }
+
+  // ───────────────────────────── home screen, offline ─────────────────────────────
+
+  /** On a phone, outside the installed app: how to put the game on the home screen. */
+  private setupInstallTip(): void {
+    const tip = $(this.root, '[data-slot="install-tip"]');
+    const text = $(tip, '[data-slot="install-text"]');
+    const nav = navigator as Navigator & { standalone?: boolean };
+    const installed = window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || nav.standalone === true;
+    const touch = window.matchMedia('(pointer: coarse)').matches;
+    if (installed || !touch || this.save.installTipDismissed || new URLSearchParams(location.search).has('e2e')) return;
+    const apple = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    text.textContent = apple ? this.t.ui.installIos : this.t.ui.installGeneric;
+    tip.hidden = false;
+    // Chrome and Edge on Android offer their own install dialog: put it behind a button.
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      this.installPrompt = event as InstallPrompt;
+      text.textContent = this.t.ui.installAndroid;
+      $(tip, '[data-action="install"]').hidden = false;
+    });
+    window.addEventListener('appinstalled', () => (tip.hidden = true));
+  }
+
+  /** Keeps a copy of the game on the device so that it opens, and plays, offline. */
+  private registerServiceWorker(): void {
+    if (!('serviceWorker' in navigator) || new URLSearchParams(location.search).has('e2e')) return;
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+    void navigator.serviceWorker.register('/sw.js').catch(() => undefined);
   }
 
   // ───────────────────────────── feedback ─────────────────────────────
@@ -758,6 +1023,7 @@ class GameApp {
           break;
         case 'spawn':
           if (e.boss) this.say(fmt(a.bossIn, { name: this.enemyName(e.enemyId) }), true);
+          this.introduce(e.enemyId, e.camp);
           break;
         case 'boom':
         case 'blast':
@@ -884,7 +1150,7 @@ class GameApp {
     const state = this.state;
 
     if (state && !this.screens.match.hidden) {
-      if (!this.paused && state.status === 'playing') {
+      if (!this.paused && !this.introOpen && state.status === 'playing') {
         this.clock += dt;
         this.accumulator += dt * this.save.speed;
         while (this.accumulator >= TICK && state.status === 'playing') {
@@ -932,6 +1198,11 @@ class GameApp {
       /** Drops an opponent on the board (tests only). */
       spawn: (enemyId: string, lane: number, x: number) => {
         if (this.state) spawnEnemy(this.state, enemyId, lane, 'gauche', x);
+      },
+      /** Lets a test see the "New!" cards (they are off by default under ?e2e). */
+      intros: (on: boolean) => {
+        this.introsEnabled = on;
+        if (on) this.save.seen = [];
       },
       unlockAll: () => {
         for (const camp of CAMP_IDS) this.save.progress[camp] = { unlocked: LAST_LEVEL, stars: {}, endlessBest: 0, finished: true };

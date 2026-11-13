@@ -54,6 +54,8 @@ const FACTS = [
   '- Platforms: any recent desktop or mobile browser; nothing to install. On phones the match is played in landscape',
   '- Content: 4 camps, 24 playable characters, 2 shared reinforcements, 6 guests, 7 campaign levels with their own stage sets, 1 endless mode',
   '- Card types: Money, Attack, Effect, Defence',
+  '- Modes: a seven-night campaign (normal or hard), then the endless "Cohabitation" mode with a local record',
+  '- Installable on the home screen and playable offline; results can be shared as a picture',
   `- Author: ${SITE.author.name} (${SITE.author.url})`,
   `- Licence: MIT. Source: ${SITE.repo}`,
   `- Version: ${SITE.version} (updated ${SITE.updated})`,

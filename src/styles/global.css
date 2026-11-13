@@ -161,7 +161,8 @@ ol[role='list'] {
   width: 100%;
   max-width: var(--container);
   margin-inline: auto;
-  padding-inline: var(--gutter);
+  /* In landscape on a phone with a notch, the text stays clear of it (viewport-fit=cover). */
+  padding-inline: max(var(--gutter), env(safe-area-inset-left, 0px)) max(var(--gutter), env(safe-area-inset-right, 0px));
 }
 
 .section {

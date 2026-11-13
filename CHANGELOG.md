@@ -12,6 +12,26 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [1.5.0] — 2026-11-13
+
+Easier to understand, nicer on phones, and something to share. Saves are kept (new settings are added with their defaults).
+
+### Added
+
+- **"New!" cards**: the first time a special opponent or guest turns up, the match stops for a short card — portrait, name, what it does. Each card appears once; Escape or "Got it!" resumes the match.
+- **Who turns up each night** is listed on every calendar card (a guest who only comes against one camp is only listed for that camp).
+- **Hard mode**, chosen on the calendar and remembered: every wave is 30% bigger. The reference bot still wins most nights, and loses a good share of the last ones.
+- **Share the result**: the end-of-match gazette is drawn as a picture (headline, stars, figures, the camp's headliner) and handed to the system share sheet; elsewhere it is downloaded and the headline and link are copied.
+- **Installable and offline**: a service worker keeps a copy of the game (pages, scripts, styles, fonts) so it opens and plays offline, especially from the home screen; on phones a dismissible tip explains how to add it (with an Install button where the browser offers one).
+- **New endless record** is called out on the gazette.
+- **Keyboard shortcuts** are listed in the pause menu, now that the board takes the whole screen.
+
+### Changed
+
+- **The whole width of a notched phone**: the pages use `viewport-fit=cover`; text and controls keep clear of the notch, and the board's scenery may run under it.
+- **No more heads under the buttons**: on phones the top strip keeps room for the first lane's heads.
+- The extras' descriptions now live in the game's dictionary, shared by the characters page and the "New!" cards.
+
 ## [1.4.0] — 2026-11-13
 
 Bigger puppets, a board that reaches the edges of every screen, and four newcomers. Saves are untouched.

@@ -29,6 +29,9 @@ The site has not yet been tested with a screen reader by someone who uses one ev
 - **Screen readers**: each square of the field is a button that describes its content (figure present, credibility, number of opponents in the lane). Waves, lost points, incoming heavyweights, tariffs and the end of the match are announced in live regions; a figure's catchphrase is read out when it is placed.
 - **Orientation**: on a phone the match is shown in landscape by default (turned a quarter turn if the device is held upright). One button in the pause menu switches this off: the game then follows the device's orientation.
 - **Zoom**: pinch-to-zoom always works. Only double-tap zoom is turned off inside the game, so that two quick taps (a card, then a square) do not enlarge the page by accident.
+- **New opponents**: the first time a special opponent appears, the match stops and a dialog explains what it does in text; focus goes to the "Got it!" button, Escape closes it and the match resumes. Each card only appears once.
+- **Keyboard shortcuts**: they are listed in the pause menu (P or Escape).
+- **Difficulty**: a "Hard" mode is offered on the calendar; normal mode stays the default.
 - **Card types**: every card carries its type (Money, Attack, Effect, Defence) in words as well as in colour.
 - **Motion**: with the system "reduce motion" setting, screen shake is removed and effects are toned down. No full-screen flash is used.
 - **Colour**: the site has a single, dark theme, whose contrast is checked. Camps are told apart by name and not by colour alone; danger information is backed by an announcement.
@@ -52,7 +55,7 @@ Third-party sites the site links to (GitHub, the author's website) are outside t
 
 ## Preparation of this statement
 
-- Statement prepared on 12 November 2026 with version 1.0.0, updated with version 1.4.0.
+- Statement prepared on 12 November 2026 with version 1.0.0, updated with version 1.5.0.
 - Technologies used: HTML, CSS, JavaScript (Astro), SVG, Canvas and Web Audio.
 - Test environment: a recent Chromium browser driven by Playwright, in desktop and mobile layouts.
 

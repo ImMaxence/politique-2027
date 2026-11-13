@@ -27,6 +27,12 @@ export interface Save {
   speed: 1 | 2;
   /** On a phone held upright, draw the match sideways so that it must be turned (default on). */
   forceLandscape: boolean;
+  /** Hard mode: bigger waves (default off). */
+  hard: boolean;
+  /** Opponents whose "New!" card has already been shown. */
+  seen: string[];
+  /** True once the "add to home screen" tip has been dismissed. */
+  installTipDismissed: boolean;
 }
 
 /** v1 had five levels; 1.1.0 inserted "the street" and "the summit". */
@@ -44,6 +50,9 @@ export function blankSave(): Save {
     muted: false,
     speed: 1,
     forceLandscape: true,
+    hard: false,
+    seen: [],
+    installTipDismissed: false,
   };
 }
 
@@ -54,6 +63,7 @@ export function loadSave(): Save {
     if (!raw) return save;
     const data = JSON.parse(raw) as {
       v?: number; camp?: unknown; muted?: unknown; speed?: unknown; forceLandscape?: unknown;
+      hard?: unknown; seen?: unknown; installTipDismissed?: unknown;
       progress?: Record<string, Partial<CampProgress>>;
     };
     if (data.v !== 1 && data.v !== 2) return save;
@@ -63,6 +73,9 @@ export function loadSave(): Save {
     save.muted = data.muted === true;
     save.speed = data.speed === 2 ? 2 : 1;
     save.forceLandscape = data.forceLandscape !== false;
+    save.hard = data.hard === true;
+    save.seen = Array.isArray(data.seen) ? data.seen.filter((id): id is string => typeof id === 'string').slice(0, 100) : [];
+    save.installTipDismissed = data.installTipDismissed === true;
     for (const camp of CAMP_IDS) {
       const stored = data.progress?.[camp];
       if (!stored) continue;

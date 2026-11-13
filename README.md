@@ -55,6 +55,10 @@ Every camp gets the same affectionate treatment, and all four are playable.
 | 🎬 **Seven nights, six stage sets** | A village square, the Agricultural Show, the street, a TV studio, an international summit and the Élysée by dusk and by night. Then **Cohabitation**, the endless mode. |
 | ⚡ **Instant** | No install, no account. The whole game is ~45 KB of JavaScript (gzipped); every page is static HTML. |
 | 📱 **Edge to edge, phone to monitor** | Every landscape screen gets the same layout: a slim column of tickets on the left (face, name, price, card type) and the board over the rest of the screen, controls on top of the scenery, like the genre's mobile classics. The scenery is cropped or widened to fit, so the board always reaches the edges and the puppets get as big as the screen allows. Where a phone cannot lock the screen, the game draws itself sideways. |
+| 🆕 **Never lost** | The first time a special opponent turns up, the match stops for a short "New!" card that says what it does. The calendar lists who turns up each night. |
+| 🔥 **Hard mode** | Bigger waves for seasoned players, one tap away on the calendar. |
+| 📤 **Share the front page** | The end-of-match gazette becomes a picture for the system share sheet — no tracking, nothing sent unless you send it. |
+| 📲 **Installable, offline** | Add it to the home screen: it opens full screen, uses the whole width of a notched phone, and plays without a connection. |
 | 🌙 **One look** | A single night-blue theme, tuned for contrast. |
 | ♿ **Playable by everyone** | Keyboard-only play, screen-reader announcements, reduced-motion support, no flashing. |
 | 🔒 **Private by design** | Zero cookies, zero analytics, zero third-party requests. Progress stays in your browser. |

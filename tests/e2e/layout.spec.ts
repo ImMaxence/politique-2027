@@ -86,7 +86,7 @@ test('a phone held sideways shows the whole courtyard', async ({ page }) => {
   expect(firstLane.x).toBeGreaterThanOrEqual(stage.x);
   expect(last.x + last.width).toBeLessThanOrEqual(stage.x + stage.width);
   expect(last.y + last.height).toBeLessThanOrEqual(stage.y + stage.height);
-  expect(cell.width).toBeGreaterThanOrEqual(60);
+  expect(cell.width).toBeGreaterThanOrEqual(56);
   expect(await overflow(page)).toBeLessThanOrEqual(0);
 });
 

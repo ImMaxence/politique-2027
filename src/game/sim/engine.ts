@@ -99,7 +99,7 @@ export type GameEvent =
   | { type: 'enemyDown'; lane: number; x: number; enemyId: string; camp: CampId; boss: boolean }
   | { type: 'leak'; lane: number; enemyId: string; loss: number }
   | { type: 'wave'; index: number; total: number; big: boolean; final: boolean }
-  | { type: 'spawn'; lane: number; enemyId: string; boss: boolean }
+  | { type: 'spawn'; lane: number; enemyId: string; boss: boolean; camp: CampId }
   | { type: 'boom'; lane: number; col: number; area: 'lane' | 'square'; unitId: string }
   | { type: 'shout'; lane: number; col: number; unitId: string }
   | { type: 'blast'; lane: number; x: number }
@@ -158,6 +158,8 @@ export interface GameState {
   /** Cost multiplier applied to every card (1 unless tariffs are in force). */
   tariff: number;
   status: 'playing' | 'won' | 'lost';
+  /** Hard mode: bigger waves. */
+  hard: boolean;
   stats: { placed: number; kills: number; leaked: number; produced: number; wavesCleared: number };
   events: GameEvent[];
   nextId: number;
@@ -197,7 +199,12 @@ export interface GameOptions {
   camp: CampId;
   level: number;
   seed?: number;
+  /** "Hard" mode: every wave is bigger. */
+  hard?: boolean;
 }
+
+/** In hard mode every wave gets this much more budget. */
+export const HARD_BUDGET = 1.3;
 
 export function createGame(options: GameOptions): GameState {
   const level = levelDef(options.level);
@@ -208,6 +215,7 @@ export function createGame(options: GameOptions): GameState {
 
   return {
     camp: camp.id,
+    hard: options.hard === true,
     level,
     seed,
     time: 0,
@@ -340,7 +348,7 @@ export function spawnEnemy(state: GameState, enemyId: string, lane: number, camp
   };
   state.enemies.push(enemy);
   // Heavyweights and named guests get an entrance announcement.
-  state.events.push({ type: 'spawn', lane, enemyId, boss: !!def.boss || !!def.portrait });
+  state.events.push({ type: 'spawn', lane, enemyId, boss: !!def.boss || !!def.portrait, camp: enemy.camp });
   return enemy;
 }
 
@@ -361,6 +369,7 @@ function launchWave(state: GameState): void {
 
   let budget = level.baseBudget + level.growth * index;
   if (big) budget = budget * 1.5 + 2;
+  if (state.hard) budget *= HARD_BUDGET;
 
   const ids: string[] = [];
 

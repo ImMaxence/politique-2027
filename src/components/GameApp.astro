@@ -4,9 +4,9 @@
  * language; src/game/main.ts brings it to life.
  */
 import '../styles/game.css';
-import { COLS, LEVELS, ROWS } from '../game/data/levels';
+import { COLS, LEVELS, ROWS, levelDef } from '../game/data/levels';
 import { CAMP_IDS } from '../game/data/types';
-import { CAMPS } from '../game/data/units';
+import { CAMPS, EXTRAS } from '../game/data/units';
 import { GAME_STRINGS, fmt, type Lang } from '../i18n/game';
 import Icon from './Icon.astro';
 import Puppet from './Puppet.astro';
@@ -19,9 +19,32 @@ const { lang } = Astro.props;
 const t = GAME_STRINGS[lang];
 const levels = [...LEVELS.map((l) => l.id), 0];
 const cells = Array.from({ length: ROWS * COLS }, (_, i) => ({ lane: Math.floor(i / COLS), col: i % COLS }));
+
+/** Who turns up on a given night, in order of appearance (activists come every night and are left out). */
+function castOf(id: number) {
+  const level = levelDef(id);
+  const extras = [...level.pool].sort((a, b) => a.from - b.from).map((p) => p.id).filter((e) => e !== 'militant');
+  return [
+    ...extras.map((e) => ({ id: e, name: t.extras[e], only: undefined as string | undefined })),
+    ...(level.guests ?? []).map((g) => ({ id: g, name: t.figures[g].name, only: EXTRAS[g].onlyAgainst as string | undefined })),
+  ];
+}
 ---
 
 <div class="game" id="game" data-lang={lang}>
+  <!-- Phones only, outside a match: how to get the game on the home screen (shown by the script). -->
+  <aside class="install-tip" data-slot="install-tip" aria-labelledby="install-title" hidden>
+    <Icon name="phone" />
+    <div class="install-tip__text">
+      <p id="install-title" class="install-tip__title">{t.ui.installTitle}</p>
+      <p data-slot="install-text"></p>
+    </div>
+    <button type="button" class="btn btn--primary install-tip__go" data-action="install" hidden>{t.ui.installButton}</button>
+    <button type="button" class="icon-btn" data-action="dismiss-install" aria-label={t.ui.dismiss} title={t.ui.dismiss}>
+      <Icon name="close" />
+    </button>
+  </aside>
+
   <!-- 1. Camp -->
   <section class="screen" data-screen="camp" aria-labelledby="camp-title">
     <div class="screen__head">
@@ -67,7 +90,15 @@ const cells = Array.from({ length: ROWS * COLS }, (_, i) => ({ lane: Math.floor(
         <h2 id="levels-title" tabindex="-1" data-focus>{t.ui.chooseLevel}</h2>
         <p><span class="screen__camp" data-slot="camp-name"></span></p>
       </div>
-      <button type="button" class="btn" data-action="change-camp">{t.ui.changeCamp}</button>
+      <div class="screen__tools">
+        <div class="difficulty" role="group" aria-labelledby="difficulty-label">
+          <span id="difficulty-label" class="difficulty__label">{t.ui.difficulty}</span>
+          <button type="button" class="difficulty__option" data-action="difficulty" data-value="normal" aria-pressed="true">{t.ui.normal}</button>
+          <button type="button" class="difficulty__option" data-action="difficulty" data-value="hard" aria-pressed="false" aria-describedby="difficulty-hint">{t.ui.hard}</button>
+          <span id="difficulty-hint" class="difficulty__hint">{t.ui.hardHint}</span>
+        </div>
+        <button type="button" class="btn" data-action="change-camp">{t.ui.changeCamp}</button>
+      </div>
     </div>
     <ol class="levels">
       {
@@ -78,6 +109,16 @@ const cells = Array.from({ length: ROWS * COLS }, (_, i) => ({ lane: Math.floor(
               <span class="level-card__name">{t.levels[id].name}</span>
               <span class="level-card__blurb">{t.levels[id].blurb}</span>
               <span class="level-card__state" data-slot="state" />
+              <span class="level-card__cast">
+                <small>{t.ui.tonight}</small>
+                {
+                  castOf(id).map((c) => (
+                    <span class="chip" data-only={c.only}>
+                      {c.name}
+                    </span>
+                  ))
+                }
+              </span>
             </button>
           </li>
         ))
@@ -173,6 +214,25 @@ const cells = Array.from({ length: ROWS * COLS }, (_, i) => ({ lane: Math.floor(
           <button type="button" class="btn btn--toggle" data-action="orientation" aria-pressed="true">
             <Icon name="phone" /><span>{t.ui.forceLandscape}</span>
           </button>
+          <!-- Keyboard only: the shortcuts, which no longer fit under a full-screen board. -->
+          <div class="panel__keys">
+            <p class="panel__keys-title">{t.ui.keyboardTitle}</p>
+            <p>{t.ui.keyboardHelp}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- The first time a special opponent turns up, the match stops for a short introduction. -->
+      <div class="overlay" data-overlay="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title" aria-describedby="intro-desc" hidden>
+        <div class="panel intro">
+          <p class="intro__tag">{t.ui.newOpponent}</p>
+          <div class="intro__art" data-slot="intro-art" aria-hidden="true"></div>
+          <div class="intro__text">
+            <h2 id="intro-title" data-slot="intro-name"></h2>
+            <p class="intro__power" data-slot="intro-power"></p>
+            <p id="intro-desc" data-slot="intro-desc"></p>
+          </div>
+          <button type="button" class="btn btn--primary" data-action="intro-ok">{t.ui.gotIt}</button>
         </div>
       </div>
 
@@ -184,8 +244,10 @@ const cells = Array.from({ length: ROWS * COLS }, (_, i) => ({ lane: Math.floor(
           <p class="gazette__stars" role="img" data-slot="stars"></p>
           <dl class="gazette__stats" data-slot="stats"></dl>
           <p class="gazette__unlock" data-slot="unlock" hidden></p>
+          <p class="gazette__notes" data-slot="notes" hidden></p>
           <div class="gazette__actions">
             <button type="button" class="btn btn--primary" data-action="next">{t.ui.nextLevel}</button>
+            <button type="button" class="btn btn--share" data-action="share"><Icon name="share" /><span>{t.ui.share}</span></button>
             <button type="button" class="btn" data-action="retry">{t.ui.tryAgain}</button>
             <button type="button" class="btn btn--ghost" data-action="calendar">{t.ui.backToCalendar}</button>
           </div>
