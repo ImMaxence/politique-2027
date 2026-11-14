@@ -816,8 +816,12 @@ ol[role='list'] {
   color: var(--paper);
   border-color: var(--ink);
 }
+/* The camp's name sits on a coloured block: room under it before the line of text. */
+.camp-block__head h2 {
+  margin: 0 0 0.9rem;
+}
 .camp-block__head p {
-  margin: 0.5rem 0 0;
+  margin: 0;
   font-style: italic;
   color: var(--ink-soft);
 }

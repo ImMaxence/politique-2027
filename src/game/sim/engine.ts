@@ -74,8 +74,6 @@ export interface Enemy {
   cast: Cast | null;
   /** True once an appeal has put her back on her feet. */
   revived: boolean;
-  /** Electronic tag already beeped in this life. */
-  tagged: boolean;
   /** Last stand (faster, harder) or tariffs raised. */
   enraged: boolean;
   /** Crossing the street: the lane it comes from and when it left (for the animation). */
@@ -149,9 +147,8 @@ export type GameEvent =
   /** A headliner announces a power (angry face, marker), then it lands. */
   | { type: 'cast'; id: number; enemyId: string; power: PowerKind; lane: number; x: number; zone?: { lane: number; col: number } }
   | { type: 'power'; id: number; enemyId: string; power: PowerKind; lane: number; x: number; hits: { lane: number; col: number }[]; to?: number }
-  /** Passive moves: the appeal, the electronic tag, the last stand, the tariff hike. */
+  /** Passive moves: the appeal, the last stand, the tariff hike. */
   | { type: 'appeal'; id: number; enemyId: string; lane: number; x: number }
-  | { type: 'tag'; id: number; lane: number; x: number }
   | { type: 'enrage'; id: number; enemyId: string; lane: number; x: number }
   | { type: 'hike'; id: number; lane: number; x: number }
   | { type: 'ultimate'; id: UltimateId }
@@ -403,7 +400,7 @@ export function spawnEnemy(state: GameState, enemyId: string, lane: number, camp
     traitTimer: def.trait && 'interval' in def.trait ? def.trait.interval * 0.6 : 0,
     attacking: false, dry: false, born: state.time, lastHit: -9,
     powerTimers: (def.powers ?? []).map((p) => ('interval' in p ? p.interval * 0.55 : 0)),
-    cast: null, revived: false, tagged: false, enraged: false, fromLane: lane, shiftAt: -9,
+    cast: null, revived: false, enraged: false, fromLane: lane, shiftAt: -9,
   };
   state.enemies.push(enemy);
   // Heavyweights and named guests get an entrance announcement.
@@ -1101,15 +1098,6 @@ function facing(state: GameState, enemy: Enemy): Unit | null {
 function updatePowers(state: GameState, enemy: Enemy, powers: Power[], dt: number): boolean {
   const ratio = enemy.hp / enemy.def.hp;
   for (const power of powers) {
-    if (power.kind === 'tag' && !enemy.tagged && !enemy.revived && enemy.x < power.limit) {
-      // Beep beep: out of bounds, and back to the permitted area.
-      enemy.tagged = true;
-      enemy.x = Math.min(SPAWN_X, enemy.x + power.back);
-      enemy.stunT = Math.max(enemy.stunT, 1.2);
-      enemy.cast = null;
-      state.events.push({ type: 'tag', id: enemy.id, lane: enemy.lane, x: enemy.x });
-      return true;
-    }
     if ((power.kind === 'enrage' || power.kind === 'hike') && !enemy.enraged && ratio < power.below) {
       enemy.enraged = true;
       state.events.push(power.kind === 'enrage'

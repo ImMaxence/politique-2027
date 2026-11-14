@@ -479,12 +479,8 @@ describe("headliners' powers", () => {
     expect(later.state.cards.find((c) => c.def.id === 'lassalle')!.cooldown).toBe(0);
   });
 
-  it('Le Pen: the tag beeps once and pulls her back, then she appeals once', () => {
+  it('Le Pen appeals once: back on her feet with 40% of her credibility', () => {
     const { state, enemy } = stage('star:lepen');
-    enemy!.x = 3.1;
-    run(state, 0.1);
-    expect(state.events.some((e) => e.type === 'tag')).toBe(true);
-    expect(enemy!.x).toBeGreaterThan(5);
     enemy!.hp = 0;
     run(state, TICK);
     expect(state.enemies).toContain(enemy);

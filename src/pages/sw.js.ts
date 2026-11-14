@@ -1,9 +1,9 @@
 import type { APIRoute } from 'astro';
 import { SITE } from '../config/site';
-import { PHOTOS } from '../game/data/photos';
+import { HEAD_FILES } from '../game/data/photos';
 
 /** Every photo head, so that a match started offline still shows real faces. */
-const HEADS = Object.entries(PHOTOS).flatMap(([id, faces]) => faces.map((face) => `/heads/${id}-${face}.webp`));
+const HEADS = Object.values(HEAD_FILES).map((file) => `/heads/${file}`);
 
 /**
  * Service worker: keeps a copy of the game on the device so that it opens and
@@ -19,7 +19,8 @@ const HEADS = ${JSON.stringify(HEADS)};
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await cache.addAll(PAGES);
+    const fresh = (url) => new Request(url, { cache: 'reload' });
+    await cache.addAll(PAGES.map(fresh));
     // The game pages' own scripts and styles, and the fonts those styles use.
     const assets = new Set();
     for (const page of PLAY) {
@@ -33,7 +34,7 @@ self.addEventListener('install', (event) => {
         if (!match[1].includes('latin-ext')) assets.add(match[1]);
       }
     }
-    await cache.addAll([...assets, ...HEADS]);
+    await cache.addAll([...assets, ...HEADS].map(fresh));
     await self.skipWaiting();
   })());
 });

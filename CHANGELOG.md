@@ -12,6 +12,20 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [3.0.3] — 2026-11-14
+
+Saves are untouched.
+
+### Fixed
+
+- **The new photos now reach every player.** A head kept the same file name from one version to the next, so browsers, Cloudflare and the offline copy of the game went on showing the old one (they keep pictures for a week). Every head's file name now carries the hash of its content, heads are cached for a year since a new photo always gets a new name, and the offline copy is filled past the browser's cache.
+
+### Changed
+
+- **Defenders show their credibility**: a thick bar with the points left written on it, always visible under every defence figure on the board (green, yellow, then red).
+- **Marine Le Pen's electronic tag is gone** (it could not be seen on the board): she keeps her cats and her appeal to the Court of Cassation. Texts, legal notice and README follow.
+- Characters page: more room between a camp's name and its motto.
+
 ## [3.0.2] — 2026-11-14
 
 Polish. Saves are untouched.

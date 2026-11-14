@@ -117,7 +117,6 @@ export const UNITS: Record<string, UnitDef> = {
     attacker: {
       hp: 2250, speed: 0.15, dps: 42, threat: 16, leak: 2, resist: 0.6, trait: { kind: 'summon', what: 'cat', interval: 5.5 },
       powers: [
-        { kind: 'tag', limit: 3.2, back: 2.5 },
         { kind: 'appeal', share: 0.4 },
       ],
     },

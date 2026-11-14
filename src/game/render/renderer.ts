@@ -6,7 +6,7 @@ import { fmt, type GameStrings } from '../../i18n/game';
 import { COLS, ROWS } from '../data/levels';
 import { PHOTOS, type Expression } from '../data/photos';
 import type { ProjectileKind } from '../data/types';
-import { CAMPS, UNITS, figureOf } from '../data/units';
+import { CAMPS, UNITS, categoryOf, figureOf } from '../data/units';
 import { ZUCMAN_SHARE, canPlace, type Enemy, type GameEvent, type GameState, type Projectile, type Unit } from '../sim/engine';
 import { BOARD_W, BOARD_X, CELL_H, CELL_W, FIGURE_SCALE, SCENE_LEFT, SCENE_W, VIEW_H, VIEW_W, feetY, laneTop, xToPx } from './layout';
 import { INK } from './portraits';
@@ -480,11 +480,6 @@ export class Renderer {
           this.speak(e.id, a.appealLine);
           this.shake = 0.4;
           break;
-        case 'tag':
-          this.float(xToPx(e.x), feetY(e.lane) - 150, a.tag, '#1f7a3d', 30, 1.6);
-          this.ring(xToPx(e.x), feetY(e.lane) - 10, 60, '#5bd16b', 6, 0.6);
-          this.ring(xToPx(e.x), feetY(e.lane) - 10, 90, '#5bd16b', 4, 0.8);
-          break;
         case 'enrage':
           this.float(xToPx(e.x), feetY(e.lane) - 150, a.enrage, RED, 28, 1.6);
           this.shake = 0.25;
@@ -587,6 +582,40 @@ export class Renderer {
     g.beginPath();
     g.roundRect(x - width / 2, y, Math.max(3, width * Math.max(0, Math.min(1, ratio))), 7, 3);
     g.fill();
+  }
+
+/**
+   * A defender's credibility, always on show: a thick bar with the points left
+   * written on it (green, then yellow, then red as it runs low).
+   */
+  private credibility(x: number, y: number, hp: number, max: number): void {
+    const g = this.ctx;
+    const ratio = Math.max(0, Math.min(1, hp / max));
+    const width = 78;
+    const height = 20;
+    const size = Math.max(14, this.minLabel);
+    g.fillStyle = INK;
+    g.beginPath();
+    g.roundRect(x - width / 2 - 2.5, y - 2.5, width + 5, height + 5, 8);
+    g.fill();
+    g.fillStyle = '#4a5273';
+    g.beginPath();
+    g.roundRect(x - width / 2, y, width, height, 6);
+    g.fill();
+    g.fillStyle = ratio > 0.5 ? '#58c26b' : ratio > 0.25 ? '#f6aa1c' : RED;
+    g.beginPath();
+    g.roundRect(x - width / 2, y, Math.max(6, width * ratio), height, 6);
+    g.fill();
+    g.font = `400 ${size}px ${DISPLAY}`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.lineJoin = 'round';
+    g.lineWidth = 3.5;
+    g.strokeStyle = INK;
+    const text = String(Math.ceil(hp));
+    g.strokeText(text, x, y + height / 2 + 1);
+    g.fillStyle = PAPER;
+    g.fillText(text, x, y + height / 2 + 1);
   }
 
   private label(text: string, x: number, y: number, size: number, color: string, outline = PAPER): void {
@@ -735,7 +764,14 @@ export class Renderer {
       g.stroke();
       g.restore();
     }
-    if (unit.hp < unit.def.hp) this.bar(x, y + 2, 58, unit.hp / unit.def.hp, '#58c26b');
+    // Defenders always show their credibility, in figures; the others once they are hurt.
+    if (categoryOf(unit.def) === 'defence') {
+      const hp = unit.hp;
+      const max = unit.def.hp;
+      this.plates.push(() => this.credibility(x, y - 6, hp, max));
+    } else if (unit.hp < unit.def.hp) {
+      this.bar(x, y + 2, 58, unit.hp / unit.def.hp, '#58c26b');
+    }
   }
 
   /** Flames licking above a burning bin. */

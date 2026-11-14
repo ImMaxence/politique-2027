@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version 3.0.2" src="https://img.shields.io/badge/version-3.0.2-d62b30">
+  <img alt="Version 3.0.3" src="https://img.shields.io/badge/version-3.0.3-d62b30">
   <img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-2f5fe0">
   <img alt="Astro 7" src="https://img.shields.io/badge/Astro-7-17203f">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-17203f">
@@ -34,7 +34,7 @@ Every night has a theme and a goal stacked at the end of the lanes: farmers afte
 
 The cast wears **real faces**: freely licensed photos of their heads, cut out like stickers, on cardboard bodies. And the last figure of every camp marches against you as a **boss**, bigger, with powers drawn from French political memes — announced a second before they land, with an angry face:
 
-- **Marine Le Pen** lets her cats out. Her **electronic tag** beeps the first time she comes too close (back she goes), and when you beat her she **appeals to the Court of Cassation** and gets back up.
+- **Marine Le Pen** lets her cats out, and when you beat her she **appeals to the Court of Cassation** and gets back up.
 - **Emmanuel Macron** _crosses the street_ to dodge your best lane, then calls a **Dissolution**: every figure on 3 × 3 squares goes back to the voters.
 - **Jean-Luc Mélenchon** roars _"La République, c'est moi !"_ — every mic in front of him is cut — and sends his **hologram** to hold a rally in another lane.
 - **Teddy Riner** throws whoever stands in his way with an **ippon**, and fights harder below half.
@@ -78,7 +78,7 @@ Every camp gets the same affectionate treatment, and all four are playable.
     <td align="center"><sub>Head to head: the attacker's column is on the right</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/new-card.png" alt="A New! card introduces Marine Le Pen as a boss while the match waits: her cats, her electronic tag and her appeal"></td>
+    <td><img src="docs/new-card.png" alt="A New! card introduces Marine Le Pen as a boss while the match waits: her cats and her appeal"></td>
     <td><img src="docs/gameplay-phone.png" alt="The match on a phone held sideways: a column of tickets on the left, the board over the whole height"></td>
   </tr>
   <tr>
@@ -276,7 +276,7 @@ Versions follow `MAJOR.MEDIUM.MINOR` — see the [changelog](CHANGELOG.md).
 
 ## Satire notice
 
-Politique 2027 is a work of satire and parody. The characters are caricatures of public figures: real photos of their heads on drawn bodies, which are obviously montages. No face is retouched; an angry or worried face is another real photo. Their powers and the situations are made up for laughs and do not describe facts or reflect the author's opinions. Where a power nods to a public fact (Marine Le Pen's conviction on appeal of 7 July 2026, including a year under electronic tag, and her announced appeal to the Court of Cassation; Jean-Luc Mélenchon's 2017 hologram rallies; Xavier Niel's public "1v1" exchange of November 2024), the legal notice says so. Some speech bubbles are famous public catchphrases, quoted as such; the others are invented. The 17 October night refers to that day of protests without targeting any organiser or participant; other news twists are generic. One guest only appears against the Right because he publicly took a stand against the far right in 2024: that reflects his stance, not a bias of the game. The game is not affiliated with any party, candidate, company, media outlet or institution, and is neither a poll nor a call to vote.
+Politique 2027 is a work of satire and parody. The characters are caricatures of public figures: real photos of their heads on drawn bodies, which are obviously montages. No face is retouched; an angry or worried face is another real photo. Their powers and the situations are made up for laughs and do not describe facts or reflect the author's opinions. Where a power nods to a public fact (Marine Le Pen's conviction on appeal of 7 July 2026 and her announced appeal to the Court of Cassation; Jean-Luc Mélenchon's 2017 hologram rallies; Xavier Niel's public "1v1" exchange of November 2024), the legal notice says so. Some speech bubbles are famous public catchphrases, quoted as such; the others are invented. The 17 October night refers to that day of protests without targeting any organiser or participant; other news twists are generic. One guest only appears against the Right because he publicly took a stand against the far right in 2024: that reflects his stance, not a bias of the game. The game is not affiliated with any party, candidate, company, media outlet or institution, and is neither a poll nor a call to vote.
 
 It is an original game in the lane-defense genre and reuses no name, character, artwork, music or level from any existing game.
 

@@ -1175,10 +1175,6 @@ class GameApp {
           this.audio.play('wave');
           this.say(a.appealBanner, true);
           break;
-        case 'tag':
-          this.audio.play('whistle');
-          this.say(a.tag);
-          break;
         case 'enrage':
           this.say(a.enrage);
           break;

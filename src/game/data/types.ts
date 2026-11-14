@@ -93,8 +93,6 @@ export type Power =
   | { kind: 'lag'; interval: number; warn: number; duration: number }
   /** Appeal: back on her feet once, with this share of her credibility. */
   | { kind: 'appeal'; share: number }
-  /** Electronic tag: beeps when she walks past `limit` and pulls her back `back` cells (once per life). */
-  | { kind: 'tag'; limit: number; back: number }
   /** Last stand: below `below` of her credibility, faster and harder. */
   | { kind: 'enrage'; below: number; speed: number }
   /** Below `below` of his credibility, tariffs go up to `factor`. */

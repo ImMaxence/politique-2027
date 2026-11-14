@@ -12,7 +12,7 @@
  * card: yellow for votes, red for attack, purple for effect, blue for defence.
  * Guests, who are never played, come without a tie.
  */
-import { PHOTOS, type Expression } from '../data/photos';
+import { HEAD_FILES, PHOTOS, type Expression } from '../data/photos';
 import type { Category } from '../data/types';
 import { EXTRAS, GUESTS, UNITS, categoryOf } from '../data/units';
 
@@ -38,12 +38,6 @@ const FIGURES = new Set([...Object.values(UNITS).filter((u) => u.camp !== 'neutr
 /** Where a photo head sits on a puppet (viewBox units): the face is about 66 units wide, chin on the collar. Same ratio as the cut-outs of scripts/build-heads.ts (360 × 440). */
 export const HEAD_BOX = { x: 8, y: -16, w: 104, h: 127.1 };
 
-/** An electronic tag around the stick, where an ankle would be (Marine Le Pen). */
-function tag(): string {
-  return `<rect x="51" y="134" width="18" height="10" rx="3" fill="#2a2e38" ${s(2)}/><circle cx="64.500" cy="139" r="2" fill="#5bd16b"/>
-    <path d="M51 137h-3M69 137h3" fill="none" ${s(2)}/>`;
-}
-
 /** The suit: jacket, shirt and, for a playable figure, a tie in the colour of its card family. */
 function suit(id: string): string {
   const unit = UNITS[id];
@@ -64,7 +58,6 @@ function figure(id: string, photo: string | null): string {
     : // No photo at hand (offline, first visit): a plain head stands in.
       `<ellipse cx="60" cy="50" rx="28" ry="33" fill="#d8c3ab" ${s()}/>`;
   return `<rect x="56" y="126" width="8" height="24" rx="2" fill="${WOOD}" ${s(2.2)}/>
-    ${id === 'lepen' ? tag() : ''}
     ${suit(id)}
     ${head}`;
 }
@@ -384,7 +377,8 @@ export const PORTRAIT_IDS = [...FIGURES, 'crs', 'pompiers'];
 
 /** Public path of a photo head (or null when the figure has no photo, or not that expression). */
 export function headUrl(id: string, expression: Expression = 'neutral'): string | null {
-  return PHOTOS[id]?.includes(expression) ? `/heads/${id}-${expression}.webp` : null;
+  const file = PHOTOS[id]?.includes(expression) ? HEAD_FILES[`${id}-${expression}`] : undefined;
+  return file ? `/heads/${file}` : null;
 }
 
 export interface PortraitOptions {
