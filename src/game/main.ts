@@ -18,6 +18,7 @@ import { enemySvg, portraitSvg } from './render/portraits';
 import { Renderer, type ViewState } from './render/renderer';
 import { SpriteStore } from './render/sprites';
 import {
+  RIPOSTE_DAMAGE, RIPOSTE_REWARD,
   TICK, ULT_CHARGE_TIME, VERSUS_KINDS, catchPunchline, costOf, createGame, mergeCost, placeUnit, removeUnit, scoreFor, spawnEnemy, starsFor, step,
   ultimateReady, useUltimate, versusSend, type GameEvent, type GameState, type PlaceError, type VersusKind,
 } from './sim/engine';
@@ -1317,6 +1318,31 @@ class GameApp {
     $(el, '[data-action="intro-ok"]').focus({ preventScroll: true });
   }
 
+  /** The soundbites, explained when the first one drops (the match waits meanwhile). */
+  private punchTip(): void {
+    const state = this.state;
+    if (!this.introsEnabled || this.introOpen || this.save.seen.includes('tip:punchline') || !state || state.status !== 'playing') return;
+    const el = this.overlay('intro', true);
+    $(el, '[data-slot="intro-tag"]').textContent = this.t.ui.tipTag;
+    $(el, '[data-slot="intro-art"]').innerHTML = `<svg viewBox="0 0 120 120" width="150" height="150" aria-hidden="true" focusable="false">
+      <circle cx="60" cy="56" r="46" fill="none" stroke="#ffd23f" stroke-width="7" stroke-dasharray="210 400" stroke-linecap="round" transform="rotate(-90 60 56)"/>
+      <path d="M26 34q0-12 12-12h44q12 0 12 12v24q0 12-12 12H56l-14 14 2-14h-6q-12 0-12-12z" fill="#fffdf6" stroke="#17203f" stroke-width="4" stroke-linejoin="round"/>
+      <text x="60" y="56" text-anchor="middle" font-family="Anton, Impact, sans-serif" font-size="30" fill="#17203f">!?</text>
+      <rect x="84" y="8" width="34" height="22" rx="8" fill="#ffd23f" stroke="#17203f" stroke-width="3"/>
+      <text x="101" y="25" text-anchor="middle" font-family="Anton, Impact, sans-serif" font-size="16" fill="#17203f">+${RIPOSTE_REWARD}</text>
+    </svg>`;
+    $(el, '[data-slot="intro-name"]').textContent = this.t.ui.punchTipTitle;
+    const power = $(el, '[data-slot="intro-power"]');
+    power.hidden = false;
+    power.textContent = fmt(this.t.ui.punchTipHow, { reward: RIPOSTE_REWARD, damage: RIPOSTE_DAMAGE });
+    $(el, '[data-slot="intro-desc"]').textContent = this.t.ui.punchTipDesc;
+    this.introFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.introOpen = true;
+    this.save.seen.push('tip:punchline');
+    storeSave(this.save);
+    $(el, '[data-action="intro-ok"]').focus({ preventScroll: true });
+  }
+
   /** The full card of a figure, opened by a long press (the match waits meanwhile). */
   private showCardSheet(unitId: string): void {
     const state = this.state;
@@ -1567,6 +1593,7 @@ class GameApp {
         case 'punchline':
           this.audio.play('whistle');
           this.say(fmt(a.punchlineIn, { row: e.lane + 1, col: e.col + 1 }));
+          this.punchTip();
           break;
         case 'riposte':
           this.audio.play('coin');

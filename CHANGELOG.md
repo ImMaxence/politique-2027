@@ -12,6 +12,14 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [4.4.1] — 2026-11-14
+
+Saves are untouched.
+
+### Changed
+
+- **The debate's soundbites show what they do.** Each bubble now draws a marching dotted line to the opponent it will hit, with a red target and the damage (-150) over that opponent, carries its reward (+15) and a blinking "Tap!", and shivers just before it lands. When one of your figures stands under it, a crossed-out speech bubble blinks over that figure: that is who will be lost for words. Sent back, the bubble flies down the lane with a golden streak and bursts on the opponent; left alone, it lands with a red ring and a "Lost for words!" over the figure it silenced. The first soundbite of a night opens a tip that explains all this (the match waits meanwhile).
+
 ## [4.4.0] — 2026-11-14
 
 A Noob mode, and two buttons to match the two ends of the scale. Saves are kept.

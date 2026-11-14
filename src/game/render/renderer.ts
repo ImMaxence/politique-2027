@@ -8,7 +8,7 @@ import type { FlameColour } from '../cosmetics';
 import { EYES, PHOTOS, type Expression } from '../data/photos';
 import type { ProjectileKind } from '../data/types';
 import { CAMPS, UNITS, categoryOf, figureOf } from '../data/units';
-import { ZUCMAN_SHARE, canPlace, playOn, refundOf, type Enemy, type GameEvent, type GameState, type Projectile, type Unit } from '../sim/engine';
+import { RIPOSTE_DAMAGE, RIPOSTE_REWARD, ZUCMAN_SHARE, canPlace, playOn, refundOf, type Enemy, type GameEvent, type GameState, type Projectile, type Unit } from '../sim/engine';
 import { BOARD_W, BOARD_X, CELL_H, CELL_W, FIGURE_SCALE, SCENE_LEFT, SCENE_W, VIEW_H, VIEW_W, feetY, laneTop, xToPx } from './layout';
 import { HEAD_BOX, INK } from './portraits';
 import { drawGoal } from './goals';
@@ -51,6 +51,8 @@ interface FloatText { x: number; y: number; text: string; color: string; size: n
 interface Ring { x: number; y: number; from: number; to: number; life: number; max: number; color: string; width: number }
 interface LaneFlash { lanes: number[]; fromX: number; toX: number; life: number; max: number; color: string }
 interface Banner { text: string; color: string; life: number; max: number }
+/** A soundbite sent back, flying to the opponent it hits (or off the board when the lane is empty). */
+interface Volley { x0: number; y0: number; x1: number; y1: number; life: number; max: number; hit: boolean }
 /** A speech bubble follows the puppet that says it. */
 interface Bubble { owner: number; lines: string[]; width: number; life: number; max: number; size: number }
 
@@ -110,6 +112,7 @@ export class Renderer {
   private particles: Particle[] = [];
   private texts: FloatText[] = [];
   private rings: Ring[] = [];
+  private volleys: Volley[] = [];
   private hints: (() => void)[] = [];
   /** What your figures wear (a key of SpriteStore's dressed pictures) and the colour of their flames. */
   private look = '';
@@ -193,6 +196,7 @@ export class Renderer {
     this.particles = [];
     this.texts = [];
     this.rings = [];
+    this.volleys = [];
     this.flashes = [];
     this.bubbles = [];
     this.replies = [];
@@ -490,19 +494,26 @@ export class Renderer {
           break;
         case 'riposte': {
           const x = xToPx(e.col + 0.5);
-          const y = laneTop(e.lane) + CELL_H * 0.45;
+          const y = laneTop(e.lane) + CELL_H * 0.42;
           this.ring(x, y, 70, GOLD, 6, 0.4);
-          this.float(x, y - 40, a.riposte, '#1f7a3d', 26, 1.2);
-          if (e.x !== null) {
-            this.confetti(xToPx(e.x), feetY(e.lane) - 70, GOLD, 14);
-            this.flashes.push({ lanes: [e.lane], fromX: x, toX: xToPx(e.x), life: 0.5, max: 0.5, color: GOLD });
+          this.float(x, y - 44, a.riposte, '#1f7a3d', 26, 1.2);
+          this.float(x + 46, y - 6, `+${RIPOSTE_REWARD}`, GOLD, 30, 1.3);
+          // The bubble flies back down the lane and bursts on the opponent.
+          const x1 = e.x !== null ? xToPx(e.x) : xToPx(COLS + 0.8);
+          const y1 = e.x !== null ? feetY(e.lane) - 95 : y;
+          this.volleys.push({ x0: x, y0: y, x1, y1, life: 0.3, max: 0.3, hit: e.x !== null });
+          break;
+        }
+        case 'punchlineLanded': {
+          const x = xToPx(e.col + 0.5);
+          this.ring(x, laneTop(e.lane) + CELL_H * 0.42, 60, RED, 5, 0.4);
+          this.float(x, laneTop(e.lane) + 20, a.landed, RED, 24, 1.3);
+          if (e.hit) {
+            this.shake = Math.max(this.shake, 0.15);
+            this.float(x, feetY(e.lane) - 150, a.speechless, RED, 24, 1.6);
           }
           break;
         }
-        case 'punchlineLanded':
-          this.float(xToPx(e.col + 0.5), laneTop(e.lane) + 20, a.landed, RED, 24, 1.3);
-          if (e.hit) this.shake = Math.max(this.shake, 0.15);
-          break;
         case 'interview':
           this.float(xToPx(e.col + 0.5), feetY(e.lane) - 122, a.noComment, INK, 22, 1.6);
           break;
@@ -1429,6 +1440,55 @@ export class Renderer {
   private drawEffects(dt: number): void {
     const g = this.ctx;
 
+    // Soundbites sent back, on their way to the opponent.
+    for (let i = this.volleys.length - 1; i >= 0; i--) {
+      const v = this.volleys[i];
+      v.life -= dt;
+      if (v.life <= 0) {
+        this.volleys.splice(i, 1);
+        if (v.hit) {
+          this.ring(v.x1, v.y1, 90, GOLD, 8, 0.45);
+          this.ring(v.x1, v.y1, 55, PAPER, 5, 0.3);
+          this.confetti(v.x1, v.y1, GOLD, 18, 1.2);
+          this.shake = Math.max(this.shake, 0.12);
+        } else {
+          this.confetti(v.x1, v.y1, PAPER, 10);
+        }
+        continue;
+      }
+      const p = 1 - v.life / v.max;
+      const e = p * p * (3 - 2 * p);
+      const x = v.x0 + (v.x1 - v.x0) * e;
+      const y = v.y0 + (v.y1 - v.y0) * e - Math.sin(p * Math.PI) * 40;
+      // A golden streak behind it.
+      const trail = g.createLinearGradient(v.x0, v.y0, x, y);
+      trail.addColorStop(0, 'rgba(255,210,63,0)');
+      trail.addColorStop(1, 'rgba(255,210,63,.9)');
+      g.save();
+      g.strokeStyle = trail;
+      g.lineWidth = 10;
+      g.lineCap = 'round';
+      g.beginPath();
+      g.moveTo(v.x0, v.y0);
+      g.quadraticCurveTo((v.x0 + x) / 2, Math.min(v.y0, y) - 30 * Math.sin(p * Math.PI), x, y);
+      g.stroke();
+      g.translate(x, y);
+      g.rotate(p * Math.PI * 2);
+      g.scale(0.6, 0.6);
+      g.fillStyle = PAPER;
+      g.strokeStyle = INK;
+      g.lineWidth = 5;
+      bubblePath(g, -40, -28, 80, 50, 14, -4, 9, -18, 36);
+      g.fill();
+      g.stroke();
+      g.fillStyle = INK;
+      g.font = `400 32px ${DISPLAY}`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('!?', 0, -2);
+      g.restore();
+    }
+
     for (let i = this.rings.length - 1; i >= 0; i--) {
       const ring = this.rings[i];
       ring.life -= dt;
@@ -1646,13 +1706,72 @@ export class Renderer {
   /** The debate's soundbites: a speech bubble per square, with the time left as a ring. */
   private drawPunchlines(state: GameState, now: number): void {
     const g = this.ctx;
+    const pulse = this.reducedMotion ? 1 : 0.5 + 0.5 * Math.sin(now * 8);
     for (const line of state.punchlines) {
       const x = xToPx(line.col + 0.5);
-      const bob = this.reducedMotion ? 0 : Math.sin(now * 6 + line.id) * 4;
-      const y = laneTop(line.lane) + CELL_H * 0.42 + bob;
+      const y = laneTop(line.lane) + CELL_H * 0.42;
       const ratio = Math.max(0, line.life / line.max);
+      // Who it will hit: a marching dotted line to the frontmost opponent in the lane, a target on it, the damage.
+      const target = state.enemies.filter((e) => e.lane === line.lane && e.hp > 0 && e.x <= COLS + 0.2).sort((p, q) => p.x - q.x)[0];
+      if (target) {
+        const tx = xToPx(target.x);
+        const ty = feetY(target.lane) - 95;
+        const side = tx >= x ? 1 : -1;
+        g.save();
+        g.globalAlpha = 0.9;
+        g.strokeStyle = GOLD;
+        g.lineWidth = 4;
+        g.setLineDash([12, 9]);
+        g.lineDashOffset = this.reducedMotion ? 0 : -now * 60 * side;
+        g.beginPath();
+        g.moveTo(x + 44 * side, y);
+        g.lineTo(tx - 30 * side, ty);
+        g.stroke();
+        g.setLineDash([]);
+        g.translate(tx, ty);
+        g.scale(1 + 0.1 * pulse, 1 + 0.1 * pulse);
+        g.strokeStyle = RED;
+        g.lineWidth = 4;
+        g.beginPath();
+        g.arc(0, 0, 24, 0, Math.PI * 2);
+        g.moveTo(-34, 0);
+        g.lineTo(-14, 0);
+        g.moveTo(14, 0);
+        g.lineTo(34, 0);
+        g.moveTo(0, -34);
+        g.lineTo(0, -14);
+        g.moveTo(0, 14);
+        g.lineTo(0, 34);
+        g.stroke();
+        g.restore();
+        this.label(`-${RIPOSTE_DAMAGE}`, tx, ty - 50, 24, RED);
+      }
+      // And if it lands on one of your figures: lost for words.
+      const victim = state.grid[line.lane][line.col];
+      if (victim && ratio < 0.6) {
+        g.save();
+        g.globalAlpha = 0.45 + 0.55 * pulse;
+        g.translate(x + 34, feetY(line.lane) - 150);
+        g.fillStyle = PAPER;
+        g.strokeStyle = INK;
+        g.lineWidth = 3;
+        g.beginPath();
+        g.roundRect(-16, -12, 32, 22, 7);
+        g.fill();
+        g.stroke();
+        g.strokeStyle = RED;
+        g.lineWidth = 4;
+        g.beginPath();
+        g.moveTo(-10, -8);
+        g.lineTo(10, 6);
+        g.stroke();
+        g.restore();
+      }
+      // About to drop: it shakes.
+      const shiver = !this.reducedMotion && ratio < 0.35 ? Math.sin(now * 40 + line.id) * 3 : 0;
+      const bob = this.reducedMotion ? 0 : Math.sin(now * 6 + line.id) * 4;
       g.save();
-      g.translate(x, y);
+      g.translate(x + shiver, y + bob);
       g.fillStyle = PAPER;
       g.strokeStyle = INK;
       g.lineWidth = 4;
@@ -1670,6 +1789,24 @@ export class Renderer {
       g.beginPath();
       g.arc(0, -2, 46, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
       g.stroke();
+      // What it pays, and what to do.
+      const reward = `+${RIPOSTE_REWARD}`;
+      g.font = `400 20px ${DISPLAY}`;
+      const width = g.measureText(reward).width + 14;
+      g.fillStyle = INK;
+      g.beginPath();
+      g.roundRect(26, -60, width + 4, 28, 9);
+      g.fill();
+      g.fillStyle = GOLD;
+      g.beginPath();
+      g.roundRect(28, -58, width, 24, 8);
+      g.fill();
+      g.fillStyle = INK;
+      g.fillText(reward, 28 + width / 2, -45);
+      g.restore();
+      g.save();
+      g.globalAlpha = 0.55 + 0.45 * pulse;
+      this.label(this.strings.ui.punchTap.toUpperCase(), x, y + 46, 20, INK);
       g.restore();
     }
   }
