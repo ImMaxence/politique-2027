@@ -280,7 +280,39 @@ class GameApp {
     return deck;
   }
 
-/** What a card does, in numbers: damage and pace, votes, credibility, freeze time… */
+/**
+   * The number on a card's portrait: damage for attack and effect cards (sword), credibility
+   * for defence (shield), votes for "Votes" cards (ballot), care for the paramedics (cross).
+   */
+  private cardStat(def: UnitDef): string {
+    const a = def.ability;
+    const icon = (body: string) =>
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
+    const SWORD = icon('<path d="M19.500 4.500L10 14" stroke-width="3.400"/><path d="M6.500 10.500l7 7"/><path d="M8.500 15.500L4 20"/>');
+    const SHIELD = icon('<path d="M12 3l7.500 2.800v5.400c0 4.600-3.300 7.800-7.500 9.800-4.200-2-7.500-5.200-7.500-9.800V5.800z" fill="currentColor"/>');
+    const BALLOT = icon('<rect x="3.500" y="11" width="17" height="9.500" rx="1.500"/><path d="M8 14.500h8"/><path d="M8 11V3.500h8V11"/>');
+    const CARE = icon('<path d="M12 5v14M5 12h14" stroke-width="4"/>');
+    const BACK = icon('<path d="M9 5L4 10l5 5"/><path d="M4.500 10H14a5 5 0 0 1 0 10h-2"/>');
+    let stat: [string, string];
+    if (a.kind === 'generator') stat = [BALLOT, `+${a.amount}`];
+    else if (categoryOf(def) === 'defence') stat = [SHIELD, String(def.hp)];
+    else if (a.kind === 'heal') stat = [CARE, `+${a.amount}`];
+    else if (a.kind === 'expel') stat = [BACK, `${String(a.interval).replace('.', this.lang === 'fr' ? ',' : '.')} s`];
+    else if (a.kind === 'shooter') stat = [SWORD, a.burst ? `${a.damage}×${a.burst}` : String(a.damage)];
+    else if ('damage' in a) stat = [SWORD, String(a.damage)];
+    else return '';
+    return `<span class="card__stat" aria-hidden="true">${stat[0]}<span>${stat[1]}</span></span>`;
+  }
+
+  /** A figure before and after reaching a level: "20 dégâts / 1,4 s → 30 dégâts / 1,1 s · Crédibilité 100 → 160". */
+  private levelLine(def: UnitDef, tier: number): string {
+    const before = tierDef(def, tier - 1);
+    const after = tierDef(def, tier);
+    const line = `${this.statLine(before)} → ${this.statLine(after)}`;
+    return categoryOf(def) === 'defence' ? line : `${line} · ${this.t.ui.credibility} ${before.hp} → ${after.hp}`;
+  }
+
+  /** What a card does, in numbers: damage and pace, votes, credibility, freeze time… */
   private statLine(def: UnitDef): string {
     const u = this.t.ui;
     const a = def.ability;
@@ -546,11 +578,12 @@ class GameApp {
         <span class="card__key" data-label="${index + 1}" aria-hidden="true"></span>
         <span class="card__art" aria-hidden="true">${portraitSvg(card.def.id, { size: 96, sticker: false })}</span>
         <span class="card__timer" aria-hidden="true" hidden></span>
+        ${this.cardStat(card.def)}
         <span class="card__name">${text.short}</span>
         <span class="card__type" aria-hidden="true">${this.t.types[category]}</span>
         <span class="card__cost" data-label="${card.def.cost}" aria-hidden="true"></span>
         <span class="card__cd" aria-hidden="true"></span>`;
-      const describe = () => this.setInfo(`${text.power} — ${text.desc}`, text.name);
+      const describe = () => this.setInfo(`${text.power} · ${this.statLine(card.def)} — ${text.desc}`, text.name);
       // A long press on a touch screen opens the full card instead of picking the figure.
       let press = 0;
       let longPressed = false;
@@ -584,7 +617,7 @@ class GameApp {
   private describeCard(unitId: string, cost: number): string {
     const text = this.t.figures[unitId];
     const type = this.t.types[categoryOf(UNITS[unitId])];
-    return `${text.name}, ${text.power}. ${this.t.ui.type} : ${type}. ${this.t.ui.cost} ${cost}. ${text.desc}`;
+    return `${text.name}, ${text.power}. ${this.t.ui.type} : ${type}. ${this.statLine(UNITS[unitId])}. ${this.t.ui.cost} ${cost}. ${text.desc}`;
   }
 
   // ───────────────────────────── input ─────────────────────────────
@@ -1150,8 +1183,7 @@ class GameApp {
     $(el, '[data-slot="intro-name"]').textContent = this.t.ui.mergeTipTitle;
     const power = $(el, '[data-slot="intro-power"]');
     power.hidden = false;
-    const level2 = tierDef(def, 2);
-    power.textContent = fmt(this.t.ui.mergeTipHow, { name: text.short, cost: mergeCost(state, def, 2), hp: level2.hp });
+    power.textContent = fmt(this.t.ui.mergeTipHow, { name: text.short, cost: mergeCost(state, def, 2), stats: this.levelLine(def, 2) });
     $(el, '[data-slot="intro-desc"]').textContent = this.t.ui.mergeTipDesc;
     el.classList.add('is-tier');
     this.introFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -1300,11 +1332,15 @@ class GameApp {
           if (canMerge(UNITS[e.unitId]) && state.units.filter((u) => u.def.id === e.unitId).length >= 2) this.mergeTip(e.unitId);
           break;
         }
-        case 'merge':
+        case 'merge': {
+          // What the level changed, in numbers, in the bar under the board.
+          const figure = this.t.figures[e.unitId];
+          this.setInfo(this.levelLine(UNITS[e.unitId], e.tier), `${figure.short} · ${fmt(this.t.ui.tierLabel, { n: e.tier })}`);
           this.audio.play('levelUp');
           this.say(fmt(e.tier === MAX_TIER ? a.mergedMax : a.merged, { name: this.t.figures[e.unitId].name, n: e.tier, cost: e.cost }));
           if (e.tier === MAX_TIER) this.save.counters.maxed++;
           break;
+        }
         case 'remove':
           this.audio.play('click');
           this.say(fmt(a.removed, { name: this.t.figures[e.unitId].name, refund: e.refund }));

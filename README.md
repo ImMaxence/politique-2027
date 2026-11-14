@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>The French presidential race, replayed as a lane-defense game — with real faces, French memes and boss fights.</strong><br>
-  Pick the Left, the Centre, the Right or the Others. Field 24 public figures, build a deck with turncoats, stack the same figure to level it up — gold, then on fire. Survive nine themed nights and the rival headliners — then play a friend.
+  Pick the Left, the Centre, the Right or the Others. Field 24 public figures, build a deck with turncoats, stack the same figure to level it up — eyes on fire, then the whole figure. Survive nine themed nights and the rival headliners — then play a friend.
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version 4.0.0" src="https://img.shields.io/badge/version-4.0.0-d62b30">
+  <img alt="Version 4.1.0" src="https://img.shields.io/badge/version-4.1.0-d62b30">
   <img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-2f5fe0">
   <img alt="Astro 7" src="https://img.shields.io/badge/Astro-7-17203f">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-17203f">
@@ -58,7 +58,7 @@ Every camp gets the same affectionate treatment, and all four are playable.
 | 🎲 **Play a friend** | **Head to head on one screen**: one defends with the mouse or a finger, the other sends opponents with the keyboard or a column of buttons. Or a **turn-based duel**: the same match for two, handed over or shared by link, best score wins. |
 | 📅 **Every day, a new challenge** | The **daily challenge** is the same night, camp and waves for everybody. 17 **achievements** to collect (including a 1v1 at the Lidl), a **hard mode** for seasoned players. |
 | 🃏 **Build your deck** | From night 6, pick **eight cards** before each night among your figures, seven everyday **reinforcements** unlocked one by one (riot police, firefighters, the speed camera, paramedics, the baker, the teachers, the Constitutional Council) and up to **two turncoats** poached from the rival camps. |
-| 🔥 **Level up on the board** | Play a figure on the same figure: level 2 turns it gold (aura, glowing eyes), level 3 sets it on fire. Tougher, stronger, quicker — and pricier each time. |
+| 🔥 **Level up on the board** | Play a figure on the same figure: at level 2 its eyes catch fire, at level 3 the whole figure does. Tougher, stronger, quicker — and pricier each time. |
 | 🗞️ **French life, French memes** | Pupils on electric scooters, the star cow of the Agricultural Show, yellow vests, union marchers who put your figures on strike, minimum-wage workers worth winning over, petrol at €2 a litre, proxy votes refused for a missing document, the Zucman tax vote, a CNews van that never runs out of pundits. |
 | 💬 **They talk — to each other too** | Speech bubbles with the cult lines of French politics, in French or English. Neighbours of the same camp answer each other. |
 | 🆕 **Never lost** | The first time a boss or a special opponent turns up, the match stops for a short "New!" card that says what it does. The calendar shows each night's goal and who turns up. |
@@ -175,7 +175,7 @@ The heads are real photos published on Wikimedia Commons under free licences; [`
 | Offline | A service worker, versioned with the game | Opens and plays without a connection; it only ever handles this site's own files |
 | Serving | nginx (unprivileged) in Docker | Read-only container, no access log, hashed assets cached for a year |
 | Security | Per-page CSP with hashes | No inline script without a hash, no inline style attribute, `frame-ancestors 'none'`, strict headers |
-| Tests | Vitest + Playwright + axe-core | 102 simulation tests (bosses, newcomers, decks, levels, saves and balance included), 174 browser tests |
+| Tests | Vitest + Playwright + axe-core | 103 simulation tests (bosses, newcomers, decks, levels, damage, saves and balance included), 174 browser tests |
 
 ```
 src/

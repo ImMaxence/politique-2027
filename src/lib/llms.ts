@@ -56,7 +56,7 @@ const FACTS = [
   '- Content: 4 camps, 24 playable characters (each camp\'s headliner is also a boss with powers), 7 shared reinforcements unlocked along the campaign, 5 guests, 9 themed campaign nights (including the 17 October 2026 protests and a TV debate with soundbites to send back), 1 endless mode with themed weeks',
   '- Card types: Votes, Attack, Effect, Defence',
   '- Modes: a nine-night campaign (normal or hard), the endless "Cohabitation" mode, a daily challenge (the same match for everybody each day), a turn-based duel shared by link, and a two-player mode on one screen (defender with the mouse or touch, attacker with the keyboard or side buttons)',
-  '- Extras: 17 achievements, a deck of eight cards picked before each night from night 6 (up to two turncoats from rival camps), figures levelled up to 3 by placing the same figure on them (gold, then on fire), background music, a slow speed for accessibility, a one-key board summary for screen readers',
+  '- Extras: 17 achievements, a deck of eight cards picked before each night from night 6 (up to two turncoats from rival camps), figures levelled up to 3 by placing the same figure on them (eyes on fire, then the whole figure), background music, a slow speed for accessibility, a one-key board summary for screen readers',
   '- Installable on the home screen and playable offline; results can be shared as a picture',
   `- Author: ${SITE.author.name} (${SITE.author.url})`,
   `- Licence: MIT (code, texts and drawings); the photo heads keep their own free licences (credited in the legal notice). Source: ${SITE.repo}`,

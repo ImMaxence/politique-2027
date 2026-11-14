@@ -84,6 +84,8 @@ export interface Enemy {
   /** Crossing the street: the lane it comes from and when it left (for the animation). */
   fromLane: number;
   shiftAt: number;
+  /** Damage from a figure's counter-attack, added up until it is worth showing. */
+  scratch: number;
 }
 
 /** A power announced by a headliner, and what it will hit when it lands. */
@@ -125,6 +127,8 @@ export type GameEvent =
   | { type: 'passive'; amount: number }
   | { type: 'shoot'; lane: number; col: number; kind: ProjectileKind }
   | { type: 'hit'; lane: number; x: number; kind: ProjectileKind | 'melee' }
+  /** Credibility an opponent just lost (shown as a number over its head). */
+  | { type: 'damage'; id: number; lane: number; x: number; amount: number }
   | { type: 'unitDown'; lane: number; col: number; unitId: string }
   | { type: 'enemyDown'; lane: number; x: number; enemyId: string; camp: CampId; boss: boolean; revived: boolean }
   | { type: 'leak'; lane: number; enemyId: string; loss: number }
@@ -405,12 +409,17 @@ export function placeUnit(state: GameState, unitId: string, lane: number, col: n
   return null;
 }
 
+/** What taking a figure off gives back: a quarter of everything spent on it (card and levels). */
+export function refundOf(unit: Unit): number {
+  return Math.floor(unit.spent * REFUND_RATIO);
+}
+
 /** "Remaniement": dismiss a figure and recover part of its cost. */
 export function removeUnit(state: GameState, lane: number, col: number): boolean {
   if (state.status !== 'playing') return false;
   const unit = state.grid[lane]?.[col];
   if (!unit) return false;
-  const refund = Math.floor(unit.spent * REFUND_RATIO);
+  const refund = refundOf(unit);
   state.resources += refund;
   dropUnit(state, unit);
   state.events.push({ type: 'remove', lane, col, unitId: unit.def.id, refund });
@@ -466,7 +475,7 @@ export function spawnEnemy(state: GameState, enemyId: string, lane: number, camp
     traitTimer: def.trait && 'interval' in def.trait ? def.trait.interval * 0.6 : 0,
     attacking: false, dry: false, born: state.time, lastHit: -9,
     powerTimers: (def.powers ?? []).map((p) => ('interval' in p ? p.interval * 0.55 : 0)),
-    cast: null, revived: false, enraged: false, fromLane: lane, shiftAt: -9,
+    cast: null, revived: false, enraged: false, fromLane: lane, shiftAt: -9, scratch: 0,
   };
   state.enemies.push(enemy);
   // Heavyweights and named guests get an entrance announcement.
@@ -613,6 +622,7 @@ function dropUnit(state: GameState, unit: Unit): void {
 function hurtEnemy(state: GameState, enemy: Enemy, amount: number): void {
   enemy.hp -= amount;
   enemy.lastHit = state.time;
+  if (amount >= 1) state.events.push({ type: 'damage', id: enemy.id, lane: enemy.lane, x: enemy.x, amount: Math.round(amount) });
 }
 
 function hurtUnit(state: GameState, unit: Unit, amount: number): void {
@@ -982,7 +992,13 @@ function updateEnemies(state: GameState, dt: number): void {
       hurtUnit(state, target, def.dps * dt * (enemy.enraged ? 1.3 : 1));
       const ability = target.def.ability;
       if (melee && ability.kind === 'wall' && ability.thorns) {
+        // Counter-attack: continuous, shown every 10 points rather than every frame.
         enemy.hp -= ability.thorns * dt;
+        enemy.scratch += ability.thorns * dt;
+        if (enemy.scratch >= 10) {
+          state.events.push({ type: 'damage', id: enemy.id, lane: enemy.lane, x: enemy.x, amount: Math.round(enemy.scratch) });
+          enemy.scratch = 0;
+        }
       }
     } else {
       enemy.attacking = false;

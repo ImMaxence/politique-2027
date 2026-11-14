@@ -370,6 +370,42 @@
 .card__timer[hidden] {
   display: none;
 }
+/* The card's number (damage, credibility, votes or care), at the foot of the portrait. */
+.card__stat {
+  position: relative;
+  z-index: 2;
+  grid-row: 1;
+  grid-column: 1;
+  align-self: end;
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1em;
+  padding: 0 0.3em 0 0.2em;
+  border-radius: 5px;
+  background: rgba(23, 32, 63, 0.9);
+  color: #fffdf6;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.card__stat svg {
+  width: 1em;
+  height: 1em;
+  flex: none;
+}
+.card[data-type='attack'] .card__stat svg,
+.card[data-type='effect'] .card__stat svg {
+  color: #ff8a8c;
+}
+.card[data-type='defence'] .card__stat svg {
+  color: #8fb4ff;
+}
+.card[data-type='money'] .card__stat svg {
+  color: #ffd23f;
+}
 .card__art svg {
   width: 100%;
   height: auto;

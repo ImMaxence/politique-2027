@@ -19,6 +19,13 @@ const home = t.home;
 const url = absolute(path(lang, 'home'));
 // The four headliners: Mélenchon, Macron, Le Pen and Riner.
 const leaders = CAMP_IDS.map((camp) => ({ camp, id: headlinerOf(camp) }));
+// On each camp's poster, its three best-known figures, the headliner in the middle.
+const famous: Record<string, [string, string, string]> = {
+  gauche: ['hollande', 'melenchon', 'royal'],
+  centre: ['philippe', 'macron', 'bayrou'],
+  droite: ['sarkozy', 'lepen', 'bardella'],
+  autres: ['bmacron', 'riner', 'villepin'],
+};
 const spotlight = ['hollande', 'melenchon', 'macron', 'borne', 'sarkozy', 'lepen', 'riner', 'lassalle'];
 
 const author = { '@type': 'Person', name: SITE.author.name, url: SITE.author.url, sameAs: [SITE.author.github] };
@@ -113,7 +120,7 @@ const jsonLd = [
             </div>
             <div class="poster__body">
               <div class="poster__faces" aria-hidden="true">
-                {CAMPS[camp].roster.map((id) => <Puppet id={id} uid="camps" size={64} />)}
+                {famous[camp].map((id) => <Puppet id={id} uid="camps" size={112} />)}
               </div>
               <p class="poster__names">
                 <b>{home.rosterLabel} :</b> {CAMPS[camp].roster.map((id) => g.figures[id].name).join(', ')}

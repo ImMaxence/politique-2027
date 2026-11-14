@@ -224,9 +224,20 @@ html.game-locked body {
   border-right: 2px solid var(--sticker-ink);
   background: #e9dfca;
 }
+/* A strip across the foot of the portrait, like the numbers on a trading card. */
+.game.is-compact .card__stat {
+  grid-area: art;
+  justify-self: stretch;
+  justify-content: center;
+  padding: 0.05rem 0.1rem;
+  border-radius: 0;
+  font-size: calc(var(--tickets) * 0.078);
+}
 /* Zoom on the face: the bust and the stick are cropped out. */
 .game.is-compact .card__timer {
   grid-area: art;
+  /* Above the number strip. */
+  margin-bottom: calc(var(--tickets) * 0.1);
   font-size: calc(var(--tickets) * 0.15);
 }
 .game.is-compact .card__art svg {

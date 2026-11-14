@@ -141,6 +141,24 @@ describe('placing figures', () => {
     expect(state.resources).toBe(left + Math.floor(spent * REFUND_RATIO));
   });
 
+  it('every hit reports the damage it does, levels included', () => {
+    const state = createGame({ camp: 'droite', level: 2 });
+    state.resources = 2000;
+    placeUnit(state, 'bardella', 2, 0);
+    spawnEnemy(state, 'militant', 2, 'gauche', 4);
+    run(state, 4);
+    const hits = state.events.filter((e) => e.type === 'damage');
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits[0]).toMatchObject({ type: 'damage', lane: 2, amount: 20 });
+    state.cards.find((c) => c.def.id === 'bardella')!.cooldown = 0;
+    placeUnit(state, 'bardella', 2, 0);
+    state.events.length = 0;
+    spawnEnemy(state, 'militant', 2, 'gauche', 4);
+    run(state, 4);
+    // A shot fired before the merge keeps its 20; the next ones take off 30.
+    expect(state.events.some((e) => e.type === 'damage' && e.amount === 30)).toBe(true);
+  });
+
   it('a merge costs what it says, and one-shot cards never merge', () => {
     const state = createGame({ camp: 'droite', level: 2 });
     state.resources = 2000;

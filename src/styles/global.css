@@ -577,10 +577,22 @@ ol[role='list'] {
   gap: 0.9rem;
   padding: 1rem 1.1rem 1.2rem;
 }
+/* A group photo: three figures side by side, slightly overlapping, the headliner in front in the middle. */
 .poster__faces {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 0.15rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+.poster__faces .puppet {
+  position: relative;
+  flex: 0 0 44%;
+  max-width: 9rem;
+  margin: 0 -7%;
+}
+.poster__faces .puppet:nth-child(2) {
+  z-index: 1;
+  flex-basis: 52%;
+  max-width: 10.5rem;
 }
 .poster__names {
   margin: 0;

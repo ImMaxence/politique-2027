@@ -7,7 +7,7 @@ import { COLS, ROWS } from '../data/levels';
 import { EYES, PHOTOS, type Expression } from '../data/photos';
 import type { ProjectileKind } from '../data/types';
 import { CAMPS, UNITS, categoryOf, figureOf } from '../data/units';
-import { ZUCMAN_SHARE, canPlace, playOn, type Enemy, type GameEvent, type GameState, type Projectile, type Unit } from '../sim/engine';
+import { ZUCMAN_SHARE, canPlace, playOn, refundOf, type Enemy, type GameEvent, type GameState, type Projectile, type Unit } from '../sim/engine';
 import { BOARD_W, BOARD_X, CELL_H, CELL_W, FIGURE_SCALE, SCENE_LEFT, SCENE_W, VIEW_H, VIEW_W, feetY, laneTop, xToPx } from './layout';
 import { HEAD_BOX, INK } from './portraits';
 import { drawGoal } from './goals';
@@ -101,8 +101,6 @@ export class Renderer {
   private particles: Particle[] = [];
   private texts: FloatText[] = [];
   private rings: Ring[] = [];
-  /** Each puppet in solid gold, made on first use, for the level-up sheen. */
-  private goldSprites = new WeakMap<HTMLCanvasElement, HTMLCanvasElement>();
   private hints: (() => void)[] = [];
   private flashes: LaneFlash[] = [];
   private bubbles: Bubble[] = [];
@@ -302,6 +300,13 @@ export class Renderer {
         case 'produce':
           this.float(xToPx(e.col + 0.5), feetY(e.lane) - 118, `+${e.amount}`, GOLD, 28);
           break;
+        case 'remove': {
+          const x = xToPx(e.col + 0.5);
+          const y = feetY(e.lane);
+          this.float(x, y - 150, `+${e.refund}`, GOLD, 40, 1.5);
+          this.confetti(x, y - 90, GOLD, 12, 0.9);
+          break;
+        }
         case 'merge': {
           const x = xToPx(e.col + 0.5);
           const y = feetY(e.lane);
@@ -315,6 +320,14 @@ export class Renderer {
         case 'hit':
           this.confetti(xToPx(e.x), feetY(e.lane) - 60, PAPER, 3, 0.5);
           break;
+        case 'damage': {
+          // A crowded courtyard keeps a lid on the numbers.
+          if (this.texts.length > 70) break;
+          const jitter = Math.sin(e.id * 12.9898 + state.time * 7.1) * 16;
+          const big = e.amount >= 100;
+          this.float(xToPx(e.x) + jitter, feetY(e.lane) - 150, `-${e.amount}`, big ? '#ff8a00' : RED, big ? 30 : 22, 0.8);
+          break;
+        }
         case 'unitDown':
           this.confetti(xToPx(e.col + 0.5), feetY(e.lane) - 60, campColor, 16);
           this.float(xToPx(e.col + 0.5), feetY(e.lane) - 110, a.resign, RED, 26, 1.4);
@@ -633,19 +646,17 @@ export class Renderer {
    * A defender's credibility, always on show: a thick bar with the points left
    * written on it (green, then yellow, then red as it runs low).
    */
-  /**
-   * Level 2: a golden aura of rising tongues behind the figure. Level 3: it is on fire,
-   * red, orange and yellow, bigger and livelier.
-   */
-  private aura(x: number, y: number, w: number, h: number, tier: number, now: number, seed: number): void {
+  /** Level 3: the figure is on fire, red, orange and yellow tongues behind it (no taller than the figure). */
+  private aura(x: number, y: number, w: number, h: number, now: number, seed: number): void {
     const g = this.ctx;
     const t = this.reducedMotion ? seed : now;
-    const fire = tier >= 3;
-    const layers = fire
-      ? [{ color: 'rgba(229,56,59,.55)', scale: 1.12 }, { color: 'rgba(255,138,0,.7)', scale: 0.95 }, { color: 'rgba(255,210,63,.8)', scale: 0.75 }]
-      : [{ color: 'rgba(255,184,0,.62)', scale: 1.05 }, { color: 'rgba(255,226,90,.75)', scale: 0.85 }, { color: 'rgba(255,250,215,.8)', scale: 0.62 }];
-    const tongues = fire ? 9 : 7;
-    const width = w * (fire ? 0.92 : 0.82);
+    // A simple fire: orange outside, yellow inside.
+    const layers = [
+      { color: 'rgba(255,120,0,.8)', scale: 1 },
+      { color: 'rgba(255,214,70,.9)', scale: 0.62 },
+    ];
+    const tongues = 7;
+    const width = w * 0.8;
     g.save();
     for (const layer of layers) {
       g.fillStyle = layer.color;
@@ -654,23 +665,21 @@ export class Renderer {
         const u = i / (tongues - 1) - 0.5; // -0.5 … 0.5
         const cx = x + u * width * layer.scale;
         // Taller in the middle, flickering.
-        const flicker = 0.85 + 0.15 * Math.sin(t * (fire ? 13 : 8) + i * 1.9 + seed);
-        const height = h * layer.scale * (fire ? 1.12 : 0.98) * (1 - Math.abs(u) * 0.75) * flicker;
-        const half = (width * layer.scale) / tongues * 0.95;
-        const sway = Math.sin(t * (fire ? 7 : 4) + i * 2.3 + seed) * half * 0.6;
+        const flicker = 0.85 + 0.15 * Math.sin(t * 12 + i * 1.9 + seed);
+        const height = h * layer.scale * 0.88 * (1 - Math.abs(u) * 0.7) * flicker;
+        const half = ((width * layer.scale) / tongues) * 0.95;
+        const sway = Math.sin(t * 7 + i * 2.3 + seed) * half * 0.6;
         const base = y - 6;
         g.moveTo(cx - half, base);
         g.quadraticCurveTo(cx - half * 1.1, base - height * 0.55, cx + sway, base - height);
         g.quadraticCurveTo(cx + half * 1.1, base - height * 0.55, cx + half, base);
         g.closePath();
       }
-      // A round glow behind the body ties the tongues together.
-      g.moveTo(x + width * 0.5 * layer.scale, y - h * 0.42);
-      g.ellipse(x, y - h * 0.42, width * 0.5 * layer.scale, h * 0.42 * layer.scale, 0, 0, Math.PI * 2);
+      g.moveTo(x + width * 0.45 * layer.scale, y - h * 0.36);
+      g.ellipse(x, y - h * 0.36, width * 0.45 * layer.scale, h * 0.36 * layer.scale, 0, 0, Math.PI * 2);
       g.fill();
-      // A darker rim on the outer layer, so the aura reads on light and dark boards alike.
       if (layer === layers[0]) {
-        g.strokeStyle = fire ? 'rgba(160,20,20,.55)' : 'rgba(200,120,0,.7)';
+        g.strokeStyle = 'rgba(170,50,0,.6)';
         g.lineWidth = 3;
         g.stroke();
       }
@@ -678,42 +687,14 @@ export class Renderer {
     g.restore();
   }
 
-  /** The figure drawn again in gold over itself ("overlay" keeps the photo readable). */
-  private sheen(sprite: Sprite, x: number, y: number, sx: number, sy: number, rot: number, alpha: number): void {
-    const g = this.ctx;
-    let gold = this.goldSprites.get(sprite.image);
-    if (!gold) {
-      gold = document.createElement('canvas');
-      gold.width = sprite.image.width;
-      gold.height = sprite.image.height;
-      const c = gold.getContext('2d')!;
-      c.drawImage(sprite.image, 0, 0);
-      c.globalCompositeOperation = 'source-in';
-      const fill = c.createLinearGradient(0, 0, 0, gold.height);
-      fill.addColorStop(0, '#ffe45c');
-      fill.addColorStop(1, '#ffae00');
-      c.fillStyle = fill;
-      c.fillRect(0, 0, gold.width, gold.height);
-      this.goldSprites.set(sprite.image, gold);
-    }
-    const pad = sprite.h * 0.045;
-    g.save();
-    g.translate(x, y);
-    g.rotate(rot);
-    g.scale(sx, sy);
-    g.globalCompositeOperation = 'overlay';
-    g.globalAlpha = alpha;
-    g.drawImage(gold, -sprite.w / 2, -sprite.h + pad, sprite.w, sprite.h);
-    g.restore();
-  }
-
-  /** Glowing yellow eyes (white-hot at level 3), where the photo's eyes are. */
-  private eyes(sprite: Sprite, id: string, mood: Expression, x: number, y: number, sx: number, sy: number, rot: number, tier: number, now: number): void {
+  /** Eyes on fire: a white-hot glow on each eye of the photo, with a flame rising from it (bigger at level 3). */
+  private eyes(sprite: Sprite, id: string, mood: Expression, x: number, y: number, sx: number, sy: number, rot: number, tier: number, now: number, seed: number): void {
     const spots = EYES[`${id}-${mood}`] ?? EYES[`${id}-neutral`];
     if (!spots) return;
     const g = this.ctx;
     const pad = sprite.h * 0.045;
-    const glow = this.reducedMotion ? 1 : 0.85 + 0.15 * Math.sin(now * 9);
+    const t = this.reducedMotion ? seed : now;
+    const big = tier >= 3 ? 1.25 : 1;
     // Puppet SVG units → sprite units (the viewBox has an 8-unit margin, centred in the sprite).
     const k = Math.min(sprite.w / PUPPET_VIEW.w, sprite.h / PUPPET_VIEW.h);
     const ox = -sprite.w / 2 + (sprite.w - PUPPET_VIEW.w * k) / 2;
@@ -725,43 +706,48 @@ export class Renderer {
     for (let i = 0; i < spots.length; i += 2) {
       const ex = ox + (HEAD_BOX.x + spots[i] * HEAD_BOX.w + PUPPET_VIEW.pad) * k;
       const ey = oy + (HEAD_BOX.y + spots[i + 1] * HEAD_BOX.h + PUPPET_VIEW.pad) * k;
-      const r = 2.6 * glow;
-      const halo = g.createRadialGradient(ex, ey, 0, ex, ey, r * 2.4);
-      halo.addColorStop(0, tier >= 3 ? 'rgba(255,255,235,1)' : 'rgba(255,248,170,1)');
-      halo.addColorStop(0.35, tier >= 3 ? 'rgba(255,190,40,.95)' : 'rgba(255,214,40,.9)');
-      halo.addColorStop(1, 'rgba(255,190,0,0)');
+      // The flame: outer orange, inner yellow, leaning and flickering.
+      const flicker = 0.8 + 0.2 * Math.sin(t * 14 + i * 2.1 + seed);
+      const lean = Math.sin(t * 6 + i + seed) * 1.6;
+      for (const [color, w, hgt] of [['rgba(255,110,0,.92)', 3.6, 13], ['rgba(255,226,80,.95)', 2.2, 8.5]] as const) {
+        const fw = w * big;
+        const fh = hgt * big * flicker;
+        g.fillStyle = color;
+        g.beginPath();
+        g.moveTo(ex - fw, ey);
+        g.quadraticCurveTo(ex - fw * 1.1, ey - fh * 0.5, ex + lean, ey - fh);
+        g.quadraticCurveTo(ex + fw * 1.1, ey - fh * 0.5, ex + fw, ey);
+        g.arc(ex, ey, fw, 0, Math.PI);
+        g.fill();
+      }
+      // The eye itself, white-hot.
+      const r = 2.9 * big * (this.reducedMotion ? 1 : 0.9 + 0.1 * Math.sin(t * 9 + i));
+      const halo = g.createRadialGradient(ex, ey, 0, ex, ey, r * 2.2);
+      halo.addColorStop(0, 'rgba(255,255,240,1)');
+      halo.addColorStop(0.4, 'rgba(255,220,60,.95)');
+      halo.addColorStop(1, 'rgba(255,140,0,0)');
       g.fillStyle = halo;
       g.beginPath();
-      g.arc(ex, ey, r * 2.4, 0, Math.PI * 2);
+      g.arc(ex, ey, r * 2.2, 0, Math.PI * 2);
       g.fill();
     }
     g.restore();
   }
 
-  /** Golden sparks (level 2) or embers (level 3) rising around the figure. */
-  private sparks(x: number, y: number, w: number, h: number, tier: number, now: number, seed: number): void {
+  /** Embers rising around a figure on fire (level 3). */
+  private sparks(x: number, y: number, w: number, h: number, now: number, seed: number): void {
     if (this.reducedMotion) return;
     const g = this.ctx;
-    const fire = tier >= 3;
-    const count = fire ? 7 : 5;
+    const count = 6;
     g.save();
     for (let i = 0; i < count; i++) {
-      const phase = (now * (fire ? 0.9 : 0.6) + i / count + seed * 0.37) % 1;
-      const px = x + Math.sin(i * 2.4 + seed + phase * 3) * w * 0.42;
-      const py = y - 10 - phase * h * 1.1;
-      const size = (fire ? 4.5 : 3.5) * (1 - phase * 0.6);
+      const phase = (now * 0.9 + i / count + seed * 0.37) % 1;
+      const px = x + Math.sin(i * 2.4 + seed + phase * 3) * w * 0.38;
+      const py = y - 10 - phase * h * 0.95;
       g.globalAlpha = 1 - phase;
-      g.fillStyle = fire ? (i % 2 ? '#ff8a00' : '#ffd23f') : i % 2 ? '#fff3b0' : GOLD;
+      g.fillStyle = i % 2 ? '#ff8a00' : '#ffd23f';
       g.beginPath();
-      if (fire) {
-        g.arc(px, py, size, 0, Math.PI * 2);
-      } else {
-        g.moveTo(px, py - size * 1.6);
-        g.lineTo(px + size, py);
-        g.lineTo(px, py + size * 1.6);
-        g.lineTo(px - size, py);
-        g.closePath();
-      }
+      g.arc(px, py, 4 * (1 - phase * 0.6), 0, Math.PI * 2);
       g.fill();
     }
     g.restore();
@@ -789,38 +775,79 @@ export class Renderer {
     g.fillText(text, x, y + 1);
   }
 
-  /** Over a figure the selected card can level up: an arrow, the next level and what it costs. */
+  /** Over a figure the selected card can level up: a tag pointing at it, with the next level and what it costs. */
   private levelUpHint(x: number, y: number, tier: number, cost: number, affordable: boolean): void {
     const g = this.ctx;
     const bob = this.reducedMotion ? 0 : Math.sin(performance.now() / 160) * 4;
     const size = Math.max(16, this.minLabel);
-    const text = `▲ ${fmt(this.strings.ui.tierShort, { n: tier })} · ${cost}`;
+    const text = `${fmt(this.strings.ui.tierShort, { n: tier })} · ${cost}`;
     g.save();
     g.translate(x, y + bob);
     g.font = `400 ${size}px ${DISPLAY}`;
-    const width = g.measureText(text).width + 18;
-    const height = size + 10;
+    const icon = 14;
+    const gap = 7;
+    const width = icon + gap + g.measureText(text).width + 24;
+    const height = size + 12;
+    const left = -width / 2;
+    const right = width / 2;
+    const top = -height;
+    const r = 9;
     g.globalAlpha = affordable ? 1 : 0.6;
+    g.beginPath();
+    g.moveTo(left + r, top);
+    g.arcTo(right, top, right, 0, r);
+    g.arcTo(right, 0, left, 0, r);
+    g.lineTo(9, 0);
+    g.lineTo(0, 11);
+    g.lineTo(-9, 0);
+    g.arcTo(left, 0, left, top, r);
+    g.arcTo(left, top, right, top, r);
+    g.closePath();
+    g.fillStyle = tier >= 3 ? FIRE : GOLD;
+    g.fill();
+    g.lineJoin = 'round';
+    g.lineWidth = 3.5;
+    g.strokeStyle = INK;
+    g.stroke();
+    // Double chevron: "up a level".
+    const ix = left + 12 + icon / 2;
+    const iy = -height / 2;
+    g.lineCap = 'round';
+    g.lineWidth = 3;
+    g.beginPath();
+    for (const dy of [-3.5, 3.5]) {
+      g.moveTo(ix - icon / 2, iy + dy + 3.5);
+      g.lineTo(ix, iy + dy - 3);
+      g.lineTo(ix + icon / 2, iy + dy + 3.5);
+    }
+    g.stroke();
+    g.textAlign = 'left';
+    g.textBaseline = 'middle';
+    g.fillStyle = INK;
+    g.fillText(text, ix + icon / 2 + gap, iy + 1);
+    g.restore();
+  }
+
+  /** Removal mode: what taking this figure off gives back. */
+  private refundTag(x: number, y: number, refund: number): void {
+    const g = this.ctx;
+    const size = Math.max(17, this.minLabel);
+    const text = `+${refund}`;
+    g.font = `400 ${size}px ${DISPLAY}`;
+    const width = g.measureText(text).width + 16;
+    const height = size + 8;
     g.fillStyle = INK;
     g.beginPath();
-    g.roundRect(-width / 2 - 3, -height - 3, width + 6, height + 6, 10);
-    // The arrow under the label.
-    g.moveTo(-13, 2);
-    g.lineTo(0, 16);
-    g.lineTo(13, 2);
+    g.roundRect(x - width - 2.5, y - height / 2 - 2.5, width + 5, height + 5, 9);
     g.fill();
-    g.fillStyle = tier >= 3 ? FIRE : GOLD;
+    g.fillStyle = GOLD;
     g.beginPath();
-    g.roundRect(-width / 2, -height, width, height, 8);
-    g.moveTo(-8, 0);
-    g.lineTo(0, 9);
-    g.lineTo(8, 0);
+    g.roundRect(x - width, y - height / 2, width, height, 7);
     g.fill();
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillStyle = INK;
-    g.fillText(text, 0, -height / 2 + 1);
-    g.restore();
+    g.fillText(text, x - width / 2, y + 1);
   }
 
   private credibility(x: number, y: number, hp: number, max: number): void {
@@ -938,7 +965,7 @@ export class Renderer {
     const since = state.time - unit.tierAt;
     const transforming = since >= 0 && since < 0.5 ? 1 - since / 0.5 : 0;
     if (transforming) pop *= 1 + 0.3 * Math.sin(transforming * Math.PI);
-    if (unit.tier > 1 && !removing) this.aura(x, y, sprite.w * FIGURE_SCALE, sprite.h * FIGURE_SCALE, unit.tier, now, unit.id);
+    if (unit.tier >= 3 && !removing) this.aura(x, y, sprite.w * FIGURE_SCALE, sprite.h * FIGURE_SCALE, now, unit.id);
     let sx = pop;
     let sy = pop * (1 + Math.sin(now * 2.4 + unit.id) * 0.018);
     let rot = 0;
@@ -961,16 +988,16 @@ export class Renderer {
     // Removal mode: every figure is washed out and tagged with a red cross.
     this.blit(sprite, x, y, sx * FIGURE_SCALE, sy * FIGURE_SCALE, rot, removing ? 0.55 : Math.max(flash, transforming * 0.85), removing ? 0.9 : 1);
     if (unit.tier > 1 && !removing) {
-      const pulse = this.reducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(now * 4 + unit.id);
-      this.sheen(sprite, x, y, sx * FIGURE_SCALE, sy * FIGURE_SCALE, rot, (unit.tier >= 3 ? 0.42 : 0.32) + 0.14 * pulse);
-      this.eyes(sprite, unit.def.id, mood, x, y, sx * FIGURE_SCALE, sy * FIGURE_SCALE, rot, unit.tier, now);
-      this.sparks(x, y, sprite.w * FIGURE_SCALE, sprite.h * FIGURE_SCALE, unit.tier, now, unit.id);
+      if (unit.tier >= 3) this.sparks(x, y, sprite.w * FIGURE_SCALE, sprite.h * FIGURE_SCALE, now, unit.id);
+      this.eyes(sprite, unit.def.id, mood, x, y, sx * FIGURE_SCALE, sy * FIGURE_SCALE, rot, unit.tier, now, unit.id);
       const top = y - sprite.h * FIGURE_SCALE;
       const tier = unit.tier;
       this.plates.push(() => this.tierBadge(x - 40, top + 30, tier));
     }
     if (!removing && struggling && mood === 'neutral' && PHOTOS[unit.def.id]) this.moodMark(x + 30, y - sprite.h * FIGURE_SCALE + 30, 'hurt', now);
     if (removing) {
+      const refund = refundOf(unit);
+      this.plates.push(() => this.refundTag(x - 16, y - 128, refund));
       const pulse = this.reducedMotion ? 1 : 1 + 0.12 * Math.sin(now * 7 + unit.id);
       g.save();
       g.translate(x + 34, y - 128);
@@ -1738,7 +1765,8 @@ export class Renderer {
     this.hints.length = 0;
 
     this.drawEffects(dt);
-    this.drawBubbles(state, dt);
+    // Removal mode: no speech bubbles over the refunds.
+    if (!view.removing) this.drawBubbles(state, dt);
     // The debate's soundbites are targets: nothing may hide them.
     this.drawPunchlines(state, now);
     if (state.tariff > 1) this.drawTariff();

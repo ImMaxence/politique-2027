@@ -12,6 +12,24 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [4.1.0] — 2026-11-14
+
+Numbers everywhere: what each card does, what each hit takes off, what each figure gives back. Levels are easier to tell apart. Saves are untouched.
+
+### Added
+
+- **Damage numbers**: every hit shows over the opponent the credibility it took off (red, orange from 100 up), levels included. Édouard Philippe's counter-attack shows in steps of 10 rather than every frame.
+- **Each card's number on its portrait**, in the column of cards: damage for attack and effect cards (sword), credibility for defence cards (shield), votes for "Votes" cards (ballot box), care for the paramedics (cross); Florian Philippot shows how often he sends an opponent back. Hovering a card, or reading it with a screen reader, gives the full figures.
+- **Taking a figure off shows what it gives back**: in removal mode each figure carries its refund ("+112" for a level 3 Jordan Bardella, a quarter of 100 + 150 + 200), and the votes won back float up when it leaves. Speech bubbles step aside meanwhile.
+- **Each level-up says what it changed**, in the bar under the board (Jordan Bardella: 20 damage every 1.4 s, then 30 every 1.1 s, then 44 every second), and the merge tip gives the figure's own numbers.
+
+### Changed
+
+- **Levels are easier to tell apart**: level 1 has nothing, level 2 only has its eyes on fire (white-hot, with a little flame rising from each), level 3 has its eyes on fire and a simple fire around it (orange and yellow, no taller than the figure). The golden aura and the golden sheen on the faces are gone.
+- The tag over a figure that can level up is one clean shape with a double chevron (its arrow looked odd).
+- **The home page shows each camp's three best-known figures, bigger**, as a group photo with the headliner in front; the six names stay listed underneath.
+- The Remove button and the rules say it plainly: a figure gives back 25% of all it cost, levels included.
+
 ## [4.0.0] — 2026-11-14
 
 Figures now level up on the board: play a card on the same figure and it goes up a level, gold then on fire. This replaces the upgrades bought with stars in 3.1.0: the levels bought there are dropped (stars stay on the calendar as each night's score, and an achievement already earned stays earned). The rest of the save is kept.
