@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>The French presidential race, replayed as a lane-defense game — with real faces, French memes and boss fights.</strong><br>
-  Pick the Left, the Centre, the Right or the Others. Field 20 public figures. Survive nine themed nights and the rival headliners — then play a friend.
+  Pick the Left, the Centre, the Right or the Others. Field 24 public figures, build a deck with turncoats, upgrade it with your stars. Survive nine themed nights and the rival headliners — then play a friend.
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version 3.0.3" src="https://img.shields.io/badge/version-3.0.3-d62b30">
+  <img alt="Version 3.1.0" src="https://img.shields.io/badge/version-3.1.0-d62b30">
   <img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-2f5fe0">
   <img alt="Astro 7" src="https://img.shields.io/badge/Astro-7-17203f">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-17203f">
@@ -53,10 +53,12 @@ Every camp gets the same affectionate treatment, and all four are playable.
 |---|---|
 | 📸 **Real faces, one body** | 34 photos from Wikimedia Commons (credited in the game and on every figure's page), cut out with a sticker edge, on the same dark suit for everybody — the **tie colour is the card's role**: yellow votes, red attack, purple effect, blue defence. Bosses change face: smiling, angry when they announce an attack, struggling when they are losing. No face is ever retouched — each expression is another real photo. |
 | 👑 **Boss fights** | Each camp's headliner is a boss with powers and a health bar: Le Pen, Macron, Mélenchon, Riner — plus Trump and Xavier Niel as guest bosses. A red "!" and flashing squares give you a second to react. |
-| 🎭 **20 headliners, 4 play styles** | Five figures per camp, each card tagged **Votes**, **Attack**, **Effect** or **Defence**, plus a camp-wide trump card: **General Strike**, **Dissolution**, the **Trocadéro Rally** or a **No-Confidence Vote**. |
+| 🎭 **24 public figures, 4 play styles** | Six figures per camp (the sixth, unlocked on night 6: Rousseau, Darmanin, Ciotti, Philippot), each card tagged **Votes**, **Attack**, **Effect** or **Defence**, plus a camp-wide trump card: **General Strike**, **Dissolution**, the **Trocadéro Rally** or a **No-Confidence Vote**. |
 | 🗓️ **Nine themed nights** | The hunt for endorsements, the Agricultural Show, the school blockade, the 17 October march against the cost of living, the TV debate, the international summit, the first round, the run-off debate (send the soundbites back) and the run-off. Then **Cohabitation**, the endless mode, with a themed week every ten waves. |
 | 🎲 **Play a friend** | **Head to head on one screen**: one defends with the mouse or a finger, the other sends opponents with the keyboard or a column of buttons. Or a **turn-based duel**: the same match for two, handed over or shared by link, best score wins. |
-| 📅 **Every day, a new challenge** | The **daily challenge** is the same night, camp and waves for everybody. 15 **achievements** to collect (including a 1v1 at the Lidl), a **hard mode** for seasoned players. |
+| 📅 **Every day, a new challenge** | The **daily challenge** is the same night, camp and waves for everybody. 17 **achievements** to collect (including a 1v1 at the Lidl), a **hard mode** for seasoned players. |
+| 🃏 **Build your deck** | From night 6, pick **eight cards** before each night among your figures, seven everyday **reinforcements** unlocked one by one (riot police, firefighters, the speed camera, paramedics, the baker, the teachers, the Constitutional Council) and up to **two turncoats** poached from the rival camps. |
+| ⭐ **Upgrades** | Every star you win is spent on the calendar: level 2 or 3, tougher, quicker, stronger. |
 | 🗞️ **French life, French memes** | Pupils on electric scooters, the star cow of the Agricultural Show, yellow vests, union marchers who put your figures on strike, minimum-wage workers worth winning over, petrol at €2 a litre, proxy votes refused for a missing document, the Zucman tax vote, a CNews van that never runs out of pundits. |
 | 💬 **They talk — to each other too** | Speech bubbles with the cult lines of French politics, in French or English. Neighbours of the same camp answer each other. |
 | 🆕 **Never lost** | The first time a boss or a special opponent turns up, the match stops for a short "New!" card that says what it does. The calendar shows each night's goal and who turns up. |
@@ -138,12 +140,12 @@ Every camp gets the same affectionate treatment, and all four are playable.
   <img src="docs/cast.png" alt="The full cast: five public figures with photo heads for each of the four camps, plus the guests, the reinforcements and the extras" width="100%">
 </p>
 
-| Camp | Line-up (the last one is the boss) | Campaign trump card |
+| Camp | Line-up (in bold, the boss; last, the night-6 figure) | Campaign trump card |
 |---|---|---|
-| 🔴 **The Left** — _United… until the next meeting._ | Glucksmann, Hollande, Royal, Ruffin, **Mélenchon** | **General Strike** — every opponent stops dead for 6 seconds. |
-| 🟡 **The Centre** — _Neither left nor right. Or both._ | Bayrou, Attal, Philippe, Borne, **Macron** | **Dissolution** — everyone back to the gate… and your ballots drop to zero. |
-| 🔵 **The Right** — _Plenty of chiefs for a single chair._ | Sarkozy, Bardella, Retailleau, Zemmour, **Le Pen** | **Trocadéro Rally** — your whole camp speaks twice as fast for 9 seconds. |
-| 🟢 **The Others** — _Nobody expected them. They came anyway._ | Brigitte Macron, Villepin, Lassalle, Poutou, **Riner** | **No-Confidence Vote** — the three toughest opponents are toppled on the spot. |
+| 🔴 **The Left** — _United… until the next meeting._ | Glucksmann, Hollande, Royal, Ruffin, **Mélenchon**, Rousseau | **General Strike** — every opponent stops dead for 6 seconds. |
+| 🟡 **The Centre** — _Neither left nor right. Or both._ | Bayrou, Attal, Philippe, Borne, **Macron**, Darmanin | **Dissolution** — everyone back to the gate… and your ballots drop to zero. |
+| 🔵 **The Right** — _Plenty of chiefs for a single chair._ | Sarkozy, Bardella, Retailleau, Zemmour, **Le Pen**, Ciotti | **Trocadéro Rally** — your whole camp speaks twice as fast for 9 seconds. |
+| 🟢 **The Others** — _Nobody expected them. They came anyway._ | Brigitte Macron, Villepin, Lassalle, Poutou, **Riner**, Philippot | **No-Confidence Vote** — the three toughest opponents are toppled on the spot. |
 
 Guests: **Donald Trump**, **Xavier Niel**, **HugoDécrypte**, **Élise Lucet** and **Squeezie**. Every anonymous extra has a single look, whichever camp sends it.
 
@@ -159,21 +161,21 @@ The heads are real photos published on Wikimedia Commons under free licences; [`
 | | Controls |
 |---|---|
 | **Mouse or touch** | Tap a card, then a square. Long-press a card for its full description. On the debate night, tap a soundbite to send it back. |
-| **Keyboard** | `1`–`7` pick a figure · arrows aim · `Enter` places (or sends a soundbite back) · `R` removes · `U` trump card · `S` reads a board summary · `F` speed (normal, fast, slow) · `M` sound · `P` / `Esc` pause |
+| **Keyboard** | `1`–`8` pick a card · arrows aim · `Enter` places (or sends a soundbite back) · `R` removes · `U` trump card · `S` reads a board summary · `F` speed (normal, fast, slow) · `M` sound · `P` / `Esc` pause |
 | **Head to head** | The attacker uses the left of the keyboard: top row to choose (`A Z E R T` on AZERTY, `Q W E R T` on QWERTY), home row to send down a lane (`Q S D F G` / `A S D F G`) — or the buttons on the right. |
 
 ## Under the hood
 
 | Layer | Choice | Why |
 |---|---|---|
-| Site | [Astro 7](https://astro.build) (static output, 86 pages) | Pure HTML for crawlers and AI assistants, zero JS on content pages |
+| Site | [Astro 7](https://astro.build) (static output, 94 pages) | Pure HTML for crawlers and AI assistants, zero JS on content pages |
 | Game | TypeScript + Canvas 2D, no engine | A deterministic simulation that runs headless in tests, ~72 KB gzipped |
 | Art | Photo heads (cut out by a script) on procedural SVG puppets, painted stage sets | One drawing routine feeds the site, the canvas, the social cards and this README |
 | Audio | Web Audio synth | Sound effects and music without a single audio file, silent until you interact |
 | Offline | A service worker, versioned with the game | Opens and plays without a connection; it only ever handles this site's own files |
 | Serving | nginx (unprivileged) in Docker | Read-only container, no access log, hashed assets cached for a year |
 | Security | Per-page CSP with hashes | No inline script without a hash, no inline style attribute, `frame-ancestors 'none'`, strict headers |
-| Tests | Vitest + Playwright + axe-core | 94 simulation tests (bosses, saves and balance included), 175 browser tests |
+| Tests | Vitest + Playwright + axe-core | 101 simulation tests (bosses, newcomers, decks, upgrades, saves and balance included), 173 browser tests |
 
 ```
 src/
@@ -255,7 +257,7 @@ No environment variable is needed. No host port is published: traffic goes throu
 ## SEO, for search engines and for AI
 
 - Static HTML, one `<h1>` per page, canonical URLs, `hreflang` FR/EN/x-default
-- **A page per named figure (25) and per night (10)**, in both languages, each with its own social card
+- **A page per named figure (29) and per night (10)**, in both languages, each with its own social card
 - Open Graph and Twitter cards, web manifest, SVG + PNG icons
 - JSON-LD: `WebSite`, `VideoGame`, `FAQPage`, `BreadcrumbList`, `ItemList`, `CreativeWork`
 - [`/sitemap.xml`](src/pages/sitemap.xml.ts) with per-URL language alternates

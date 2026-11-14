@@ -67,7 +67,7 @@ test('game: a match with every card, reinforcements included', async ({ page }) 
   test.slow();
   await openGame(page, 'en');
   await startMatch(page, 'autres', 5);
-  await expect(page.locator('.card')).toHaveCount(7);
+  await expect(page.locator('.card')).toHaveCount(8);
   await audit(page);
 });
 

@@ -15,6 +15,8 @@ export interface Setup {
   seed: number;
   /** Duel: the score the second player has to beat. */
   rival?: number;
+  /** Campaign: the cards chosen for the night. */
+  deck?: string[];
 }
 
 

@@ -121,6 +121,52 @@ test('achievements are earned and listed, and the night starts with its goal', a
   await expect(page.locator('[data-achievement="firstWin"]')).toHaveClass(/is-earned/);
 });
 
+test('from night 6 the deck is picked on the team screen, turncoats included', async ({ page }) => {
+  await openGame(page, 'en');
+  await page.evaluate(() => window.__P2027__.team('gauche', 7));
+  const screen = page.locator('[data-screen="team"]');
+  await expect(screen).toBeVisible();
+  await expect(screen.locator('[data-slot="team-count"]')).toHaveText('8/8 cards picked');
+  // Full: a ninth card is refused until one is taken out.
+  await screen.locator('[data-card="samu"]').click();
+  await expect(screen.locator('[data-card="samu"]')).toHaveAttribute('aria-pressed', 'false');
+  await screen.locator('[data-card="pompiers"]').click();
+  await screen.locator('[data-card="royal"]').click();
+  await screen.locator('[data-card="samu"]').click();
+  await screen.locator('[data-card="attal"]').click();
+  await expect(screen.locator('[data-card="attal"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(screen.locator('[data-slot="team-transfuges-title"]')).toHaveText('Turncoats (1/2)');
+  await expect(screen.locator('[data-card="lepen"]')).toHaveCount(0); // no rival headliner
+  await expect(screen.locator('[data-card="macron"]')).toHaveCount(0);
+  await screen.locator('[data-action="team-go"]').click();
+  await page.waitForSelector('[data-screen="match"]:not([hidden])');
+  await expect(page.locator('.card[data-unit="attal"]')).toBeVisible();
+  await expect(page.locator('.card[data-unit="samu"]')).toBeVisible();
+  await expect(page.locator('.card[data-unit="pompiers"]')).toHaveCount(0);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('politique2027:save')!).teams.gauche);
+  expect(saved).toContain('attal');
+});
+
+test('stars buy upgrades on the calendar', async ({ page }) => {
+  await openGame(page, 'en');
+  await page.evaluate(() => {
+    localStorage.setItem('politique2027:save', '{"v":4,"camp":"droite","progress":{"droite":{"unlocked":4,"stars":{"1":3,"2":2},"endlessBest":0,"finished":false}}}');
+  });
+  await page.reload();
+  await page.waitForSelector('#game[data-ready="true"]');
+  const panel = page.locator('details.upgrades');
+  await panel.locator('summary').click();
+  await expect(panel.locator('summary')).toHaveText('Upgrades (5 ★ to spend)');
+  await panel.locator('[data-upgrade="bardella"]').click();
+  await expect(panel.locator('summary')).toHaveText('Upgrades (3 ★ to spend)');
+  await panel.locator('[data-upgrade="bardella"]').click();
+  await expect(panel.locator('summary')).toHaveText('Upgrades (0 ★ to spend)');
+  await expect(panel.locator('[data-upgrade="bardella"]')).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.locator('[data-achievement="maxed"]')).toHaveClass(/is-earned/);
+  const level = await page.evaluate(() => JSON.parse(localStorage.getItem('politique2027:save')!).upgrades.droite.bardella);
+  expect(level).toBe(3);
+});
+
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
 

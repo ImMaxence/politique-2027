@@ -25,7 +25,7 @@ The site has not yet been tested with a screen reader by someone who uses one ev
 
 ## What the game does to be accessible
 
-- **Keyboard**: every action goes through real buttons. Keys 1 to 7 pick a figure, arrows move around the field, Enter or Space places, and R, U, P, F and M drive the tools. Shortcuts only work while focus is inside the game.
+- **Keyboard**: every action goes through real buttons. Keys 1 to 8 pick a figure, arrows move around the field, Enter or Space places, and R, U, P, F and M drive the tools. Shortcuts only work while focus is inside the game.
 - **Screen readers**: each square of the field is a button that describes its content (figure present, credibility, number of opponents in the lane). Waves, lost points, incoming heavyweights, tariffs and the end of the match are announced in live regions; a figure's catchphrase is read out when it is placed.
 - **Orientation**: on a phone the match is shown in landscape by default (turned a quarter turn if the device is held upright). One button in the pause menu switches this off: the game then follows the device's orientation.
 - **Zoom**: pinch-to-zoom always works. Only double-tap zoom is turned off inside the game, so that two quick taps (a card, then a square) do not enlarge the page by accident.

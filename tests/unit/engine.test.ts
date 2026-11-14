@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { ENDLESS, LAST_LEVEL, LEVELS, VERSUS } from '../../src/game/data/levels';
 import { CAMP_IDS, type CampId } from '../../src/game/data/types';
-import { CAMPS, EXTRAS, GUESTS, REINFORCEMENTS, UNITS, categoryOf } from '../../src/game/data/units';
+import {
+  CAMPS, DECK_SIZE, EXTRAS, GUESTS, REINFORCEMENTS, UNITS, cardPool, categoryOf, headlinerOf, reinforcementsFor, transfugesFor, upgradedDef,
+} from '../../src/game/data/units';
 import { botAct } from '../../src/game/sim/bot';
 import {
   PASSIVE_AMOUNT, PASSIVE_INTERVAL, REFUND_RATIO, SPAWN_X, TICK, ULT_CHARGE_TIME,
@@ -26,12 +28,14 @@ function play(camp: CampId, level: number, seed: number, idle = false): GameStat
 }
 
 describe('data', () => {
-  it('has four camps of five figures in unlock order, each ending with a headliner who has powers', () => {
+  it('has four camps of six figures in unlock order: a headliner with powers, then an effect figure', () => {
     expect(CAMP_IDS).toHaveLength(4);
     for (const camp of CAMP_IDS) {
       const roster = CAMPS[camp].roster.map((id) => UNITS[id]);
-      expect(roster).toHaveLength(5);
-      expect(roster.map((u) => u.slot)).toEqual([0, 1, 2, 3, 4]);
+      expect(roster).toHaveLength(6);
+      expect(roster.map((u) => u.slot)).toEqual([0, 1, 2, 3, 4, 5]);
+      expect(categoryOf(roster[5])).toBe('effect');
+      expect(headlinerOf(camp)).toBe(roster[4].id);
       expect(roster.every((u) => u.camp === camp && u.attacker)).toBe(true);
       expect(roster[0].ability.kind).toBe('generator');
       expect(roster[2].ability.kind).toBe('wall');
@@ -79,9 +83,34 @@ describe('placing figures', () => {
     expect(state.cards.map((c) => c.def.id)).toEqual(['glucksmann', 'hollande', 'royal']);
   });
 
-  it('adds the public-service reinforcements once the school blockade opens them', () => {
+  it('adds the public-service reinforcements once the school blockade opens them, then one more every night', () => {
     const state = createGame({ camp: 'autres', level: 3 });
-    expect(state.cards.map((c) => c.def.id)).toEqual(['bmacron', 'villepin', 'lassalle', 'poutou', ...REINFORCEMENTS]);
+    expect(state.cards.map((c) => c.def.id)).toEqual(['bmacron', 'villepin', 'lassalle', 'poutou', 'crs', 'pompiers']);
+    expect(reinforcementsFor(5)).toEqual(['crs', 'pompiers', 'radar']);
+    expect(reinforcementsFor(9)).toEqual(REINFORCEMENTS);
+    expect(reinforcementsFor(0)).toEqual(REINFORCEMENTS);
+    expect(createGame({ camp: 'gauche', level: 5 }).cards.map((c) => c.def.id)).toEqual([...CAMPS.gauche.roster.slice(0, 5), 'crs', 'pompiers', 'radar']);
+  });
+
+  it('takes the chosen deck from night 6: at most eight cards, turncoats but no rival headliner', () => {
+    const pool = cardPool('centre', 7, 6, true);
+    expect(pool.length).toBeGreaterThan(DECK_SIZE);
+    expect(createGame({ camp: 'centre', level: 7 }).cards).toHaveLength(DECK_SIZE);
+    expect(transfugesFor('centre', 5, 5)).toEqual([]);
+    expect(transfugesFor('centre', 7, 6)).toContain('ciotti');
+    expect(transfugesFor('centre', 7, 6)).not.toContain('lepen');
+    const deck = ['bayrou', 'samu', 'boulangere', 'ciotti', 'lepen', 'nobody', 'macron'];
+    expect(createGame({ camp: 'centre', level: 7, deck }).cards.map((c) => c.def.id)).toEqual(['bayrou', 'samu', 'boulangere', 'ciotti', 'macron']);
+  });
+
+  it('upgrades make a card tougher, quicker and stronger', () => {
+    const base = UNITS.hollande;
+    const up = upgradedDef(base, 3);
+    expect(up.hp).toBe(Math.round(base.hp * 1.5));
+    expect(up.recharge).toBeCloseTo(base.recharge * 0.7, 1);
+    expect(up.ability.kind === 'shooter' && base.ability.kind === 'shooter' && up.ability.damage > base.ability.damage).toBe(true);
+    const state = createGame({ camp: 'gauche', level: 2, upgrades: { hollande: 2 } });
+    expect(state.cards.find((c) => c.def.id === 'hollande')!.def.hp).toBe(Math.round(base.hp * 1.25));
   });
 
   it('charges the cost and starts the card cooldown', () => {
@@ -424,6 +453,66 @@ describe('money, taxes and guests', () => {
     expect(invited('droite')).toBe(true);
     expect(invited('gauche')).toBe(false);
     expect(invited('centre')).toBe(false);
+  });
+});
+
+describe('the newcomers', () => {
+  function board(camp: CampId = 'gauche'): GameState {
+    const state = createGame({ camp, level: 0, seed: 3 });
+    state.resources = 5000;
+    return state;
+  }
+
+  it('the speed camera flashes its whole lane and slows everyone down', () => {
+    const state = board();
+    state.cards.push({ def: UNITS.radar, cooldown: 0 });
+    expect(placeUnit(state, 'radar', 2, 1)).toBeNull();
+    const a = spawnEnemy(state, 'militant', 2, 'droite', 5)!;
+    const b = spawnEnemy(state, 'militant', 2, 'droite', 8)!;
+    run(state, 1.2);
+    expect(state.events.some((e) => e.type === 'flash')).toBe(true);
+    expect(a.slowed && b.slowed).toBe(true);
+    expect(a.hp).toBeLessThan(EXTRAS.militant.hp);
+  });
+
+  it('the paramedics give their neighbours credibility back', () => {
+    const state = board();
+    state.cards.push({ def: UNITS.samu, cooldown: 0 });
+    placeUnit(state, 'royal', 2, 3);
+    const royal = state.grid[2][3]!;
+    royal.hp = 100;
+    expect(placeUnit(state, 'samu', 2, 2)).toBeNull();
+    run(state, 1.2);
+    expect(royal.hp).toBeGreaterThanOrEqual(160);
+  });
+
+  it('the teachers send the pupils back to class, and the Council censors the toughest opponent', () => {
+    const state = board();
+    state.cards.push({ def: UNITS.profs, cooldown: 0 }, { def: UNITS.conseil, cooldown: 0 });
+    const pupil = spawnEnemy(state, 'lyceen', 1, 'droite', 6)!;
+    const placard = spawnEnemy(state, 'placard', 1, 'droite', 7)!;
+    expect(placeUnit(state, 'profs', 1, 0)).toBeNull();
+    run(state, 1.2);
+    expect(state.enemies).not.toContain(pupil);
+    expect(placard.hp).toBe(EXTRAS.placard.hp - 320);
+    const bus = spawnEnemy(state, 'bus', 3, 'droite', 6)!;
+    spawnEnemy(state, 'militant', 3, 'droite', 5);
+    expect(placeUnit(state, 'conseil', 3, 0)).toBeNull();
+    run(state, 1.4);
+    expect(bus.hp).toBeLessThan(EXTRAS.bus.hp * 0.5);
+  });
+
+  it('Frexit sends the frontmost opponent back to the gate; Ciotti locks the door', () => {
+    const state = board('autres');
+    expect(placeUnit(state, 'philippot', 2, 0)).toBeNull();
+    const front = spawnEnemy(state, 'militant', 2, 'droite', 3)!;
+    run(state, 1.1);
+    expect(front.x).toBeGreaterThan(8.5);
+    const locked = board('droite');
+    expect(placeUnit(locked, 'ciotti', 2, 2)).toBeNull();
+    const near = spawnEnemy(locked, 'militant', 2, 'gauche', 4.4)!;
+    run(locked, 1.6);
+    expect(near.stunT).toBeGreaterThan(1);
   });
 });
 

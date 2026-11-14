@@ -88,7 +88,7 @@ export const LEVELS: LevelDef[] = [
       { id: 'patron', weight: 1.5, from: 2 },
       { id: 'bus', weight: 1, from: 5 },
     ],
-    starsFrom: 3, bosses: 0, guests: ['trump'], twists: ['manif'], firstWaveAt: 24, waveGap: 26, slots: 5, reinforcements: true,
+    starsFrom: 3, bosses: 0, guests: ['trump'], twists: ['manif'], firstWaveAt: 24, waveGap: 26, slots: 6, reinforcements: true,
   },
   {
     // The first round: everybody wants the ballot boxes.
@@ -105,7 +105,7 @@ export const LEVELS: LevelDef[] = [
       { id: 'syndicat', weight: 1, from: 3 },
       { id: 'bus', weight: 1, from: 5 },
     ],
-    starsFrom: 2, bosses: 1, guests: ['squeezie'], twists: ['manif', 'force'], firstWaveAt: 24, waveGap: 27, slots: 5, reinforcements: true,
+    starsFrom: 2, bosses: 1, guests: ['squeezie'], twists: ['manif', 'force'], firstWaveAt: 24, waveGap: 27, slots: 6, reinforcements: true,
   },
   {
     // The debate between the two rounds: one heavyweight on the other side of the desk, their
@@ -120,7 +120,7 @@ export const LEVELS: LevelDef[] = [
       { id: 'patron', weight: 1, from: 4 },
       { id: 'bus', weight: 1, from: 6 },
     ],
-    starsFrom: 1, bosses: 1, punchlines: { interval: 6.5, life: 4.5 }, firstWaveAt: 24, waveGap: 26, slots: 5, reinforcements: true,
+    starsFrom: 1, bosses: 1, punchlines: { interval: 6.5, life: 4.5 }, firstWaveAt: 24, waveGap: 26, slots: 6, reinforcements: true,
   },
   {
     // The run-off: two rival headliners, and everybody wants the armchair.
@@ -137,7 +137,7 @@ export const LEVELS: LevelDef[] = [
       { id: 'cnews', weight: 0.8, from: 5 },
       { id: 'tracteur', weight: 0.8, from: 5 },
     ],
-    starsFrom: 1, bosses: 2, twists: ['manif'], firstWaveAt: 24, waveGap: 27, slots: 5, reinforcements: true,
+    starsFrom: 1, bosses: 2, twists: ['manif'], firstWaveAt: 24, waveGap: 27, slots: 6, reinforcements: true,
   },
 ];
 
@@ -147,7 +147,7 @@ export const LAST_LEVEL = LEVELS[LEVELS.length - 1].id;
 export const VERSUS: LevelDef = {
   id: -1, scene: 'plateau', goal: 'micros', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
   waves: Number.POSITIVE_INFINITY, baseBudget: 0, growth: 0, bigWaves: [], pool: [],
-  starsFrom: 99, bosses: 0, firstWaveAt: 1e9, waveGap: 1e9, slots: 5, reinforcements: true,
+  starsFrom: 99, bosses: 0, firstWaveAt: 1e9, waveGap: 1e9, slots: 6, reinforcements: true,
   versus: { duration: 180 },
 };
 
@@ -174,7 +174,7 @@ export const ENDLESS: LevelDef = {
     { id: 'tracteur', weight: 1, from: 7 },
     { id: 'cnews', weight: 1, from: 8 },
   ],
-  starsFrom: 3, bosses: 1, guests: ['trump', 'niel', 'hugo', 'lucet', 'squeezie'], twists: ['manif', 'force'], firstWaveAt: 24, waveGap: 25, slots: 5, reinforcements: true, endless: true,
+  starsFrom: 3, bosses: 1, guests: ['trump', 'niel', 'hugo', 'lucet', 'squeezie'], twists: ['manif', 'force'], firstWaveAt: 24, waveGap: 25, slots: 6, reinforcements: true, endless: true,
 };
 
 export function levelDef(id: number): LevelDef {

@@ -11,7 +11,9 @@
  * background, Gaussian mixtures) and a minimum cut over the pixel graph, refined a few
  * times. The face's core is always kept and everything far from the head always goes,
  * so that the whole face stays visible. The outline is then smoothed, so that the cut
- * looks like scissors went round it, and given a thin ink line. The white sticker edge
+ * looks like scissors went round it, and given a thin ink line. Finally the head is
+ * moved so that its chin sits on the collar and its middle over the tie, whatever the
+ * framing of the photo. The white sticker edge
  * is added by the SVG filter of the puppet (see portraits.ts).
  *
  * Optional per-entry tweaks: `rx`/`ry` widen or narrow the head oval (default 1.08 / 1.1),
@@ -569,10 +571,54 @@ async function headMask(raw: Buffer, entry: Entry, scale: number, hw: number, hh
   return sharp(hard, { raw: { width: OUT_W, height: OUT_H, channels: 1 } }).blur(0.7).extractChannel(0).raw().toBuffer();
 }
 
+/** Where the bottom of every cut-out (the chin) ends up: on the collar of the puppet (see HEAD_BOX in portraits.ts). */
+const CHIN = 0.945;
+
+/**
+ * Moves the photo and its mask so that every head sits the same way on its body:
+ * the bottom of the cut-out on the collar, the middle of the head on the tie.
+ */
+function align(raw: Buffer, soft: Buffer): { raw: Buffer; soft: Buffer } {
+  const w = OUT_W;
+  const h = OUT_H;
+  let minX = w;
+  let maxX = -1;
+  let minY = h;
+  let maxY = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (soft[y * w + x] < 128) continue;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (maxY < 0) return { raw, soft };
+  let dy = Math.round(h * CHIN) - maxY;
+  let dx = Math.round(w / 2 - (minX + maxX) / 2);
+  // Never push the head out of the picture.
+  dy = Math.max(2 - minY, Math.min(h - 2 - maxY, dy));
+  dx = Math.max(2 - minX, Math.min(w - 2 - maxX, dx));
+  const raw2 = Buffer.alloc(raw.length);
+  const soft2 = Buffer.alloc(soft.length);
+  for (let y = 0; y < h; y++) {
+    const sy = y - dy;
+    if (sy < 0 || sy >= h) continue;
+    for (let x = 0; x < w; x++) {
+      const sx = x - dx;
+      if (sx < 0 || sx >= w) continue;
+      soft2[y * w + x] = soft[sy * w + sx];
+      raw.copy(raw2, (y * w + x) * 4, (sy * w + sx) * 4, (sy * w + sx) * 4 + 4);
+    }
+  }
+  return { raw: raw2, soft: soft2 };
+}
+
 async function cut(entry: Entry): Promise<string> {
   const src = await download(entry.file);
-  const { raw, scale, hw, hh } = await crop(src, entry);
-  const soft = await headMask(raw, entry, scale, hw, hh);
+  const cropped = await crop(src, entry);
+  const { raw, soft } = align(cropped.raw, await headMask(cropped.raw, entry, cropped.scale, cropped.hw, cropped.hh));
   const w = OUT_W;
   const h = OUT_H;
   // Ink line around the cut-out, then the photo.
@@ -699,8 +745,10 @@ if (review && made.length) {
   const TH = Math.round((240 * (OUT_H + PAD * 2)) / (OUT_W + PAD * 2)) + 24;
   const cols = 6;
   const tiles: OverlayOptions[] = [];
+  const written = await fs.readdir(OUT);
   for (const [i, m] of made.entries()) {
-    tiles.push({ input: await sharp(m.file).resize(TW).png().toBuffer(), left: (i % cols) * TW, top: Math.floor(i / cols) * TH });
+    const file = path.join(OUT, written.find((f) => f.startsWith(`${m.entry.id}-${m.entry.expr}.`))!);
+    tiles.push({ input: await sharp(file).resize(TW).png().toBuffer(), left: (i % cols) * TW, top: Math.floor(i / cols) * TH });
     tiles.push({ input: Buffer.from(`<svg width="${TW}" height="24"><text x="6" y="18" font-size="16" font-family="Arial" fill="#fff">${m.entry.id}-${m.entry.expr}</text></svg>`), left: (i % cols) * TW, top: Math.floor(i / cols) * TH + TH - 24 });
   }
   await sharp({ create: { width: TW * Math.min(cols, made.length), height: TH * Math.ceil(made.length / cols), channels: 3, background: '#26305e' } })

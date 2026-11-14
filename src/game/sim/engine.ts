@@ -6,7 +6,7 @@
  * which is what lets the unit tests and the balance bot run it headlessly.
  */
 import { COLS, ROWS, levelDef } from '../data/levels';
-import { CAMPS, REINFORCEMENTS, UNITS, enemyDef, rivalsOf } from '../data/units';
+import { CAMPS, DECK_SIZE, UNITS, cardPool, defaultDeck, enemyDef, rivalsOf, upgradedDef } from '../data/units';
 import type { CampId, EnemyDef, LevelDef, Power, PowerKind, ProjectileKind, ThemeId, TwistId, UltimateId, UnitDef } from '../data/types';
 
 export const TICK = 1 / 60;
@@ -129,6 +129,13 @@ export type GameEvent =
   | { type: 'silence'; lane: number; x: number; range: number }
   | { type: 'checkpoint'; lane: number; col: number }
   | { type: 'hose'; lane: number; col: number }
+  /** The speed camera flashes its lane; the paramedics give care; "Frexit" sends an opponent back. */
+  | { type: 'flash'; lane: number; col: number; hits: number }
+  | { type: 'heal'; lane: number; col: number }
+  | { type: 'expel'; lane: number; from: number; to: number }
+  /** The teachers send the pupils back to class; the Constitutional Council censors the toughest opponent. */
+  | { type: 'sentHome'; lane: number; x: number }
+  | { type: 'censored'; lane: number; x: number }
   | { type: 'dry'; lane: number; x: number }
   | { type: 'tariff'; on: boolean }
   | { type: 'censure'; hits: { lane: number; x: number }[] }
@@ -248,10 +255,28 @@ export interface GameOptions {
   hard?: boolean;
   /** The player's line-up, when it differs from the camp's roster. */
   roster?: string[];
+  /** The cards chosen for the night (at most DECK_SIZE); the default deck otherwise. */
+  deck?: string[];
+  /** Upgrade level of each card (1-3). */
+  upgrades?: Record<string, number>;
 }
 
 /** In hard mode every wave gets this much more budget. */
 export const HARD_BUDGET = 1.3;
+
+/** The cards of a match: the chosen deck (unknown cards and rival headliners left out), or the default one. */
+function deckFor(options: GameOptions, level: LevelDef): string[] {
+  const pool = options.roster
+    ? [...options.roster.slice(0, level.slots), ...cardPool(options.camp, level.id, 0, level.reinforcements)]
+    : cardPool(options.camp, level.id, level.slots, level.reinforcements);
+  if (!options.deck?.length) return defaultDeck(pool);
+  const chosen = [...new Set(options.deck)].filter((id) => {
+    const def = UNITS[id];
+    if (!def) return false;
+    return def.camp === 'neutre' || def.camp === options.camp ? pool.includes(id) : !def.boss;
+  });
+  return (chosen.length ? chosen : pool).slice(0, DECK_SIZE);
+}
 
 export function createGame(options: GameOptions): GameState {
   const level = levelDef(options.level);
@@ -272,10 +297,7 @@ export function createGame(options: GameOptions): GameState {
     units: [],
     enemies: [],
     projectiles: [],
-    cards: [...(options.roster ?? camp.roster).slice(0, level.slots), ...(level.reinforcements ? REINFORCEMENTS : [])].map((id) => ({
-      def: UNITS[id],
-      cooldown: 0,
-    })),
+    cards: deckFor(options, level).map((id) => ({ def: upgradedDef(UNITS[id], options.upgrades?.[id]), cooldown: 0 })),
     ult: { id: camp.ultimate, charge: 0, strike: 0, frenzy: 0 },
     wave: { next: 0, nextAt: level.firstWaveAt, lastStart: 0, pending: [], lastLane: -1 },
     passiveTimer: PASSIVE_INTERVAL,
@@ -325,6 +347,7 @@ export function placeUnit(state: GameState, unitId: string, lane: number, col: n
   else if (ability.kind === 'bomb' || ability.kind === 'hose') timer = ability.fuse;
   else if (ability.kind === 'shooter') timer = 0.6;
   else if (ability.kind === 'shout') timer = Math.min(1.5, ability.interval / 2);
+  else if (ability.kind === 'flash' || ability.kind === 'heal' || ability.kind === 'expel') timer = 1;
 
   const unit: Unit = {
     id: state.nextId++, def, lane, col, hp: def.hp, timer,
@@ -578,12 +601,26 @@ function explode(state: GameState, unit: Unit): void {
   const ability = unit.def.ability;
   if (ability.kind !== 'bomb') return;
   const x = unitX(unit);
+  if (ability.toughest) {
+    // Censored: the toughest opponent of the lane (a headliner loses half as much).
+    const target = state.enemies.filter((e) => e.lane === unit.lane && e.hp > 0 && e.x <= SPAWN_X).sort((a, b) => b.hp - a.hp)[0];
+    if (target) {
+      hurtEnemy(state, target, target.def.hp * ability.toughest * (target.def.boss ? 0.5 : 1));
+      state.events.push({ type: 'censored', lane: target.lane, x: target.x });
+    }
+  }
   for (const enemy of state.enemies) {
     const inArea =
       ability.area === 'lane'
         ? enemy.lane === unit.lane && enemy.x <= SPAWN_X
         : Math.abs(enemy.lane - unit.lane) <= 1 && Math.abs(enemy.x - x) <= 1.6;
     if (!inArea) continue;
+    if (ability.sendHome?.includes(enemy.def.id)) {
+      // Back to class, there and then.
+      hurtEnemy(state, enemy, enemy.hp);
+      state.events.push({ type: 'sentHome', lane: enemy.lane, x: enemy.x });
+      continue;
+    }
     hurtEnemy(state, enemy, ability.damage);
     // Negotiations: whoever was caught in them stands there, dazed, for a moment.
     if (ability.stun) {
@@ -715,6 +752,67 @@ function updateUnits(state: GameState, dt: number): void {
         }
         break;
       }
+      case 'flash': {
+        // The speed camera: everyone in front of it in the lane is flashed.
+        unit.timer -= dt * pace;
+        if (unit.timer <= 0) {
+          const targets = enemiesAhead(state, unit.lane, unitX(unit) - 0.3, COLS + 0.2);
+          if (targets.length) {
+            unit.timer = ability.interval;
+            unit.lastAct = state.time;
+            for (const enemy of targets) {
+              hurtEnemy(state, enemy, ability.damage);
+              const resist = enemy.def.resist ?? 0;
+              if (resist < 1) {
+                enemy.slowT = Math.max(enemy.slowT, ability.slow.duration * (1 - resist * 0.5));
+                enemy.slowF = ability.slow.factor;
+              }
+            }
+            state.events.push({ type: 'flash', lane: unit.lane, col: unit.col, hits: targets.length });
+          } else {
+            unit.timer = 0.3;
+          }
+        }
+        break;
+      }
+      case 'heal': {
+        // The paramedics: a pulse of care for whoever needs it around them.
+        unit.timer -= dt * pace;
+        if (unit.timer <= 0) {
+          const patients = state.units.filter(
+            (ally) => ally !== unit && ally.hp < ally.def.hp && Math.abs(ally.lane - unit.lane) <= 1 && Math.abs(ally.col - unit.col) <= 1,
+          );
+          if (patients.length) {
+            unit.timer = ability.interval;
+            unit.lastAct = state.time;
+            for (const ally of patients) ally.hp = Math.min(ally.def.hp, ally.hp + ability.amount);
+            state.events.push({ type: 'heal', lane: unit.lane, col: unit.col });
+          } else {
+            unit.timer = 0.4;
+          }
+        }
+        break;
+      }
+      case 'expel': {
+        // "Frexit": the frontmost opponent within reach goes back to the gate.
+        unit.timer -= dt * pace;
+        if (unit.timer <= 0) {
+          const x = unitX(unit);
+          const target = enemiesAhead(state, unit.lane, x - 0.3, x + ability.range).sort((a, b) => a.x - b.x)[0];
+          if (target) {
+            unit.timer = ability.interval;
+            unit.lastAct = state.time;
+            const from = target.x;
+            target.x = target.def.boss ? Math.min(SPAWN_X, target.x + 2) : SPAWN_X - 0.2;
+            target.attacking = false;
+            target.cast = null;
+            state.events.push({ type: 'expel', lane: target.lane, from, to: target.x });
+          } else {
+            unit.timer = 0.3;
+          }
+        }
+        break;
+      }
       case 'shout': {
         unit.timer -= dt * pace;
         if (unit.timer <= 0) {
@@ -727,6 +825,7 @@ function updateUnits(state: GameState, dt: number): void {
               hurtEnemy(state, enemy, ability.damage);
               const push = ability.knockback * (1 - (enemy.def.resist ?? 0));
               enemy.x = Math.min(SPAWN_X, enemy.x + push);
+              if (ability.stun && (enemy.def.resist ?? 0) < 1) enemy.stunT = Math.max(enemy.stunT, ability.stun * (1 - (enemy.def.resist ?? 0)));
               enemy.attacking = false;
             }
             state.events.push({ type: 'shout', lane: unit.lane, col: unit.col, unitId: unit.def.id });

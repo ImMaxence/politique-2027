@@ -249,6 +249,77 @@ const STREET: Record<string, () => string> = {
     <path d="M10 84v44" ${thin('rgba(255,255,255,.9)', 3)}/>
     <text x="25" y="111" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="12" fill="#1c2a4a">CRS</text>`,
 
+  // The speed camera: a grey box on a pole, its flash and the speed-limit sign.
+  radar: () => `
+    <rect x="55" y="70" width="10" height="80" rx="2" fill="#7d8597" ${s(2.4)}/>
+    <rect x="22" y="22" width="76" height="54" rx="8" fill="#5b6270" ${s(3)}/>
+    <rect x="28" y="28" width="64" height="16" rx="3" fill="#dfe3ea" ${s(2)}/>
+    <text x="60" y="40.500" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="12" fill="#17203f">RADAR</text>
+    <circle cx="44" cy="60" r="10" fill="#17203f" ${s(2.4)}/><circle cx="44" cy="60" r="5" fill="#6fc3ff"/>
+    <rect x="62" y="52" width="26" height="16" rx="4" fill="#fffdf6" ${s(2.2)}/>
+    <path d="M66 60h18" fill="none" stroke="#e5383b" stroke-width="3" stroke-linecap="round"/>
+    <path d="M18 56l-12-6M18 64l-14 2M20 72l-12 8" ${thin('#ffd23f', 3.4)}/>
+    <rect x="36" y="96" width="48" height="26" rx="4" fill="#fffdf6" ${s(2.4)}/>
+    <circle cx="60" cy="109" r="9" fill="#fffdf6" stroke="#e5383b" stroke-width="3"/>
+    <text x="60" y="113" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="10" fill="#17203f">80</text>`,
+
+  // Paramedic: orange and white, a stethoscope and a first-aid bag.
+  samu: () => `${stick}
+    <path d="M22 134c0-25 12-37 28-39h20c16 2 28 14 28 39z" fill="#f2f3f6" ${s()}/>
+    <path d="M22 118h76v10H22z" fill="#ff7a1a"/>
+    <rect x="36" y="100" width="18" height="12" rx="2" fill="#e5383b" ${s(1.6)}/><path d="M45 102v8M41 106h8" ${thin('#fffdf6', 2.4)}/>
+    <rect x="52" y="82" width="16" height="14" rx="4" fill="#f0bf9a" ${s(2.4)}/>
+    <ellipse cx="60" cy="60" rx="24" ry="25" fill="#f0bf9a" ${s()}/>
+    <path d="M36 54c0-18 10-28 24-28s24 10 24 28c-6-6-14-8-24-8s-18 2-24 8z" fill="#3b2a20" ${s()}/>
+    <ellipse cx="51" cy="62" rx="2.600" ry="3.200" fill="${INK}"/><ellipse cx="69" cy="62" rx="2.600" ry="3.200" fill="${INK}"/>
+    <path d="M52 72q8 6 16 0" fill="none" ${s(2.4)}/>
+    <path d="M50 92c-4 10-2 18 6 20M70 92c4 10 2 18-6 20" ${thin(INK, 2.2)}/><circle cx="60" cy="114" r="3" fill="#aab6cc" ${s(1.6)}/>
+    <rect x="78" y="108" width="36" height="28" rx="5" fill="#e5383b" ${s(2.6)}/>
+    <path d="M88 108v-5h16v5" fill="none" ${s(2.4)}/><path d="M96 114v16M88 122h16" ${thin('#fffdf6', 4)}/>`,
+
+  // The baker: an apron, flour on the cheek and a baguette under the arm.
+  boulangere: () => `${stick}
+    <path d="M22 134c0-25 12-37 28-39h20c16 2 28 14 28 39z" fill="#f2f3f6" ${s()}/>
+    <path d="M38 98h44l4 36H34z" fill="#3c6fd0" ${s(2.2)}/><path d="M44 98v-4h32v4" fill="none" ${s(2)}/>
+    <rect x="52" y="82" width="16" height="14" rx="4" fill="#f0bf9a" ${s(2.4)}/>
+    <ellipse cx="60" cy="60" rx="24" ry="25" fill="#f0bf9a" ${s()}/>
+    <path d="M34 62c-4-22 8-38 26-38s30 16 26 38c-2-12-10-20-26-20s-24 8-26 20z" fill="#7a4a2a" ${s()}/>
+    <circle cx="60" cy="22" r="9" fill="#7a4a2a" ${s(2.4)}/>
+    <ellipse cx="51" cy="62" rx="2.600" ry="3.200" fill="${INK}"/><ellipse cx="69" cy="62" rx="2.600" ry="3.200" fill="${INK}"/>
+    <path d="M50 72q10 8 20 0" fill="none" ${s(2.4)}/>
+    <circle cx="44" cy="70" r="4" fill="#fffdf6" opacity=".85"/>
+    <g transform="rotate(-38 86 104)"><rect x="56" y="98" width="62" height="13" rx="6.500" fill="#e0a54a" ${s(2.4)}/>
+    <path d="M68 100l-4 8M80 100l-4 8M92 100l-4 8M104 100l-4 8" ${thin('#a86a1f', 2.2)}/></g>`,
+
+  // A teacher: glasses, a cardigan, a marked paper and the red pen.
+  profs: () => `${stick}
+    <path d="M22 134c0-25 12-37 28-39h20c16 2 28 14 28 39z" fill="#8a5a3c" ${s()}/>
+    <path d="M50 95l10 18 10-18z" fill="#f2f3f6" ${s(2)}/>
+    <circle cx="52" cy="118" r="2" fill="${INK}"/><circle cx="52" cy="127" r="2" fill="${INK}"/>
+    <rect x="52" y="82" width="16" height="14" rx="4" fill="#f0bf9a" ${s(2.4)}/>
+    <ellipse cx="60" cy="60" rx="24" ry="25" fill="#f0bf9a" ${s()}/>
+    <path d="M34 58c-2-20 10-32 26-32s28 12 26 32c-4-10-12-16-26-16s-22 6-26 16z" fill="#9aa0aa" ${s()}/>
+    <g fill="rgba(255,255,255,.35)" ${s(2.2)}><circle cx="50" cy="62" r="7"/><circle cx="70" cy="62" r="7"/><path d="M57 62h6" fill="none"/></g>
+    <circle cx="50" cy="62" r="2" fill="${INK}"/><circle cx="70" cy="62" r="2" fill="${INK}"/>
+    <path d="M52 76h16" fill="none" ${s(2.4)}/>
+    <g transform="rotate(10 30 110)"><rect x="8" y="96" width="42" height="32" rx="2" fill="#fffdf6" ${s(2.4)}/>
+    <path d="M10 104h30M10 111h30M10 118h18" ${thin('#9aa3b8', 2)}/>
+    <text x="36" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="11" fill="#e5383b">3/20</text></g>
+    <g transform="rotate(30 100 100)"><rect x="96" y="82" width="7" height="36" rx="2" fill="#e5383b" ${s(1.8)}/><path d="M96.500 118l3 6 3-6z" fill="${INK}"/></g>`,
+
+  // The Constitutional Council: one of its members, nobody in particular, and the CENSURÉ stamp.
+  conseil: () => `${stick}
+    <path d="M22 134c0-25 12-37 28-39h20c16 2 28 14 28 39z" fill="#232733" ${s()}/>
+    <path d="M49 95l11 20 11-20z" fill="#fffdf6" ${s(2)}/><path d="M57 100h6l2 18-5 5-5-5z" fill="#2f5fe0" ${s(1.8)}/>
+    <rect x="52" y="82" width="16" height="14" rx="4" fill="#f0bf9a" ${s(2.4)}/>
+    <ellipse cx="60" cy="60" rx="24" ry="25" fill="#f0bf9a" ${s()}/>
+    <path d="M36 56c-1-14 6-24 14-26 4-2 16-2 20 0 8 2 15 12 14 26-3-6-6-10-10-11-6 2-16 2-28 0-4 1-7 5-10 11z" fill="#dfe2e7" ${s()}/>
+    <ellipse cx="51" cy="62" rx="2.600" ry="3.200" fill="${INK}"/><ellipse cx="69" cy="62" rx="2.600" ry="3.200" fill="${INK}"/>
+    <path d="M44 54l12 2M64 56l12-2" ${thin('#9aa3b8', 3)}/>
+    <path d="M52 76h16" fill="none" ${s(2.4)}/>
+    <g transform="rotate(-10 90 104)"><rect x="64" y="94" width="50" height="20" rx="3" fill="#fffdf6" stroke="#e5383b" stroke-width="3"/>
+    <text x="89" y="108" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="10" fill="#e5383b">CENSURÉ</text></g>`,
+
   // Firefighter: the only one everybody applauds.
   pompiers: () => `${stick}
     <path d="M22 134c0-25 12-37 28-39h20c16 2 28 14 28 39z" fill="#1c2a4a" ${s()}/>

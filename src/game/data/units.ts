@@ -5,8 +5,9 @@
  * them) and an attacker profile (when they march against the player). Names,
  * titles, jokes and catchphrases live in src/i18n/game.ts; this file is numbers only.
  *
- * Five figures per camp, always in the same order: votes, attack, defence,
- * a one-shot "bomb", and the headliner, who marches as a boss with powers.
+ * Six figures per camp, always in the same order: votes, attack, defence,
+ * a one-shot "bomb", the headliner (who marches as a boss with powers) and,
+ * unlocked last, an "effect" figure that slows, freezes or sends back.
  */
 export const UNITS: Record<string, UnitDef> = {
   // ---------------------------------------------------------------- Gauche
@@ -160,38 +161,96 @@ export const UNITS: Record<string, UnitDef> = {
     },
   },
 
-  // ---------------------------------------------------------------- Reinforcements (any camp)
+  // ---------------------------------------------------------------- The effect figures (unlocked on night 6)
+  rousseau: {
+    id: 'rousseau', camp: 'gauche', slot: 5, cost: 125, hp: 110, recharge: 8,
+    // "Barbecue? Let's deconstruct that": every remark leaves the opponent dragging its feet.
+    ability: { kind: 'shooter', damage: 11, interval: 1.6, projectile: 'leaf', speed: 7, slow: { factor: 0.5, duration: 3.2 } },
+    attacker: { hp: 560, speed: 0.2, dps: 24, threat: 6, leak: 1, trait: { kind: 'silence', interval: 8, duration: 2, range: 2.6 } },
+  },
+  darmanin: {
+    id: 'darmanin', camp: 'centre', slot: 5, cost: 125, hp: 110, recharge: 9,
+    // The Justice minister: handcuffs, and the first opponent stands still.
+    ability: { kind: 'shooter', damage: 14, interval: 3.8, projectile: 'cuffs', speed: 8, stun: 2.4 },
+    attacker: { hp: 560, speed: 0.21, dps: 26, threat: 6, leak: 1, trait: { kind: 'ranged', range: 2.4 } },
+  },
+  ciotti: {
+    id: 'ciotti', camp: 'droite', slot: 5, cost: 125, hp: 150, recharge: 12,
+    // The locked headquarters: he shuts the door and everyone in front of him is stuck.
+    ability: { kind: 'shout', interval: 8.5, damage: 20, knockback: 0, range: 2.6, stun: 2.6 },
+    attacker: { hp: 1250, speed: 0.14, dps: 28, threat: 6, leak: 1, resist: 0.4 },
+  },
+  philippot: {
+    id: 'philippot', camp: 'autres', slot: 5, cost: 150, hp: 110, recharge: 10,
+    // "Frexit": out you go, back to the gate.
+    ability: { kind: 'expel', interval: 11, range: 6 },
+    attacker: { hp: 540, speed: 0.2, dps: 24, threat: 6, leak: 1, trait: { kind: 'summon', what: 'militant', interval: 9 } },
+  },
+
+  // ---------------------------------------------------------------- Reinforcements (any camp, one more every night from the 5th)
   crs: {
-    id: 'crs', camp: 'neutre', slot: 6, cost: 100, hp: 520, recharge: 14,
+    id: 'crs', camp: 'neutre', slot: 6, cost: 100, hp: 520, recharge: 14, unlock: 3,
     // Holds the line and checks papers: whoever is in contact stands still for a moment.
     ability: { kind: 'wall', checkpoint: { interval: 5, stun: 2.2 } },
   },
   pompiers: {
-    id: 'pompiers', camp: 'neutre', slot: 7, cost: 75, hp: 200, recharge: 22,
+    id: 'pompiers', camp: 'neutre', slot: 7, cost: 75, hp: 200, recharge: 22, unlock: 3,
     // Fire hose: every fire in the lane is out, everyone else is soaked and pushed back.
     ability: { kind: 'hose', fuse: 0.7, damage: 40, knockback: 1.2, slow: { factor: 0.5, duration: 4 } },
   },
+  radar: {
+    id: 'radar', camp: 'neutre', slot: 8, cost: 75, hp: 160, recharge: 12, unlock: 5,
+    // The speed camera: flashed, a point off, and everybody slows down.
+    ability: { kind: 'flash', interval: 6, damage: 25, slow: { factor: 0.45, duration: 3.5 } },
+  },
+  samu: {
+    id: 'samu', camp: 'neutre', slot: 9, cost: 100, hp: 160, recharge: 16, unlock: 6,
+    // Paramedics: a pulse of care for the eight neighbours.
+    ability: { kind: 'heal', interval: 4, amount: 60 },
+  },
+  boulangere: {
+    id: 'boulangere', camp: 'neutre', slot: 10, cost: 50, hp: 100, recharge: 6, unlock: 7,
+    // The baker: a baguette and a ballot, every morning.
+    ability: { kind: 'generator', amount: 20, interval: 6, firstDelay: 4 },
+  },
+  profs: {
+    id: 'profs', camp: 'neutre', slot: 11, cost: 125, hp: 120, recharge: 28, unlock: 8,
+    // The teachers: the whole lane is marked, and the pupils go back to class.
+    ability: { kind: 'bomb', fuse: 1, damage: 320, area: 'lane', sendHome: ['lyceen', 'trottinette'] },
+  },
+  conseil: {
+    id: 'conseil', camp: 'neutre', slot: 12, cost: 150, hp: 120, recharge: 34, unlock: 9,
+    // The Constitutional Council: the toughest opponent in the lane is censored.
+    ability: { kind: 'bomb', fuse: 1.2, damage: 120, area: 'lane', toughest: 0.6 },
+  },
 };
 
-/** Public-service reinforcements, available to every camp once a level allows them. */
-export const REINFORCEMENTS = ['crs', 'pompiers'];
+/** Public-service and everyday reinforcements, in the order they are unlocked. */
+export const REINFORCEMENTS = ['crs', 'pompiers', 'radar', 'samu', 'boulangere', 'profs', 'conseil'];
+
+/** How many cards a player takes into a night. */
+export const DECK_SIZE = 8;
+/** How many figures from rival camps ("transfuges") a deck may hold, from night 6. */
+export const TRANSFUGES = 2;
+/** The night from which the deck is chosen, transfuges included. */
+export const TEAM_FROM = 6;
 
 export const CAMPS: Record<CampId, CampDef> = {
   gauche: {
     id: 'gauche', color: '#e5383b', ink: '#b0191f', ultimate: 'greve',
-    roster: ['glucksmann', 'hollande', 'royal', 'ruffin', 'melenchon'],
+    roster: ['glucksmann', 'hollande', 'royal', 'ruffin', 'melenchon', 'rousseau'],
   },
   centre: {
     id: 'centre', color: '#f6aa1c', ink: '#8a5300', ultimate: 'dissolution',
-    roster: ['bayrou', 'attal', 'philippe', 'borne', 'macron'],
+    roster: ['bayrou', 'attal', 'philippe', 'borne', 'macron', 'darmanin'],
   },
   droite: {
     id: 'droite', color: '#2f5fe0', ink: '#1c3fa8', ultimate: 'trocadero',
-    roster: ['sarkozy', 'bardella', 'retailleau', 'zemmour', 'lepen'],
+    roster: ['sarkozy', 'bardella', 'retailleau', 'zemmour', 'lepen', 'ciotti'],
   },
   autres: {
     id: 'autres', color: '#2e9e5b', ink: '#17653a', ultimate: 'censure',
-    roster: ['bmacron', 'villepin', 'lassalle', 'poutou', 'riner'],
+    roster: ['bmacron', 'villepin', 'lassalle', 'poutou', 'riner', 'philippot'],
   },
 };
 
@@ -267,15 +326,86 @@ export function categoryOf(def: UnitDef): Category {
     case 'wall':
       return 'defence';
     case 'hose':
+    case 'flash':
+    case 'heal':
+    case 'expel':
       return 'effect';
     case 'shooter':
       return ability.slow || ability.stun ? 'effect' : 'attack';
     case 'shout':
-      // A short-range thrower holds a square; a long-range roar is an attack.
+      // A shout that freezes is an effect; a short-range thrower holds a square; a long-range roar is an attack.
+      if (ability.stun) return 'effect';
       return ability.range < 2 ? 'defence' : 'attack';
     default:
       return 'attack';
   }
+}
+
+/** A camp's headliner: the figure who marches as a boss. */
+export function headlinerOf(camp: CampId): string {
+  return CAMPS[camp].roster.find((id) => UNITS[id].boss)!;
+}
+
+/** Reinforcements every camp can call on a given night (all of them in the endless and two-player modes). */
+export function reinforcementsFor(levelId: number, allowed = true): string[] {
+  if (!allowed) return [];
+  return REINFORCEMENTS.filter((id) => levelId <= 0 || (UNITS[id].unlock ?? 0) <= levelId);
+}
+
+/** Every card a camp may take into a night: its unlocked figures, then the reinforcements. */
+export function cardPool(camp: CampId, levelId: number, slots: number, reinforcements: boolean): string[] {
+  return [...CAMPS[camp].roster.slice(0, slots), ...reinforcementsFor(levelId, reinforcements)];
+}
+
+/** Figures of rival camps a deck may take on a given night (headliners excepted). */
+export function transfugesFor(camp: CampId, levelId: number, slots: number): string[] {
+  if (levelId > 0 && levelId < TEAM_FROM) return [];
+  return rivalsOf(camp).flatMap((c) => CAMPS[c].roster.slice(0, slots)).filter((id) => !UNITS[id].boss);
+}
+
+/** The deck used when nobody chose one (the bot, the daily challenge, duels): figures first, then reinforcements. */
+export function defaultDeck(pool: string[]): string[] {
+  return pool.slice(0, DECK_SIZE);
+}
+
+/** Stars an upgrade costs, by the level it reaches (2 or 3). */
+export const UPGRADE_COST: Record<number, number> = { 2: 2, 3: 3 };
+export const MAX_UPGRADE = 3;
+
+/** A card with its upgrades: +25% credibility, -15% recharge and +15% effect per level above 1. */
+export function upgradedDef(def: UnitDef, level = 1): UnitDef {
+  const extra = Math.max(0, Math.min(MAX_UPGRADE, level) - 1);
+  if (!extra) return def;
+  const more = (n: number) => Math.round(n * (1 + 0.15 * extra));
+  const a = def.ability;
+  let ability = a;
+  switch (a.kind) {
+    case 'generator':
+      ability = { ...a, amount: more(a.amount) };
+      break;
+    case 'shooter':
+    case 'bomb':
+    case 'shout':
+    case 'flash':
+    case 'hose':
+      ability = { ...a, damage: more(a.damage) };
+      break;
+    case 'heal':
+      ability = { ...a, amount: more(a.amount) };
+      break;
+    case 'wall':
+      ability = { ...a, ...(a.thorns ? { thorns: more(a.thorns) } : {}), ...(a.healAura ? { healAura: more(a.healAura) } : {}), ...(a.regen ? { regen: more(a.regen) } : {}) };
+      break;
+    case 'expel':
+      ability = { ...a, interval: Math.round(a.interval * (1 - 0.12 * extra) * 10) / 10 };
+      break;
+  }
+  return {
+    ...def,
+    hp: Math.round(def.hp * (1 + 0.25 * extra)),
+    recharge: Math.round(def.recharge * (1 - 0.15 * extra) * 10) / 10,
+    ability,
+  };
 }
 
 export function unitsOf(camp: CampId): UnitDef[] {

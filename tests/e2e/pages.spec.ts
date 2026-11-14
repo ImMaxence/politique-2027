@@ -36,13 +36,14 @@ test('a figure page credits its photo', async ({ page }) => {
 
 test('the legal notice lists the photo credits', async ({ page }) => {
   await page.goto('/fr/mentions-legales');
-  await expect(page.locator('table.credits tbody tr')).toHaveCount(34);
+  await expect(page.locator('table.credits tbody tr')).toHaveCount(38);
 });
 
 test('the characters page links every figure to its page, and the sitemap lists them', async ({ page, request }) => {
   await page.goto('/fr/personnages');
   const links = await page.locator('.figure-card h3 a').evaluateAll((els) => els.map((a) => a.getAttribute('href')));
-  expect(links.length).toBe(25);
+  expect(links.length).toBe(29);
+  expect(links).toContain('/fr/personnages/gerald-darmanin');
   expect(links).toContain('/fr/personnages/xavier-niel');
   const sitemap = await (await request.get('/sitemap.xml')).text();
   expect(sitemap).toContain('/en/characters/marine-le-pen');

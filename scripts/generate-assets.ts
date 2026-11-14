@@ -105,7 +105,8 @@ function castSheet(): string {
       .join('');
   return html(
     `<main>${rows}<section><h2 class="display"><span style="background:#f3ecdd;color:#141a36">Guests, reinforcements and extras</span></h2>
-      <div class="row extras">${sheet(['trump', 'niel', 'hugo', 'lucet', 'squeezie', 'crs', 'pompiers'])}</div>
+      <div class="row extras">${sheet(['trump', 'niel', 'hugo', 'lucet', 'squeezie'])}</div>
+      <div class="row extras">${sheet(['crs', 'pompiers', 'radar', 'samu', 'boulangere', 'profs', 'conseil'])}</div>
       <div class="row extras">${sheet(['lyceen', 'trottinette', 'gilet', 'syndicat', 'smicard', 'agriculteur', 'impots'])}</div>
       <div class="row extras">${sheet(['patron', 'militant', 'placard', 'pundit', 'auto', 'poubelle', 'cat'])}</div>
       <div class="row extras">${sheet(['cnews', 'tracteur', 'vache', 'bus'])}</div></section></main>`,

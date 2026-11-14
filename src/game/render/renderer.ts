@@ -24,6 +24,7 @@ const PAPER = '#fffdf6';
 const GOLD = '#ffd23f';
 const RED = '#e5383b';
 const WATER = '#6fc3ff';
+const BLUE = '#3f7be8';
 const DISPLAY = "'Anton', 'Arial Narrow', Impact, sans-serif";
 const BODY = "'Public Sans Variable', 'Public Sans', system-ui, sans-serif";
 const MAX_BUBBLES = 3;
@@ -350,8 +351,9 @@ export class Renderer {
           const x = xToPx(e.col + 0.5);
           const y = laneTop(e.lane) + CELL_H / 2;
           if (e.area === 'lane') {
-            this.flashes.push({ lanes: [e.lane], fromX: BOARD_X, toX: BOARD_X + BOARD_W, life: 0.7, max: 0.7, color: GOLD });
-            this.float(VIEW_W / 2, y - 10, a.boom493, INK, 44, 1.5);
+            this.flashes.push({ lanes: [e.lane], fromX: BOARD_X, toX: BOARD_X + BOARD_W, life: 0.7, max: 0.7, color: e.unitId === 'conseil' ? RED : GOLD });
+            const label = e.unitId === 'profs' ? a.boomProfs : e.unitId === 'conseil' ? a.boomConseil : a.boom493;
+            this.float(VIEW_W / 2, y - 10, label, INK, 44, 1.5);
           } else {
             this.ring(x, y, CELL_W * 1.7, RED, 10, 0.5);
             this.ring(x, y, CELL_W * 1.2, GOLD, 8, 0.4);
@@ -397,6 +399,32 @@ export class Renderer {
           this.float(xToPx(e.col + 1.5), y - 60, a.hose, '#1c3fa8', 34, 1.3);
           break;
         }
+        case 'flash': {
+          // The speed camera: a white flash down the lane.
+          this.flashes.push({ lanes: [e.lane], fromX: xToPx(e.col + 0.5), toX: BOARD_X + BOARD_W, life: 0.35, max: 0.35, color: PAPER });
+          this.float(xToPx(e.col + 1.2), feetY(e.lane) - 118, a.flashed, INK, 26, 1.2);
+          break;
+        }
+        case 'heal': {
+          const x = xToPx(e.col + 0.5);
+          const y = feetY(e.lane) - 60;
+          this.ring(x, y, CELL_W * 1.4, '#58c26b', 6, 0.5);
+          for (let i = 0; i < 6; i++) this.float(x + (Math.random() - 0.5) * CELL_W * 2, y - 20 - Math.random() * 60, '+', '#1f7a3d', 30, 0.9);
+          break;
+        }
+        case 'expel':
+          this.flashes.push({ lanes: [e.lane], fromX: xToPx(e.from), toX: xToPx(e.to), life: 0.5, max: 0.5, color: BLUE });
+          this.float(xToPx(e.from), feetY(e.lane) - 120, a.expelled, '#1c3fa8', 28, 1.3);
+          break;
+        case 'sentHome':
+          this.confetti(xToPx(e.x), feetY(e.lane) - 60, '#7d65b8', 8);
+          this.float(xToPx(e.x), feetY(e.lane) - 110, a.backToClass, '#4a3a80', 20, 1.2);
+          break;
+        case 'censored':
+          this.ring(xToPx(e.x), feetY(e.lane) - 60, 90, RED, 9, 0.5);
+          this.float(xToPx(e.x), feetY(e.lane) - 130, a.censured, RED, 30, 1.5);
+          this.shake = Math.max(this.shake, 0.25);
+          break;
         case 'dry':
           this.float(xToPx(e.x), feetY(e.lane) - 110, a.dry, INK, 24, 1.4);
           break;
@@ -1012,6 +1040,37 @@ export class Renderer {
         g.fill();
         g.stroke();
         break;
+      case 'leaf':
+        g.rotate(Math.sin(phase * 8) * 0.6);
+        g.fillStyle = '#58c26b';
+        g.beginPath();
+        g.moveTo(-14, 0);
+        g.quadraticCurveTo(0, -14, 14, 0);
+        g.quadraticCurveTo(0, 14, -14, 0);
+        g.fill();
+        g.stroke();
+        g.beginPath();
+        g.moveTo(-12, 0);
+        g.lineTo(12, 0);
+        g.stroke();
+        break;
+      case 'cuffs':
+        g.rotate(phase * 6);
+        g.strokeStyle = '#aab6cc';
+        g.lineWidth = 5;
+        for (const dx of [-8, 8]) {
+          g.beginPath();
+          g.arc(dx, 0, 7, 0, Math.PI * 2);
+          g.stroke();
+        }
+        g.strokeStyle = INK;
+        g.lineWidth = 2;
+        for (const dx of [-8, 8]) {
+          g.beginPath();
+          g.arc(dx, 0, 9.5, 0, Math.PI * 2);
+          g.stroke();
+        }
+        break;
       case 'cat': {
         const cat = this.sprites.enemy('cat');
         if (cat) {
@@ -1056,8 +1115,12 @@ export class Renderer {
           for (const offset of ability.lanes ?? [0]) {
             if (open(hover.lane + offset)) g.fillRect(cellX, laneTop(hover.lane + offset), BOARD_X + BOARD_W - cellX, CELL_H);
           }
-        } else if (ability.kind === 'shout') {
+        } else if (ability.kind === 'shout' || ability.kind === 'expel') {
           g.fillRect(cellX, cellY, Math.min((ability.range + 0.5) * CELL_W, BOARD_X + BOARD_W - cellX), CELL_H);
+        } else if (ability.kind === 'flash') {
+          g.fillRect(cellX, cellY, BOARD_X + BOARD_W - cellX, CELL_H);
+        } else if (ability.kind === 'heal') {
+          around();
         } else if (ability.kind === 'wall' && ability.zone) {
           g.fillRect(cellX, cellY, Math.min((ability.zone.range + 0.5) * CELL_W, BOARD_X + BOARD_W - cellX), CELL_H);
         } else if (ability.kind === 'hose' || (ability.kind === 'bomb' && ability.area === 'lane')) {

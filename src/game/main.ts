@@ -8,9 +8,11 @@ import { GAME_STRINGS, fmt, isLang, type GameStrings, type Lang } from '../i18n/
 import { Audio } from './audio';
 import { unlockAchievements } from './achievements';
 import { dailySetup, duelCode, parseDuel, today, type Mode, type Setup } from './modes';
-import { COLS, LAST_LEVEL, LEVELS, ROWS, VERSUS } from './data/levels';
+import { COLS, LAST_LEVEL, LEVELS, ROWS, VERSUS, levelDef } from './data/levels';
 import { CAMP_IDS, type CampId } from './data/types';
-import { CAMPS, EXTRAS, UNITS, categoryOf } from './data/units';
+import {
+  CAMPS, DECK_SIZE, EXTRAS, MAX_UPGRADE, REINFORCEMENTS, TRANSFUGES, UNITS, UPGRADE_COST, cardPool, categoryOf, headlinerOf, reinforcementsFor, transfugesFor,
+} from './data/units';
 import { enemySvg, portraitSvg } from './render/portraits';
 import { Renderer, type ViewState } from './render/renderer';
 import { SpriteStore } from './render/sprites';
@@ -22,7 +24,7 @@ import { registerServiceWorker, setupInstallTip } from './pwa';
 import { resultPicture } from './share';
 import { loadSave, storeSave, type Save } from './storage';
 
-type ScreenName = 'camp' | 'levels' | 'match';
+type ScreenName = 'camp' | 'levels' | 'team' | 'match';
 
 function $(root: ParentNode, selector: string): HTMLElement {
   const el = root.querySelector<HTMLElement>(selector);
@@ -34,7 +36,7 @@ function $(root: ParentNode, selector: string): HTMLElement {
 /** Opponents who get a "New!" card the first time: the special extras, the guests and the rival headliners (as bosses). */
 const INTRODUCED = new Set([
   ...Object.keys(EXTRAS).filter((id) => id !== 'militant' && id !== 'cat'),
-  ...CAMP_IDS.map((camp) => `star:${CAMPS[camp].roster[CAMPS[camp].roster.length - 1]}`),
+  ...CAMP_IDS.map((camp) => `star:${headlinerOf(camp)}`),
 ]);
 
 interface LastResult {
@@ -98,6 +100,8 @@ class GameApp {
   private resumeFocus: HTMLElement | null = null;
   private cells: HTMLButtonElement[][] = [];
   private cards = new Map<string, HTMLButtonElement>();
+  /** The night being prepared on the team screen, and the cards picked so far. */
+  private team: { level: number; seed: number; pool: string[]; transfuges: string[]; picked: string[] } | null = null;
   private shown: Record<string, string | number> = {};
 
   private screens: Record<ScreenName, HTMLElement>;
@@ -115,6 +119,7 @@ class GameApp {
     this.screens = {
       camp: $(root, '[data-screen="camp"]'),
       levels: $(root, '[data-screen="levels"]'),
+      team: $(root, '[data-screen="team"]'),
       match: $(root, '[data-screen="match"]'),
     };
     this.hud = $(root, '[data-slot="hud"]');
@@ -225,6 +230,7 @@ class GameApp {
       });
     }
 
+    this.renderUpgrades();
     const earned = new Set(this.save.achievements);
     for (const item of this.root.querySelectorAll<HTMLElement>('[data-achievement]')) {
       item.classList.toggle('is-earned', earned.has(item.dataset.achievement as never));
@@ -241,10 +247,155 @@ class GameApp {
     for (let lane = 0; lane < ROWS; lane++) this.cells.push(buttons.slice(lane * COLS, lane * COLS + COLS));
   }
 
-  private async startLevel(levelId: number, seed?: number): Promise<void> {
+  /**
+   * Starts a campaign night. From night 6 (and in Cohabitation) there are more cards
+   * than room in the deck, and turncoats to poach: the team screen comes first,
+   * unless `direct` (the last deck is taken again).
+   */
+  private async startLevel(levelId: number, seed?: number, direct = false): Promise<void> {
     const camp = this.save.camp;
     if (!camp) return;
-    await this.startMatch({ mode: 'campaign', level: levelId, camp, seed: seed ?? Math.floor(Math.random() * 1e9) });
+    const level = levelDef(levelId);
+    const pool = cardPool(camp, levelId, level.slots, level.reinforcements);
+    const transfuges = transfugesFor(camp, levelId, level.slots);
+    const choose = pool.length > DECK_SIZE || transfuges.length > 0;
+    const nightSeed = seed ?? Math.floor(Math.random() * 1e9);
+    const deck = choose ? this.lastDeck(camp, pool, transfuges) : undefined;
+    if (choose && !direct) {
+      this.team = { level: levelId, seed: nightSeed, pool, transfuges, picked: deck! };
+      this.renderTeam();
+      this.show('team');
+      return;
+    }
+    await this.startMatch({ mode: 'campaign', level: levelId, camp, seed: nightSeed, deck });
+  }
+
+  /** The last deck picked with this camp, kept to what is allowed tonight and topped up from the pool. */
+  private lastDeck(camp: CampId, pool: string[], transfuges: string[]): string[] {
+    const saved = this.save.teams[camp].filter((id) => pool.includes(id) || transfuges.includes(id));
+    const poached = saved.filter((id) => transfuges.includes(id)).slice(0, TRANSFUGES);
+    const deck = [...saved.filter((id) => pool.includes(id)), ...poached].slice(0, DECK_SIZE);
+    for (const id of pool) if (deck.length < DECK_SIZE && !deck.includes(id)) deck.push(id);
+    return deck;
+  }
+
+  /** A card on the team screen or in the upgrades list: portrait, name, family and level. */
+  private teamCard(id: string, picked: boolean, transfuge: boolean): string {
+    const def = UNITS[id];
+    const text = this.t.figures[id];
+    const camp = this.save.camp!;
+    const level = def.camp === camp || def.camp === 'neutre' ? (this.save.upgrades[camp][id] ?? 1) : 1;
+    const category = categoryOf(def);
+    return `<li><button type="button" class="team-card" data-card="${id}" data-type="${category}" aria-pressed="${picked}">
+      <span class="team-card__art" aria-hidden="true">${portraitSvg(id, { size: 72, sticker: false })}</span>
+      <span class="team-card__name">${text.short}${transfuge ? ` <small>· ${this.t.ui.transfuge}</small>` : ''}</span>
+      <span class="team-card__type">${this.t.types[category]}</span>
+      <span class="team-card__cost">${def.cost}</span>
+      ${level > 1 ? `<span class="team-card__level">${'★'.repeat(level - 1)}</span>` : ''}
+    </button></li>`;
+  }
+
+  private renderTeam(): void {
+    const team = this.team;
+    if (!team) return;
+    const t = this.t.ui;
+    const picked = new Set(team.picked);
+    const figures = team.pool.filter((id) => UNITS[id].camp !== 'neutre');
+    const reinforcements = team.pool.filter((id) => UNITS[id].camp === 'neutre');
+    const poached = team.picked.filter((id) => team.transfuges.includes(id)).length;
+    $(this.root, '[data-slot="team-hint"]').textContent = fmt(t.teamHint, { max: DECK_SIZE, transfuges: TRANSFUGES });
+    $(this.root, '[data-slot="team-count"]').textContent = fmt(t.teamCount, { n: team.picked.length, max: DECK_SIZE });
+    $(this.root, '[data-slot="team-camp"]').innerHTML = figures.map((id) => this.teamCard(id, picked.has(id), false)).join('');
+    $(this.root, '[data-slot="team-reinforcements"]').innerHTML = reinforcements.map((id) => this.teamCard(id, picked.has(id), false)).join('');
+    const transfugeTitle = $(this.root, '[data-slot="team-transfuges-title"]');
+    transfugeTitle.textContent = fmt(t.teamTransfuges, { n: poached, max: TRANSFUGES });
+    transfugeTitle.hidden = !team.transfuges.length;
+    $(this.root, '[data-slot="team-transfuges"]').innerHTML = team.transfuges.map((id) => this.teamCard(id, picked.has(id), true)).join('');
+    $(this.root, '[data-action="team-go"]').setAttribute('aria-disabled', String(!team.picked.length));
+  }
+
+  private toggleTeamCard(id: string): void {
+    const team = this.team;
+    if (!team) return;
+    this.audio.play('click');
+    if (team.picked.includes(id)) {
+      team.picked = team.picked.filter((c) => c !== id);
+    } else if (team.picked.length >= DECK_SIZE) {
+      this.audio.play('error');
+      this.say(this.t.ui.teamFull, true);
+      return;
+    } else if (team.transfuges.includes(id) && team.picked.filter((c) => team.transfuges.includes(c)).length >= TRANSFUGES) {
+      this.audio.play('error');
+      this.say(this.t.ui.teamTransfugeFull, true);
+      return;
+    } else {
+      team.picked.push(id);
+    }
+    this.renderTeam();
+    this.root.querySelector<HTMLElement>(`[data-card="${id}"]`)?.focus();
+  }
+
+  private async launchTeam(): Promise<void> {
+    const team = this.team;
+    const camp = this.save.camp;
+    if (!team || !camp || !team.picked.length) return;
+    this.save.teams[camp] = [...team.picked];
+    if (team.picked.some((id) => team.transfuges.includes(id))) this.save.counters.transfuges++;
+    storeSave(this.save);
+    await this.startMatch({ mode: 'campaign', level: team.level, camp, seed: team.seed, deck: [...team.picked] });
+  }
+
+  /** Stars a camp has earned and not spent yet. */
+  private starsLeft(camp: CampId): number {
+    const earned = Object.values(this.save.progress[camp].stars).reduce((sum, n) => sum + n, 0);
+    const spent = Object.values(this.save.upgrades[camp]).reduce((sum, level) => {
+      let cost = 0;
+      for (let l = 2; l <= level; l++) cost += UPGRADE_COST[l];
+      return sum + cost;
+    }, 0);
+    return earned - spent;
+  }
+
+  /** The upgrades panel of the calendar: every card the camp has unlocked so far. */
+  private renderUpgrades(): void {
+    const camp = this.save.camp;
+    if (!camp) return;
+    const progress = this.save.progress[camp];
+    const night = levelDef(Math.min(LAST_LEVEL, progress.unlocked));
+    const cards = [...CAMPS[camp].roster.slice(0, night.slots), ...reinforcementsFor(night.id)];
+    const left = this.starsLeft(camp);
+    $(this.root, '[data-slot="upgrades-title"]').textContent = fmt(this.t.ui.upgradesTitle, { n: left });
+    $(this.root, '[data-slot="upgrades-list"]').innerHTML = cards
+      .map((id) => {
+        const level = this.save.upgrades[camp][id] ?? 1;
+        const cost = UPGRADE_COST[level + 1];
+        const max = level >= MAX_UPGRADE;
+        const label = max ? this.t.ui.upgradeMax : fmt(this.t.ui.upgradeButton, { cost });
+        return `<li>
+          <span class="upgrades__art" aria-hidden="true">${portraitSvg(id, { size: 48, sticker: false })}</span>
+          <span class="upgrades__name"><b>${this.t.figures[id].short}</b> <small>${fmt(this.t.ui.upgradeLevel, { n: level })}</small></span>
+          <button type="button" class="btn btn--small" data-upgrade="${id}" aria-disabled="${max || left < cost}" aria-label="${label} — ${this.t.figures[id].name}">${label}</button>
+        </li>`;
+      })
+      .join('');
+  }
+
+  private upgrade(id: string): void {
+    const camp = this.save.camp;
+    if (!camp) return;
+    const level = this.save.upgrades[camp][id] ?? 1;
+    const cost = UPGRADE_COST[level + 1];
+    if (level >= MAX_UPGRADE || this.starsLeft(camp) < cost) {
+      this.audio.play('error');
+      return;
+    }
+    this.save.upgrades[camp][id] = level + 1;
+    unlockAchievements(this.save);
+    storeSave(this.save);
+    this.audio.play('coin');
+    this.say(fmt(this.t.announce.upgraded, { name: this.t.figures[id].name, n: level + 1 }));
+    this.renderModes();
+    this.root.querySelector<HTMLElement>(`[data-upgrade="${id}"]`)?.focus();
   }
 
   private async startMatch(setup: Setup): Promise<void> {
@@ -258,7 +409,12 @@ class GameApp {
     await document.fonts?.ready;
     this.root.classList.remove('is-loading');
 
-    const state = createGame({ camp, level: levelId, seed: setup.seed, hard: setup.mode === 'campaign' && this.save.hard });
+    // The daily challenge, duels and head to head are the same for everybody: default deck, no upgrades.
+    const personal = setup.mode === 'campaign';
+    const state = createGame({
+      camp, level: levelId, seed: setup.seed, hard: personal && this.save.hard,
+      deck: personal ? setup.deck : undefined, upgrades: personal ? this.save.upgrades[camp] : undefined,
+    });
     this.root.dataset.camp = camp;
     this.root.dataset.mode = setup.mode;
     $(this.root, '[data-slot="versus"]').hidden = setup.mode !== 'versus';
@@ -455,6 +611,17 @@ class GameApp {
         return;
       }
       void this.startLevel(Number(el.dataset.level));
+    });
+
+    this.screens.team.addEventListener('click', (event) => {
+      const card = (event.target as HTMLElement).closest<HTMLElement>('[data-card]');
+      if (card) this.toggleTeamCard(card.dataset.card!);
+    });
+    on('[data-action="team-go"]', () => void this.launchTeam());
+    on('[data-action="team-back"]', () => this.show('levels'));
+    $(this.root, '[data-slot="upgrades-list"]').addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLElement>('[data-upgrade]');
+      if (button) this.upgrade(button.dataset.upgrade!);
     });
 
     on('[data-action="remove"]', () => this.toggleRemove());
@@ -814,7 +981,7 @@ class GameApp {
     const stars = starsFor(state);
     const wavesHeld = level.endless ? Math.max(0, state.wave.next - 1) : state.stats.wavesCleared;
     let unlockedUnit: string | null = null;
-    let unlockedReinforcements = false;
+    let unlockedReinforcements: string[] = [];
 
     const previousBest = progress.endlessBest;
     if (level.endless) {
@@ -826,7 +993,7 @@ class GameApp {
       if (next && progress.unlocked < next.id) {
         progress.unlocked = next.id;
         if (next.slots > level.slots) unlockedUnit = CAMPS[camp].roster[next.slots - 1];
-        unlockedReinforcements = next.reinforcements && !level.reinforcements;
+        unlockedReinforcements = REINFORCEMENTS.filter((id) => UNITS[id].unlock === next.id);
       }
     }
     if (setup.mode === 'daily') {
@@ -895,13 +1062,14 @@ class GameApp {
     this.lastResult = { headline, won, stars: won && setup.mode !== 'versus' ? stars : 0, stats, notes, link };
 
     const unlock = $(el, '[data-slot="unlock"]');
-    unlock.hidden = !unlockedUnit && !unlockedReinforcements;
+    unlock.hidden = !unlockedUnit && !unlockedReinforcements.length;
     if (unlockedUnit) {
       const text = this.t.figures[unlockedUnit];
       unlock.innerHTML = `${portraitSvg(unlockedUnit, { size: 72, uid: 'unlock' })}<span><b>${this.t.ui.newUnlock}</b><br>${text.name} — ${text.power}</span>`;
-    } else if (unlockedReinforcements) {
-      const names = `${this.t.figures.crs.name}, ${this.t.figures.pompiers.name}`;
-      unlock.innerHTML = `${portraitSvg('pompiers', { size: 72, uid: 'unlock' })}<span><b>${this.t.ui.newReinforcements}</b><br>${names}</span>`;
+    } else if (unlockedReinforcements.length) {
+      const names = unlockedReinforcements.map((id) => this.t.figures[id].name).join(', ');
+      const title = unlockedReinforcements.length > 1 ? this.t.ui.newReinforcements : this.t.ui.newReinforcement;
+      unlock.innerHTML = `${portraitSvg(unlockedReinforcements[unlockedReinforcements.length - 1], { size: 72, uid: 'unlock' })}<span><b>${title}</b><br>${names}</span>`;
     }
 
     const next = $(el, '[data-action="next"]');
@@ -1027,7 +1195,7 @@ class GameApp {
     const result = this.lastResult;
     const camp = this.save.camp;
     if (!result || !camp) return;
-    const blob = await resultPicture(result, camp, this.t, this.sprites.unit(CAMPS[camp].roster[5]));
+    const blob = await resultPicture(result, camp, this.t, this.sprites.unit(headlinerOf(camp)));
     if (!blob) return;
     const file = new File([blob], 'politique-2027.png', { type: 'image/png' });
     const text = result.link?.text ?? fmt(this.t.ui.shareText, { headline: result.headline });
@@ -1362,7 +1530,12 @@ class GameApp {
       start: async (camp: CampId, level: number, seed = 2027) => {
         if (!CAMP_IDS.includes(camp)) throw new Error('unknown camp');
         this.pickCamp(camp, false);
-        await this.startLevel(level, seed);
+        await this.startLevel(level, seed, true);
+      },
+      /** Opens the team screen of a night (tests only). */
+      team: async (camp: CampId, level: number) => {
+        this.pickCamp(camp, false);
+        await this.startLevel(level, 2027);
       },
       /** Fast-forwards the simulation, optionally letting the reference bot play. */
       advance: async (seconds: number, bot = false) => {

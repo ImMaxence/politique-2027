@@ -45,9 +45,9 @@ export function botAct(state: GameState): void {
   const generator = roster.find((d) => d.ability.kind === 'generator');
   const shooter = roster.find((d) => d.slot === 1);
   const walls = cards.filter((d) => d.ability.kind === 'wall');
-  const support = roster.find((d) => d.slot === 3);
+  const support = roster.find((d) => d.slot === 5) ?? roster.find((d) => d.slot === 3);
   const bomb = roster.find((d) => d.ability.kind === 'bomb');
-  const boss = roster.find((d) => d.slot === 5);
+  const boss = roster.find((d) => d.boss);
   const hose = cards.find((d) => d.ability.kind === 'hose');
 
   // Ultimate: when the courtyard gets crowded close to the steps.

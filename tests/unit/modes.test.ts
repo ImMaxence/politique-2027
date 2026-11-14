@@ -107,6 +107,14 @@ describe('saves', () => {
     expect('bench' in save).toBe(false);
   });
 
+  it('keeps the decks and the upgrades, and drops what makes no sense', () => {
+    withStorage({ v: 4, teams: { gauche: ['hollande', 'samu', 'nobody', 3] }, upgrades: { gauche: { hollande: 3, royal: 9, nobody: 2, ruffin: 1 } } });
+    const save = loadSave();
+    expect(save.teams.gauche).toEqual(['hollande', 'samu']);
+    expect(save.upgrades.gauche).toEqual({ hollande: 3, royal: 3 });
+    expect(save.teams.centre).toEqual([]);
+  });
+
   it('keeps the daily scores', () => {
     withStorage({ v: 4, daily: { '2026-11-13': 1200, '2026-11-14': 900, junk: 5 } });
     expect(loadSave().daily).toEqual({ '2026-11-13': 1200, '2026-11-14': 900 });

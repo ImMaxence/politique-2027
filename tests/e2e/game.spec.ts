@@ -134,7 +134,7 @@ test('tariffs raise the price printed on every card while the guest is on the bo
   await startMatch(page, 'droite', 5);
   const cost = page.locator('.card[data-unit="bardella"] .card__cost');
   await expect(cost).toHaveAttribute('data-label', '100');
-  await expect(page.locator('.card')).toHaveCount(7);
+  await expect(page.locator('.card')).toHaveCount(8);
 
   await page.evaluate(() => window.__P2027__.spawn('trump', 2, 8.5));
   await expect(cost).toHaveAttribute('data-label', '125');
@@ -198,6 +198,7 @@ test('every card shows which family it belongs to', async ({ page }) => {
     ['riner', 'defence', 'Défense'],
     ['crs', 'defence', 'Défense'],
     ['pompiers', 'effect', 'Effet'],
+    ['radar', 'effect', 'Effet'],
   ]);
   // The family is also part of what a screen reader hears.
   await expect(page.locator('#card-desc-pompiers')).toContainText('Type : Effet');

@@ -2,7 +2,7 @@
 import Puppet from '../components/Puppet.astro';
 import { CAMP_IDS } from '../game/data/types';
 import { CAMPS, EXTRAS, GUESTS, REINFORCEMENTS, UNITS, categoryOf } from '../game/data/units';
-import { GAME_STRINGS, type Lang } from '../i18n/game';
+import { GAME_STRINGS, fmt, type Lang } from '../i18n/game';
 import { absolute, path } from '../i18n/routes';
 import { SITE_STRINGS } from '../i18n/site';
 import Base from '../layouts/Base.astro';
@@ -111,7 +111,7 @@ const jsonLd = [
               <li class="figure-card" id={id}>
                 <Puppet id={id} uid="sheet" size={96} />
                 <div>
-                  <p class="figure-card__party">{text.party}</p>
+                  <p class="figure-card__party">{text.party} · {fmt(page.from, { night: g.levels[unit.unlock ?? 3].name })}</p>
                   <h3>{text.name}</h3>
                   <p class="figure-card__title">{text.title}</p>
                 </div>

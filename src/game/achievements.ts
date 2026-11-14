@@ -18,6 +18,8 @@ export const ACHIEVEMENTS = [
   'noComment',
   'lidl',
   'appeal',
+  'transfuge',
+  'maxed',
   'cohabitation',
   'hardRunoff',
   'dailyDone',
@@ -38,13 +40,15 @@ export interface Counters {
   niel: number;
   /** Marine Le Pen beaten after her appeal. */
   appeal: number;
+  /** Nights played with a turncoat in the deck. */
+  transfuges: number;
   dailies: number;
   versus: number;
   hardRunoff: number;
 }
 
 export function blankCounters(): Counters {
-  return { exiled: 0, wonOver: 0, unionists: 0, ripostes: 0, lucet: 0, niel: 0, appeal: 0, dailies: 0, versus: 0, hardRunoff: 0 };
+  return { exiled: 0, wonOver: 0, unionists: 0, ripostes: 0, lucet: 0, niel: 0, appeal: 0, transfuges: 0, dailies: 0, versus: 0, hardRunoff: 0 };
 }
 
 function earned(id: AchievementId, save: Save): boolean {
@@ -71,6 +75,10 @@ function earned(id: AchievementId, save: Save): boolean {
       return c.niel >= 1;
     case 'appeal':
       return c.appeal >= 1;
+    case 'transfuge':
+      return c.transfuges >= 1;
+    case 'maxed':
+      return CAMP_IDS.some((camp) => Object.values(save.upgrades[camp]).some((level) => level >= 3));
     case 'cohabitation':
       return camps.some((p) => p.endlessBest >= 20);
     case 'hardRunoff':

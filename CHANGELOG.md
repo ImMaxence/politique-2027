@@ -12,6 +12,25 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [3.1.0] — 2026-11-14
+
+Something new every night until the run-off: four public figures, five reinforcements, a deck to build with turncoats, and upgrades bought with stars. Saves are kept (the new settings start empty).
+
+### Added
+
+- **A sixth figure per camp**, unlocked on night 6, each an "effect" card (purple tie): **Sandrine Rousseau** (No More Barbecue: her remarks slow opponents down), **Gérald Darmanin** (Under Arrest!: handcuffs that freeze the first opponent), **Éric Ciotti** (The Locked Headquarters: everyone in front of him is stuck for a few seconds) and **Florian Philippot** (Frexit: the frontmost opponent goes back to the gate). They also march as rival lieutenants.
+- **Five everyday reinforcements**, one more every night from the 5th, for every camp: the **speed camera** (flashes its whole lane: damage and slowdown), the **paramedics** (give the eight neighbours credibility back), the **baker** (a baguette, a ballot: 20 votes every six seconds), the **teachers** (the whole lane is marked; pupils and scooters go back to class at once) and the **Constitutional Council** (the toughest opponent in the lane is censored: −60%, −30% for a headliner).
+- **Get ready for the night**: from night 6 (and in Cohabitation) a screen comes before the match to pick a deck of **eight cards** among the camp's figures, the reinforcements and up to **two turncoats** poached from the rival camps (headliners excepted). The last deck is remembered; "Try again" keeps it.
+- **Upgrades**: the stars won are spent on the calendar to take a card to level 2 (2 ★) or 3 (3 ★): +25% credibility, 15% shorter recharge and a 15% stronger effect per level. The daily challenge, duels and head to head stay the same for everybody (no upgrades, default deck).
+- Two achievements: **Poached** (play a night with a turncoat) and **Maxed Out** (take a card to level 3).
+- The result screen announces the reinforcement unlocked for the next night; the characters page says from which night each reinforcement comes.
+
+### Changed
+
+- **Every head sits the same way on its body**: the cutter now moves each head so that its chin rests on the collar and its middle sits over the tie, whatever the framing of the photo (François Hollande and Bruno Retailleau were floating). Élisabeth Borne's cheek, Marine Le Pen's and Brigitte Macron's hair are no longer cut off.
+- Keys 1 to 8 pick a card again (decks hold eight cards).
+- The shared result picture shows the camp's headliner again (it had gone missing in 3.0).
+
 ## [3.0.3] — 2026-11-14
 
 Saves are untouched.

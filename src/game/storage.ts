@@ -1,6 +1,7 @@
 import { LAST_LEVEL } from './data/levels';
 import { ACHIEVEMENTS, blankCounters, type AchievementId, type Counters } from './achievements';
 import { CAMP_IDS, type CampId } from './data/types';
+import { MAX_UPGRADE, UNITS } from './data/units';
 
 /**
  * Progress lives in localStorage only: nothing is sent to a server.
@@ -42,6 +43,10 @@ export interface Save {
   counters: Counters;
   /** Background music (sound effects follow the mute button). */
   music: boolean;
+  /** The last deck chosen with each camp (from night 6). */
+  teams: Record<CampId, string[]>;
+  /** Upgrade level (2-3) of each card, per camp; the stars spent are worked out from it. */
+  upgrades: Record<CampId, Record<string, number>>;
 }
 
 /** v1 had five levels; 1.1.0 inserted "the street" and "the summit". */
@@ -70,6 +75,8 @@ export function blankSave(): Save {
     achievements: [],
     counters: blankCounters(),
     music: true,
+    teams: { gauche: [], centre: [], droite: [], autres: [] },
+    upgrades: { gauche: {}, centre: {}, droite: {}, autres: {} },
   };
 }
 
@@ -82,6 +89,7 @@ export function loadSave(): Save {
       v?: number; camp?: unknown; muted?: unknown; speed?: unknown; forceLandscape?: unknown;
       hard?: unknown; seen?: unknown; installTipDismissed?: unknown;
       daily?: unknown; achievements?: unknown; counters?: Record<string, unknown>; music?: unknown;
+      teams?: Record<string, unknown>; upgrades?: Record<string, Record<string, unknown>>;
       progress?: Record<string, Partial<CampProgress>>;
     };
     if (data.v !== 1 && data.v !== 2 && data.v !== 3 && data.v !== 4) return save;
@@ -96,6 +104,14 @@ export function loadSave(): Save {
     save.seen = Array.isArray(data.seen) ? data.seen.filter((id): id is string => typeof id === 'string').slice(0, 100) : [];
     save.installTipDismissed = data.installTipDismissed === true;
     save.music = data.music !== false;
+    for (const camp of CAMP_IDS) {
+      const team = data.teams?.[camp];
+      if (Array.isArray(team)) save.teams[camp] = team.filter((id): id is string => typeof id === 'string' && id in UNITS).slice(0, 8);
+      for (const [id, level] of Object.entries(data.upgrades?.[camp] ?? {})) {
+        const n = Math.round(Number(level));
+        if (id in UNITS && n >= 2) save.upgrades[camp][id] = Math.min(MAX_UPGRADE, n);
+      }
+    }
     if (data.daily && typeof data.daily === 'object') {
       const days = Object.entries(data.daily as Record<string, unknown>)
         .filter(([day, score]) => /^\d{4}-\d{2}-\d{2}$/.test(day) && Number.isFinite(Number(score)))

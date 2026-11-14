@@ -173,6 +173,12 @@ function castOf(id: number) {
       </li>
     </ul>
 
+    <details class="achievements upgrades">
+      <summary data-slot="upgrades-title">{t.ui.upgradesTitle.replace('{n}', '0')}</summary>
+      <p class="upgrades__hint">{t.ui.upgradesHint}</p>
+      <ul class="upgrades__list" data-slot="upgrades-list" role="list"></ul>
+    </details>
+
     <details class="achievements">
       <summary data-slot="achievements-title">{t.ui.achievementsTitle.replace('{n}', '0').replace('{total}', String(ACHIEVEMENTS.length))}</summary>
       <ul class="achievements__list" role="list">
@@ -186,6 +192,27 @@ function castOf(id: number) {
         }
       </ul>
     </details>
+  </section>
+
+  <!-- 2b. Getting ready for a night: the deck, from night 6 -->
+  <section class="screen" data-screen="team" aria-labelledby="team-title" hidden>
+    <div class="screen__head">
+      <div>
+        <h2 id="team-title" tabindex="-1" data-focus>{t.ui.teamTitle}</h2>
+        <p data-slot="team-hint"></p>
+      </div>
+      <div class="screen__tools">
+        <button type="button" class="btn" data-action="team-back">{t.ui.teamBack}</button>
+      </div>
+    </div>
+    <p class="team__count" data-slot="team-count" aria-live="polite"></p>
+    <h3 class="team__title">{t.ui.teamCamp}</h3>
+    <ul class="team__cards" data-slot="team-camp" role="list"></ul>
+    <h3 class="team__title">{t.ui.teamReinforcements}</h3>
+    <ul class="team__cards" data-slot="team-reinforcements" role="list"></ul>
+    <h3 class="team__title" data-slot="team-transfuges-title"></h3>
+    <ul class="team__cards" data-slot="team-transfuges" role="list"></ul>
+    <p class="team__go"><button type="button" class="btn btn--primary" data-action="team-go">{t.ui.teamGo}</button></p>
   </section>
 
   <!-- 3. Match -->

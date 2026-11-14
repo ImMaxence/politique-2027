@@ -4,7 +4,7 @@ export type CampId = 'gauche' | 'centre' | 'droite' | 'autres';
 
 export const CAMP_IDS: readonly CampId[] = ['gauche', 'centre', 'droite', 'autres'];
 
-export type ProjectileKind = 'bubble' | 'tract' | 'heart' | 'cat';
+export type ProjectileKind = 'bubble' | 'tract' | 'heart' | 'cat' | 'leaf' | 'cuffs';
 
 export type SceneId = 'mairie' | 'salon' | 'lycee' | 'rue' | 'plateau' | 'sommet' | 'elysee' | 'elysee-nuit';
 
@@ -46,8 +46,25 @@ export type Ability =
       /** Zero tolerance: whoever walks within `range` cells in front of it slows down to `slow`. */
       zone?: { slow: number; range: number };
     }
-  | { kind: 'bomb'; fuse: number; damage: number; area: 'lane' | 'square'; friendlyFire?: number; stun?: number }
-  | { kind: 'shout'; interval: number; damage: number; knockback: number; range: number }
+  | {
+      kind: 'bomb';
+      fuse: number;
+      damage: number;
+      area: 'lane' | 'square';
+      friendlyFire?: number;
+      stun?: number;
+      /** These opponents leave on the spot ("back to class!"). */
+      sendHome?: string[];
+      /** The toughest opponent in the lane loses this share of its credibility (half as much for a headliner). */
+      toughest?: number;
+    }
+  | { kind: 'shout'; interval: number; damage: number; knockback: number; range: number; stun?: number }
+  /** Speed camera: every `interval`, everyone in the lane in front of it is flashed (damage, then slowed). */
+  | { kind: 'flash'; interval: number; damage: number; slow: { factor: number; duration: number } }
+  /** Paramedics: every `interval`, the eight neighbours get `amount` credibility back. */
+  | { kind: 'heal'; interval: number; amount: number }
+  /** "Frexit": every `interval`, the frontmost opponent within `range` cells is sent back to the gate (a headliner only 2 cells). */
+  | { kind: 'expel'; interval: number; range: number }
   /** Fire hose: puts out every fire in the lane and soaks everyone else. */
   | { kind: 'hose'; fuse: number; damage: number; knockback: number; slow: { factor: number; duration: number } };
 
@@ -135,6 +152,8 @@ export interface UnitDef {
   attacker?: AttackerProfile;
   /** Headliners get a name plate and a health bar when they march. */
   boss?: boolean;
+  /** Reinforcements: the night from which every camp can call them. */
+  unlock?: number;
 }
 
 export interface EnemyDef extends AttackerProfile {
@@ -195,7 +214,7 @@ export interface LevelDef {
   waveGap: number;
   /** What the crowd is after tonight (drawn at the end of every row). */
   goal: GoalId;
-  /** Number of roster slots available (3-5). */
+  /** Number of roster slots available (3-6). */
   slots: number;
   /** Whether the public-service reinforcements can be called. */
   reinforcements: boolean;

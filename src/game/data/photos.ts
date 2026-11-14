@@ -6,40 +6,44 @@ export type Expression = 'neutral' | 'angry' | 'hurt';
 
 /** File of each face in public/heads, by "<id>-<expression>". */
 export const HEAD_FILES: Record<string, string> = {
-  "lepen-neutral": "lepen-neutral.437d640a.webp",
-  "lepen-angry": "lepen-angry.b1ca7afa.webp",
-  "lepen-hurt": "lepen-hurt.9b4f2f3f.webp",
-  "melenchon-neutral": "melenchon-neutral.0262a20e.webp",
-  "melenchon-angry": "melenchon-angry.122b767b.webp",
-  "melenchon-hurt": "melenchon-hurt.8bf841a8.webp",
-  "macron-neutral": "macron-neutral.d06b355c.webp",
-  "macron-angry": "macron-angry.3210a99e.webp",
-  "macron-hurt": "macron-hurt.9aec8463.webp",
-  "trump-neutral": "trump-neutral.e925aeb9.webp",
-  "trump-angry": "trump-angry.755abbd3.webp",
-  "trump-hurt": "trump-hurt.55c542bb.webp",
-  "niel-neutral": "niel-neutral.ab031dab.webp",
-  "niel-angry": "niel-angry.b74efce3.webp",
-  "riner-neutral": "riner-neutral.91f7fef3.webp",
-  "glucksmann-neutral": "glucksmann-neutral.a31fa8f0.webp",
-  "royal-neutral": "royal-neutral.3c116778.webp",
-  "ruffin-neutral": "ruffin-neutral.54bdd606.webp",
-  "bardella-neutral": "bardella-neutral.9afef377.webp",
-  "hollande-neutral": "hollande-neutral.a701b807.webp",
-  "bayrou-neutral": "bayrou-neutral.bca0a52f.webp",
-  "attal-neutral": "attal-neutral.b35f3d7b.webp",
-  "philippe-neutral": "philippe-neutral.9c9c5043.webp",
-  "borne-neutral": "borne-neutral.22c6f745.webp",
-  "sarkozy-neutral": "sarkozy-neutral.47df7830.webp",
-  "retailleau-neutral": "retailleau-neutral.8e33500a.webp",
-  "zemmour-neutral": "zemmour-neutral.220ae185.webp",
-  "squeezie-neutral": "squeezie-neutral.669147d4.webp",
-  "hugo-neutral": "hugo-neutral.cbab2c43.webp",
-  "lucet-neutral": "lucet-neutral.335f8c64.webp",
-  "poutou-neutral": "poutou-neutral.a0d0bc88.webp",
-  "villepin-neutral": "villepin-neutral.654f9099.webp",
-  "bmacron-neutral": "bmacron-neutral.9ef70e99.webp",
-  "lassalle-neutral": "lassalle-neutral.c87c0a6e.webp"
+  "lepen-neutral": "lepen-neutral.00b96a84.webp",
+  "lepen-angry": "lepen-angry.d7f0450d.webp",
+  "lepen-hurt": "lepen-hurt.6cfb5288.webp",
+  "melenchon-neutral": "melenchon-neutral.34506c8d.webp",
+  "melenchon-angry": "melenchon-angry.15aa8607.webp",
+  "melenchon-hurt": "melenchon-hurt.fd1ccc84.webp",
+  "macron-neutral": "macron-neutral.47da4608.webp",
+  "macron-angry": "macron-angry.6cce4114.webp",
+  "macron-hurt": "macron-hurt.a25e2563.webp",
+  "trump-neutral": "trump-neutral.9cef212d.webp",
+  "trump-angry": "trump-angry.9f567b8d.webp",
+  "trump-hurt": "trump-hurt.914dbe86.webp",
+  "niel-neutral": "niel-neutral.f6802793.webp",
+  "niel-angry": "niel-angry.f9a81d7c.webp",
+  "riner-neutral": "riner-neutral.d3c1c436.webp",
+  "glucksmann-neutral": "glucksmann-neutral.6e071c9a.webp",
+  "royal-neutral": "royal-neutral.4c4743e1.webp",
+  "ruffin-neutral": "ruffin-neutral.02fca79f.webp",
+  "bardella-neutral": "bardella-neutral.947d5f0f.webp",
+  "hollande-neutral": "hollande-neutral.e184234a.webp",
+  "bayrou-neutral": "bayrou-neutral.83e6fa3f.webp",
+  "attal-neutral": "attal-neutral.8849e4e7.webp",
+  "philippe-neutral": "philippe-neutral.1e9b1028.webp",
+  "borne-neutral": "borne-neutral.b4da7fd5.webp",
+  "sarkozy-neutral": "sarkozy-neutral.7b3af9ac.webp",
+  "retailleau-neutral": "retailleau-neutral.97a1dfbe.webp",
+  "zemmour-neutral": "zemmour-neutral.09ed5751.webp",
+  "squeezie-neutral": "squeezie-neutral.fc9c1c15.webp",
+  "hugo-neutral": "hugo-neutral.0d7ac36a.webp",
+  "lucet-neutral": "lucet-neutral.c68ac2eb.webp",
+  "poutou-neutral": "poutou-neutral.b46a7cf1.webp",
+  "villepin-neutral": "villepin-neutral.1abb7299.webp",
+  "bmacron-neutral": "bmacron-neutral.138d42c1.webp",
+  "lassalle-neutral": "lassalle-neutral.90897d62.webp",
+  "darmanin-neutral": "darmanin-neutral.6be0a289.webp",
+  "ciotti-neutral": "ciotti-neutral.12234213.webp",
+  "philippot-neutral": "philippot-neutral.1771e622.webp",
+  "rousseau-neutral": "rousseau-neutral.f9706f50.webp"
 };
 
 export const PHOTOS: Record<string, Expression[]> = {
@@ -125,6 +129,18 @@ export const PHOTOS: Record<string, Expression[]> = {
     'neutral'
   ],
   lassalle: [
+    'neutral'
+  ],
+  darmanin: [
+    'neutral'
+  ],
+  ciotti: [
+    'neutral'
+  ],
+  philippot: [
+    'neutral'
+  ],
+  rousseau: [
     'neutral'
   ]
 };
@@ -447,5 +463,41 @@ export const CREDITS: PhotoCredit[] = [
     "license": "CC BY-SA 4.0",
     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Jean_Lassalle_04_(cropped).jpg"
+  },
+  {
+    "id": "darmanin",
+    "expression": "neutral",
+    "title": "French Justice Minister Gérald Darmanin in 2025 (cropped 1).jpg",
+    "author": "UK Home Office",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:French_Justice_Minister_G%C3%A9rald_Darmanin_in_2025_(cropped_1).jpg"
+  },
+  {
+    "id": "ciotti",
+    "expression": "neutral",
+    "title": "Éric Ciotti (2).jpg",
+    "author": "Frantogian",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:%C3%89ric_Ciotti_(2).jpg"
+  },
+  {
+    "id": "philippot",
+    "expression": "neutral",
+    "title": "Florian Philippot1.jpg",
+    "author": "tocsin",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Florian_Philippot1.jpg"
+  },
+  {
+    "id": "rousseau",
+    "expression": "neutral",
+    "title": "Sandrine Rousseau 20210819 (cropped).jpg",
+    "author": "Greenbox",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Sandrine_Rousseau_20210819_(cropped).jpg"
   }
 ];
