@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version 3.0.0" src="https://img.shields.io/badge/version-3.0.0-d62b30">
+  <img alt="Version 3.0.1" src="https://img.shields.io/badge/version-3.0.1-d62b30">
   <img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-2f5fe0">
   <img alt="Astro 7" src="https://img.shields.io/badge/Astro-7-17203f">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-17203f">
@@ -51,7 +51,7 @@ Every camp gets the same affectionate treatment, and all four are playable.
 
 | | |
 |---|---|
-| 📸 **Real faces, cartoon bodies** | 34 photos from Wikimedia Commons (credited in the game and on every figure's page), cut out with a sticker edge. Bosses change face: smiling, angry when they announce an attack, struggling when they are losing. No face is ever retouched — each expression is another real photo. |
+| 📸 **Real faces, one body** | 34 photos from Wikimedia Commons (credited in the game and on every figure's page), cut out with a sticker edge, on the same dark suit for everybody — the **tie colour is the card's role**: yellow votes, red attack, purple effect, blue defence. Bosses change face: smiling, angry when they announce an attack, struggling when they are losing. No face is ever retouched — each expression is another real photo. |
 | 👑 **Boss fights** | Each camp's headliner is a boss with powers and a health bar: Le Pen, Macron, Mélenchon, Riner — plus Trump and Xavier Niel as guest bosses. A red "!" and flashing squares give you a second to react. |
 | 🎭 **20 headliners, 4 play styles** | Five figures per camp, each card tagged **Votes**, **Attack**, **Effect** or **Defence**, plus a camp-wide trump card: **General Strike**, **Dissolution**, the **Trocadéro Rally** or a **No-Confidence Vote**. |
 | 🗓️ **Nine themed nights** | The hunt for endorsements, the Agricultural Show, the school blockade, the 17 October march against the cost of living, the TV debate, the international summit, the first round, the run-off debate (send the soundbites back) and the run-off. Then **Cohabitation**, the endless mode, with a themed week every ten waves. |
@@ -147,7 +147,7 @@ Every camp gets the same affectionate treatment, and all four are playable.
 
 Guests: **Donald Trump**, **Xavier Niel**, **HugoDécrypte**, **Élise Lucet** and **Squeezie**. Every anonymous extra has a single look, whichever camp sends it.
 
-The heads are real photos published on Wikimedia Commons under free licences; [`scripts/build-heads.ts`](scripts/build-heads.ts) crops them, cuts them out and draws their outline, from the list in [`scripts/heads.json`](scripts/heads.json) (`npm run heads`). Bodies, props, scenery and extras are original SVG drawn by code ([`portraits.ts`](src/game/render/portraits.ts)); no party, channel or company logo is reproduced. Each named figure and each night also has [a page of its own](https://politique2027.mbonnici.fr/en/characters).
+The heads are real photos published on Wikimedia Commons under free licences; [`scripts/build-heads.ts`](scripts/build-heads.ts) crops them, separates each head from its background (GrabCut: colour models and a minimum cut) and draws its outline, from the list in [`scripts/heads.json`](scripts/heads.json) (`npm run heads`). Bodies, scenery and extras are original SVG drawn by code ([`portraits.ts`](src/game/render/portraits.ts)); no party, channel or company logo is reproduced. Each named figure and each night also has [a page of its own](https://politique2027.mbonnici.fr/en/characters).
 
 ## How it plays
 

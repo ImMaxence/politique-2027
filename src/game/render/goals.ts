@@ -1,7 +1,9 @@
 /**
  * What the crowd is after on each night, drawn at the end of every row (one piece
- * per row: the five lives). Each item fits in about 72 × 84 units so that the phone
- * layout, which crops the scene a little left of the board, still shows it whole.
+ * per row: the five lives). Each piece is a card, like the tickets of the HUD: a
+ * plain icon and its name written in full underneath, so that nobody has to guess.
+ * A card is 62 × 78 units, so that the phone and side layouts, which crop the scene a
+ * little left of the board, still show it whole.
  */
 import type { GoalId } from '../data/types';
 import { INK } from './portraits';
@@ -12,9 +14,10 @@ const PAPER = '#fffdf6';
 const GOLD = '#ffd23f';
 const RED = '#e5383b';
 const BLUE = '#2f5fe0';
+const GREEN = '#3c8a57';
 const DISPLAY = "'Anton', 'Arial Narrow', Impact, sans-serif";
 
-function outline(g: Ctx, width = 2.6): void {
+function stroke(g: Ctx, width = 2.4): void {
   g.strokeStyle = INK;
   g.lineWidth = width;
   g.lineJoin = 'round';
@@ -22,237 +25,249 @@ function outline(g: Ctx, width = 2.6): void {
   g.stroke();
 }
 
-function rect(g: Ctx, x: number, y: number, w: number, h: number, fill: string, r: number | number[] = 3): void {
+function shape(g: Ctx, fill: string, draw: () => void, width = 2.4): void {
   g.beginPath();
-  g.roundRect(x, y, w, h, r);
+  draw();
   g.fillStyle = fill;
   g.fill();
-  outline(g);
+  stroke(g, width);
 }
 
-function text(g: Ctx, value: string, x: number, y: number, size: number, color: string, rotate = 0): void {
-  g.save();
-  g.translate(x, y);
-  g.rotate(rotate);
+function rect(g: Ctx, x: number, y: number, w: number, h: number, fill: string, r: number | number[] = 3): void {
+  shape(g, fill, () => g.roundRect(x, y, w, h, r));
+}
+
+function text(g: Ctx, value: string, x: number, y: number, size: number, color: string, max?: number): void {
   g.font = `400 ${size}px ${DISPLAY}`;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.fillStyle = color;
-  g.fillText(value, 0, 1);
-  g.restore();
+  g.fillText(value, x, y + 1, max);
 }
 
-function sack(g: Ctx, x: number, y: number, s: number, label: string): void {
-  g.beginPath();
-  g.moveTo(x - 16 * s, y);
-  g.quadraticCurveTo(x - 22 * s, y - 26 * s, x - 8 * s, y - 34 * s);
-  g.lineTo(x - 10 * s, y - 42 * s);
-  g.lineTo(x + 10 * s, y - 42 * s);
-  g.lineTo(x + 8 * s, y - 34 * s);
-  g.quadraticCurveTo(x + 22 * s, y - 26 * s, x + 16 * s, y);
-  g.closePath();
-  g.fillStyle = '#c9a26a';
-  g.fill();
-  outline(g);
-  g.beginPath();
-  g.moveTo(x - 9 * s, y - 35 * s);
-  g.lineTo(x + 9 * s, y - 35 * s);
-  outline(g, 3);
-  text(g, label, x, y - 16 * s, 15 * s, '#5a3b16');
-}
-
-/** One piece of the night's goal, its base centred on (x, y). */
-export function drawGoal(g: Ctx, goal: GoalId, x: number, y: number): void {
+/** The icon of each goal, centred on (0, 0), about 50 × 42 units. */
+function icon(g: Ctx, goal: GoalId): void {
   switch (goal) {
     case 'parrainages': {
-      // A pile of signed forms, with the famous figure on a ribbon.
-      for (let i = 0; i < 4; i++) {
-        g.save();
-        g.translate(x + (i % 2 ? 3 : -3), y - 8 - i * 9);
-        g.rotate((i % 2 ? 1 : -1) * 0.05);
-        rect(g, -26, -6, 52, 10, PAPER, 2);
-        g.restore();
+      // An endorsement form, signed, and its pen.
+      rect(g, -16, -21, 32, 40, PAPER, 2);
+      g.strokeStyle = '#9aa3b8';
+      g.lineWidth = 2;
+      for (const y of [-13, -7, -1]) {
+        g.beginPath();
+        g.moveTo(-10, y);
+        g.lineTo(10, y);
+        g.stroke();
       }
-      rect(g, -30 + x, y - 64, 60, 26, PAPER, 3);
       g.beginPath();
-      g.moveTo(x - 20, y - 52);
-      g.quadraticCurveTo(x - 10, y - 60, x, y - 50);
-      g.quadraticCurveTo(x + 8, y - 44, x + 18, y - 54);
-      outline(g, 2);
-      g.beginPath();
-      g.arc(x + 18, y - 32, 11, 0, Math.PI * 2);
-      g.fillStyle = RED;
-      g.fill();
-      outline(g);
-      text(g, '500', x + 18, y - 32, 11, PAPER);
+      g.moveTo(-10, 10);
+      g.bezierCurveTo(-6, 2, -3, 16, 1, 8);
+      g.bezierCurveTo(4, 3, 6, 12, 10, 8);
+      g.strokeStyle = BLUE;
+      g.lineWidth = 2.2;
+      g.stroke();
+      g.save();
+      g.translate(16, 4);
+      g.rotate(0.6);
+      rect(g, -3, -16, 6, 26, GOLD, 2);
+      shape(g, INK, () => {
+        g.moveTo(-3, 10);
+        g.lineTo(0, 16);
+        g.lineTo(3, 10);
+        g.closePath();
+      }, 1.5);
+      g.restore();
       break;
     }
-    case 'pac':
-      sack(g, x - 14, y, 0.9, '€');
-      sack(g, x + 14, y, 0.9, '€');
-      sack(g, x, y - 26, 0.8, 'PAC');
+    case 'pac': {
+      // A sack of money.
+      shape(g, '#d8b06a', () => {
+        g.moveTo(-17, 20);
+        g.quadraticCurveTo(-24, -2, -8, -10);
+        g.lineTo(-11, -18);
+        g.lineTo(11, -18);
+        g.lineTo(8, -10);
+        g.quadraticCurveTo(24, -2, 17, 20);
+        g.closePath();
+      });
+      g.beginPath();
+      g.moveTo(-9, -11);
+      g.lineTo(9, -11);
+      stroke(g, 3);
+      text(g, '€', 0, 6, 22, '#6b4410');
       break;
+    }
     case 'portables': {
-      // A crate of confiscated phones, and the school books.
-      for (let i = 0; i < 3; i++) rect(g, x - 34, y - 12 - i * 10, 30, 9, ['#2f5fe0', '#e5383b', '#3c8a57'][i], 2);
-      for (let i = 0; i < 3; i++) {
+      // Two phones in a basket.
+      for (const [dx, rot, screen] of [[-8, -0.25, '#8fd3ff'], [9, 0.2, '#ffd23f']] as const) {
         g.save();
-        g.translate(x + 2 + i * 10, y - 46);
-        g.rotate(-0.2 + i * 0.2);
-        rect(g, -6, -14, 12, 24, INK, 3);
-        g.fillStyle = ['#8fd3ff', '#ffd23f', '#ff9fb2'][i];
-        g.fillRect(-4, -11, 8, 15);
+        g.translate(dx, -6);
+        g.rotate(rot);
+        rect(g, -8, -15, 16, 28, INK, 4);
+        g.fillStyle = screen;
+        g.fillRect(-5.5, -11, 11, 18);
         g.restore();
       }
-      rect(g, x - 4, y - 40, 40, 40, '#b98558', 3);
-      rect(g, x + 9, y - 33, 14, 24, INK, 3);
-      g.fillStyle = '#8fd3ff';
-      g.fillRect(x + 11, y - 30, 10, 16);
-      g.beginPath();
-      g.moveTo(x + 4, y - 8);
-      g.lineTo(x + 28, y - 36);
-      g.strokeStyle = RED;
-      g.lineWidth = 3;
-      g.stroke();
+      rect(g, -20, 4, 40, 16, '#b98558', [2, 2, 6, 6]);
+      g.strokeStyle = 'rgba(23,32,63,.45)';
+      g.lineWidth = 2;
+      for (const x of [-10, 0, 10]) {
+        g.beginPath();
+        g.moveTo(x, 6);
+        g.lineTo(x, 18);
+        g.stroke();
+      }
       break;
     }
     case 'caddie': {
-      // A full trolley: a baguette, a bottle, a bag of pasta.
+      // A shopping trolley full of groceries.
+      rect(g, -8, -22, 7, 20, '#e0a54a', 3); // baguette
+      rect(g, 2, -18, 9, 16, GREEN, [4, 4, 2, 2]); // bottle
+      rect(g, -16, -10, 10, 9, RED, 2);
+      rect(g, 8, -8, 10, 7, GOLD, 2);
+      shape(g, '#c9d1de', () => {
+        g.moveTo(-20, -4);
+        g.lineTo(22, -4);
+        g.lineTo(17, 12);
+        g.lineTo(-15, 12);
+        g.closePath();
+      });
       g.beginPath();
-      g.moveTo(x - 34, y - 58);
-      g.lineTo(x - 26, y - 58);
-      g.lineTo(x - 18, y - 16);
-      g.lineTo(x + 28, y - 16);
-      outline(g, 4);
-      g.beginPath();
-      g.moveTo(x - 24, y - 48);
-      g.lineTo(x + 34, y - 48);
-      g.lineTo(x + 28, y - 22);
-      g.lineTo(x - 19, y - 22);
-      g.closePath();
-      g.fillStyle = '#c4cad6';
-      g.fill();
-      outline(g);
-      g.save();
-      g.translate(x - 6, y - 58);
-      g.rotate(-0.5);
-      rect(g, -6, -16, 12, 34, '#e0a54a', 6);
-      g.restore();
-      rect(g, x + 4, y - 66, 10, 22, '#3c8a57', [4, 4, 2, 2]);
-      rect(g, x + 16, y - 58, 16, 14, GOLD, 3);
-      for (const wx of [x - 16, x + 24]) {
+      g.moveTo(-26, -10);
+      g.lineTo(-20, -10);
+      g.lineTo(-14, 16);
+      g.lineTo(18, 16);
+      stroke(g, 3);
+      for (const x of [-11, 15]) {
         g.beginPath();
-        g.arc(wx, y - 6, 6, 0, Math.PI * 2);
+        g.arc(x, 20, 3.5, 0, Math.PI * 2);
         g.fillStyle = INK;
         g.fill();
       }
       break;
     }
     case 'micros': {
-      // Two microphones on their stands: the speaking time.
-      for (const dx of [-14, 14]) {
+      // A microphone on its stand.
+      g.beginPath();
+      g.moveTo(0, -2);
+      g.lineTo(0, 18);
+      stroke(g, 3.5);
+      rect(g, -12, 16, 24, 5, INK, 2);
+      shape(g, '#aab6cc', () => g.ellipse(0, -11, 10, 13, 0, 0, Math.PI * 2));
+      g.strokeStyle = 'rgba(23,32,63,.35)';
+      g.lineWidth = 1.6;
+      for (const y of [-16, -11, -6]) {
         g.beginPath();
-        g.moveTo(x + dx, y - 2);
-        g.lineTo(x + dx, y - 50);
-        outline(g, 4);
-        rect(g, x + dx - 12, y - 6, 24, 6, '#3a3f4b', 3);
-        g.beginPath();
-        g.ellipse(x + dx, y - 60, 9, 12, 0, 0, Math.PI * 2);
-        g.fillStyle = '#aab6cc';
-        g.fill();
-        outline(g);
+        g.moveTo(-8, y);
+        g.lineTo(8, y);
+        g.stroke();
       }
-      rect(g, x - 26, y - 34, 52, 18, RED, 4);
-      text(g, 'ON AIR', x, y - 25, 12, PAPER);
       break;
     }
     case 'terroir': {
-      // A wheel of cheese, a bottle of wine and a baguette.
-      g.beginPath();
-      g.ellipse(x - 8, y - 10, 24, 9, 0, 0, Math.PI * 2);
-      g.fillStyle = '#f2cf6b';
-      g.fill();
-      outline(g);
-      rect(g, x - 32, y - 30, 48, 20, '#f6d97f', 4);
-      g.beginPath();
-      g.moveTo(x - 8, y - 30);
-      g.lineTo(x + 16, y - 22);
-      g.lineTo(x + 16, y - 12);
-      outline(g, 2);
-      for (const [hx, hy] of [[-20, -20], [-4, -24], [6, -16]]) {
+      // A wedge of cheese and a bottle of wine.
+      shape(g, '#f6d97f', () => {
+        g.moveTo(-24, 18);
+        g.lineTo(-24, 2);
+        g.lineTo(4, -6);
+        g.lineTo(4, 18);
+        g.closePath();
+      });
+      for (const [hx, hy, r] of [[-15, 8, 3], [-6, 12, 2.5], [-4, 3, 2]]) {
         g.beginPath();
-        g.arc(x + hx, y + hy, 2.5, 0, Math.PI * 2);
+        g.arc(hx, hy, r, 0, Math.PI * 2);
         g.fillStyle = '#d9a83c';
         g.fill();
       }
-      rect(g, x + 18, y - 58, 12, 56, '#5b1f3a', [5, 5, 3, 3]);
-      rect(g, x + 21, y - 70, 6, 14, '#5b1f3a', 2);
-      rect(g, x + 18, y - 38, 12, 12, PAPER, 1);
-      g.save();
-      g.translate(x - 4, y - 52);
-      g.rotate(-0.35);
-      rect(g, -26, -6, 52, 12, '#e0a54a', 6);
-      g.restore();
+      rect(g, 9, -10, 13, 28, '#6b2445', [5, 5, 3, 3]);
+      rect(g, 12.5, -22, 6, 13, '#6b2445', 2);
+      rect(g, 10, 0, 11, 9, PAPER, 1);
       break;
     }
     case 'urnes': {
-      // A see-through ballot box with envelopes inside.
-      rect(g, x - 28, y - 52, 56, 52, 'rgba(220,240,255,.85)', 4);
-      for (const [ex, ey] of [[-14, -14], [6, -10], [-4, -24], [12, -26]]) {
+      // A see-through ballot box and its envelopes.
+      rect(g, -20, -10, 40, 30, 'rgba(210,232,255,.95)', 3);
+      for (const [ex, ey, rot] of [[-9, 10, -0.2], [7, 12, 0.15], [-1, 3, 0.05]]) {
         g.save();
-        g.translate(x + ex, y + ey);
-        g.rotate(ex * 0.02);
-        rect(g, -8, -5, 16, 10, '#c9d6f5', 1);
+        g.translate(ex, ey);
+        g.rotate(rot);
+        rect(g, -7, -4.5, 14, 9, '#c9d6f5', 1);
         g.restore();
       }
-      rect(g, x - 32, y - 60, 64, 10, BLUE, 3);
+      rect(g, -23, -16, 46, 8, BLUE, 2);
       g.fillStyle = INK;
-      g.fillRect(x - 12, y - 57, 24, 4);
-      text(g, 'URNE', x, y - 40, 13, INK);
+      g.fillRect(-9, -13.5, 18, 3);
+      g.save();
+      g.translate(0, -20);
+      rect(g, -7, -8, 14, 10, PAPER, 1);
+      g.restore();
       break;
     }
     case 'fiches': {
-      // A lectern and a stack of debate notes.
+      // A stack of note cards.
+      for (let i = 2; i >= 0; i--) {
+        g.save();
+        g.translate(i * 3 - 3, i * -3 + 2);
+        g.rotate(-0.06 * i);
+        rect(g, -18, -14, 36, 26, PAPER, 2);
+        g.restore();
+      }
+      g.strokeStyle = '#9aa3b8';
+      g.lineWidth = 2;
+      for (const y of [-8, -2, 4]) {
+        g.beginPath();
+        g.moveTo(-12, y);
+        g.lineTo(12, y);
+        g.stroke();
+      }
+      g.strokeStyle = RED;
       g.beginPath();
-      g.moveTo(x - 22, y);
-      g.lineTo(x + 22, y);
-      g.lineTo(x + 14, y - 40);
-      g.lineTo(x - 14, y - 40);
-      g.closePath();
-      g.fillStyle = '#8a5a3c';
-      g.fill();
-      outline(g);
-      g.save();
-      g.translate(x, y - 50);
-      g.rotate(-0.08);
-      for (let i = 0; i < 3; i++) rect(g, -24 + i * 3, -12 - i * 4, 44, 24, PAPER, 2);
-      g.restore();
-      text(g, 'FICHES', x + 2, y - 60, 11, RED, -0.08);
+      g.moveTo(-12, -13);
+      g.lineTo(12, -13);
+      g.stroke();
       break;
     }
     case 'fauteuil': {
-      // The presidential armchair: gilt and red velvet.
-      rect(g, x - 26, y - 76, 52, 50, GOLD, [16, 16, 4, 4]);
-      rect(g, x - 18, y - 68, 36, 38, RED, [12, 12, 3, 3]);
-      rect(g, x - 30, y - 30, 60, 16, GOLD, 4);
-      rect(g, x - 24, y - 28, 48, 10, RED, 3);
-      for (const lx of [x - 26, x + 20]) rect(g, lx, y - 16, 6, 16, GOLD, 2);
+      // The presidential armchair.
+      rect(g, -16, -22, 32, 28, GOLD, [12, 12, 3, 3]);
+      rect(g, -11, -17, 22, 20, RED, [9, 9, 2, 2]);
+      rect(g, -22, 2, 44, 10, GOLD, 4);
+      rect(g, -17, 3, 34, 6, RED, 2);
+      for (const lx of [-19, 14]) rect(g, lx, 11, 5, 10, GOLD, 2);
       break;
     }
     case 'budget': {
-      // Bundles of banknotes and a label.
+      // Bundles of banknotes.
       for (let row = 0; row < 3; row++) {
         for (let i = 0; i < 3 - row; i++) {
-          const bx = x - 30 + i * 20 + row * 10;
-          const by = y - 12 - row * 14;
-          rect(g, bx, by, 20, 12, '#8fce8f', 2);
+          const bx = -24 + i * 16 + row * 8;
+          const by = 8 - row * 11;
+          rect(g, bx, by, 16, 10, '#8fce8f', 2);
           g.fillStyle = PAPER;
-          g.fillRect(bx + 8, by + 1, 4, 10);
+          g.fillRect(bx + 6, by + 1, 4, 8);
         }
       }
-      rect(g, x - 26, y - 68, 52, 18, PAPER, 3);
-      text(g, 'BUDGET', x, y - 59, 12, INK);
+      text(g, '€', 16, -16, 18, GREEN);
       break;
     }
   }
+}
+
+/** One piece of the night's goal, its base centred on (x, y), with its name. */
+export function drawGoal(g: Ctx, goal: GoalId, label: string, x: number, y: number): void {
+  g.save();
+  g.translate(x, y);
+  // The card.
+  g.fillStyle = 'rgba(23,32,63,.22)';
+  g.beginPath();
+  g.roundRect(-28, -78, 62, 76, 8);
+  g.fill();
+  rect(g, -31, -82, 62, 76, PAPER, 8);
+  // Its name, on a strip at the bottom.
+  shape(g, INK, () => g.roundRect(-31, -26, 62, 20, [0, 0, 8, 8]), 2.4);
+  text(g, label, 0, -16, 12, PAPER, 56);
+  g.translate(0, -53);
+  g.scale(0.92, 0.92);
+  icon(g, goal);
+  g.restore();
 }

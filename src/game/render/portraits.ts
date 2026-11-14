@@ -1,18 +1,20 @@
 /**
- * Paper-puppet caricatures, generated as SVG strings.
+ * Paper puppets, generated as SVG strings.
  *
  * One drawing routine serves three consumers: the site (inlined in the HTML),
  * the game canvas (rasterised once per sprite) and the asset scripts (social
- * card, README art). Bodies, props and anonymous extras are original artwork
- * built from primitives.
+ * card, README art). Bodies and anonymous extras are original artwork built
+ * from primitives.
  *
- * A figure is a `Look`: an outfit and one signature prop, on a stick. Real
- * people wear a real photo of their head (freely licensed, cut out with a
- * sticker edge: see scripts/build-heads.ts and the credits in the legal notice);
- * the drawn face (face shape, hair, nose, mouth) is only a fallback.
+ * Every named figure has the same body — a dark suit on a stick — and a real
+ * photo of their head (freely licensed, cut out by scripts/build-heads.ts; the
+ * credits are in the legal notice). The colour of the tie is the family of the
+ * card: yellow for votes, red for attack, purple for effect, blue for defence.
+ * Guests, who are never played, come without a tie.
  */
 import { PHOTOS, type Expression } from '../data/photos';
-import { EXTRAS } from '../data/units';
+import type { Category } from '../data/types';
+import { EXTRAS, GUESTS, UNITS, categoryOf } from '../data/units';
 
 export const INK = '#17203f';
 const PAPER = '#fffdf6';
@@ -20,475 +22,51 @@ const WOOD = '#c9995a';
 const WHITE = '#ffffff';
 const GOLD = '#ffd23f';
 
-type Face = 'oval' | 'round' | 'long' | 'square';
-type Mouth = 'smile' | 'grin' | 'gap' | 'open' | 'flat' | 'smirk' | 'pout' | 'laugh';
-type Nose = 'small' | 'long' | 'round' | 'hook' | 'broad';
-type Brows = 'flat' | 'angry' | 'arched' | 'sad';
-type Eyes = 'dot' | 'narrow' | 'wide' | 'tired';
-type Outfit = 'suit' | 'open' | 'casual' | 'coat' | 'judogi';
-
-interface Look {
-  skin: string;
-  face: Face;
-  hair: string;
-  hairColor: string;
-  brows: string;
-  browStyle?: Brows;
-  thickBrows?: boolean;
-  eyes?: Eyes;
-  eyeColor?: string;
-  nose?: Nose;
-  mouth: Mouth;
-  /** Ear radius (default 5). */
-  ears?: number;
-  glasses?: 'round' | 'rect' | 'thin';
-  stubble?: boolean;
-  beard?: string;
-  wrinkles?: boolean;
-  /** Lighter patches around the eyes (a certain tan). */
-  eyePatch?: string;
-  blush?: boolean;
-  outfit?: Outfit;
-  jacket: string;
-  shirt: string;
-  tie?: string;
-  tieTilt?: number;
-  longTie?: boolean;
-  scarf?: string;
-  /** Extra artwork drawn over the head (a beret…). */
-  hat?: string;
-  prop?: string;
-  /** An electronic tag around the stick, where an ankle would be. */
-  tag?: boolean;
-}
-
 const s = (width = 2.6) => `stroke="${INK}" stroke-width="${width}" stroke-linejoin="round" stroke-linecap="round"`;
 const thin = (color: string, width = 2) => `fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"`;
 
-// ───────────────────────────── props ─────────────────────────────
+// ───────────────────────────── named figures ─────────────────────────────
 
-const PROPS: Record<string, string> = {
-  // Hollande: it always rains on him.
-  rain: `<g transform="translate(16 -17)"><path d="M70 14c-7 0-12 4-13 9-6 0-10 4-10 9s4 9 10 9h34c6 0 11-4 11-10s-5-10-11-10c-2-5-8-8-14-7z" fill="#aab6cc" ${s(2.4)}/>
-    <path d="M84 47l-3 8M95 46l-3 8M88 62l-3 8M99 60l-3 8" ${thin('#4d8fe0', 2.6)}/></g>`,
-  // Macron: "en même temps".
-  arrows: `<g fill="#f6aa1c" ${s(2.2)}><path d="M88 108h14v-6l12 10-12 10v-6H88z"/><path d="M32 108H18v-6L6 112l12 10v-6h14z"/></g>`,
-  // Mélenchon: the fist of the tribune.
-  fist: `<g><path d="M94 96c-4 0-7 3-7 7v13c0 5 4 9 10 9h6c6 0 10-4 10-9v-12c0-3-2-5-5-5s-4 1-4 3v-3c0-3-2-5-5-5s-5 1-5 2z" fill="#f0bf9a" ${s(2.4)}/>
-    <path d="M99 99v8M104 101v7" fill="none" ${s(2)}/></g>`,
-  // Le Pen: certified cat breeder.
-  cat: `<g><path d="M8 124c0-11 7-18 16-18s16 7 16 18v10H8z" fill="#f2a65a" ${s(2.4)}/>
-    <path d="M10 112l-2-12 10 6zM38 112l2-12-10 6z" fill="#f2a65a" ${s(2.4)}/>
-    <circle cx="18" cy="120" r="2" fill="${INK}"/><circle cx="30" cy="120" r="2" fill="${INK}"/>
-    <path d="M22 125l2 2 2-2M12 124H5M12 128l-6 2M36 124h7M36 128l6 2" fill="none" ${s(1.6)}/></g>`,
-  // Bardella: one selfie, one like.
-  phone: `<g transform="rotate(12 100 108)"><rect x="89" y="88" width="24" height="40" rx="5" fill="${INK}"/>
-    <rect x="92" y="92" width="18" height="30" rx="2" fill="#dff1ff"/>
-    <path d="M101 114c-6-4-8-7-8-10 0-2 2-4 4-4 2 0 3 1 4 2 1-1 2-2 4-2 2 0 4 2 4 4 0 3-2 6-8 10z" fill="#ff4d6d"/></g>`,
-  // Zemmour: a book a year, a controversy a week.
-  book: `<g transform="rotate(-10 100 110)"><path d="M86 94h28v34H86z" fill="#8b2f2f" ${s(2.4)}/>
-    <path d="M86 94h5v34h-5z" fill="#5e1c1c" ${s(2)}/><path d="M96 104h13M96 110h13" ${thin(PAPER, 2.2)}/></g>`,
-  // Ruffin: the documentary maker.
-  camera: `<g><rect x="84" y="98" width="32" height="24" rx="4" fill="#3a3f4b" ${s(2.4)}/>
-    <rect x="92" y="92" width="10" height="7" rx="2" fill="#3a3f4b" ${s(2.2)}/>
-    <circle cx="100" cy="110" r="7.5" fill="#8fd3ff" ${s(2.2)}/><circle cx="111" cy="103" r="1.8" fill="#e5383b"/></g>`,
-  // Poutou: the debate punchline.
-  megaphone: `<g transform="rotate(-18 98 108)"><path d="M82 102h12l20-11v36l-20-11H82z" fill="#e5383b" ${s(2.4)}/>
-    <path d="M86 116l3 12h7l-2-12z" fill="#3a3f4b" ${s(2.2)}/></g><path d="M112 86l5-6M117 96l7-2M116 106l7 3" ${thin(INK, 2.2)}/>`,
-  // Bayrou: the sponsorship bank.
-  bank: `<g ${s(2)}><path d="M83 106l18-13 18 13z" fill="#f6aa1c"/><path d="M84 124h34v7H84z" fill="#f6aa1c"/>
-    <path d="M87 106h6v18h-6zM98 106h6v18h-6zM109 106h6v18h-6z" fill="${PAPER}"/></g>`,
-  // Attal: top of the class.
-  pencil: `<g transform="rotate(28 102 108)"><path d="M97 84h10v36l-5 10-5-10z" fill="#ffd23f" ${s(2.2)}/>
-    <path d="M97 84h10v7H97z" fill="#ff8fa3" ${s(2)}/><path d="M99 124l3 6 3-6z" fill="${INK}"/></g>`,
-  // Philippe: the boxer from Le Havre.
-  gloves: `<g fill="#e5383b" ${s(2.4)}><path d="M6 108c0-8 6-13 13-13s12 5 12 12v9c0 5-4 9-9 9h-7c-5 0-9-4-9-9z"/>
-    <path d="M89 108c0-8 6-13 13-13s12 5 12 12v9c0 5-4 9-9 9h-7c-5 0-9-4-9-9z"/></g>
-    <path d="M9 119h20M92 119h20" fill="none" stroke="${PAPER}" stroke-width="2.4"/>`,
-  // Borne: article 49.3.
-  sign493: `<g transform="rotate(6 100 104)"><path d="M100 132v-16" fill="none" ${s(3)}/>
-    <rect x="80" y="90" width="40" height="26" rx="3" fill="${PAPER}" ${s(2.4)}/>
-    <text x="100" y="109" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="15" fill="#e5383b">49.3</text></g>`,
-  // Sarkozy: work more to earn more.
-  coin: `<g><circle cx="102" cy="108" r="15" fill="#ffd23f" ${s(2.4)}/><circle cx="102" cy="108" r="10.5" fill="none" stroke="#c98a00" stroke-width="1.6"/>
-    <text x="102" y="114" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="16" fill="#8a5300">€</text></g>`,
-  // Retailleau: order, order, order.
-  order: `<g fill="none" stroke="#2f5fe0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M90 96l9 12-9 12"/><path d="M100 96l9 12-9 12"/><path d="M110 96l9 12-9 12"/></g>`,
-  // Glucksmann: the European.
-  stars: `<g><circle cx="101" cy="108" r="17" fill="#1c3fa8" ${s(2.4)}/>
-    ${Array.from({ length: 8 }, (_, i) => {
-      const a = (i * Math.PI) / 4;
-      return `<circle cx="${(101 + Math.cos(a) * 11).toFixed(1)}" cy="${(108 + Math.sin(a) * 11).toFixed(1)}" r="2.3" fill="#ffd23f"/>`;
-    }).join('')}</g>`,
-  // Brigitte Macron: the yellow coins.
-  coins: `<g ${s(2)}><ellipse cx="100" cy="124" rx="15" ry="6" fill="#ffd23f"/><ellipse cx="100" cy="117" rx="15" ry="6" fill="#ffd23f"/>
-    <ellipse cx="100" cy="110" rx="15" ry="6" fill="#ffd23f"/><ellipse cx="100" cy="103" rx="15" ry="6" fill="#ffe680"/></g>
-    <path d="M118 92l2-6M124 99l6-2" ${thin('#c98a00', 2.2)}/>`,
-  // Villepin: the speech.
-  lectern: `<g><path d="M82 104h36l-4 28H86z" fill="#8a5a3c" ${s(2.4)}/><path d="M80 98h40v7H80z" fill="#a8744e" ${s(2.2)}/>
-    <path d="M100 98V86" fill="none" ${s(2.4)}/><circle cx="100" cy="83" r="4.5" fill="#3a3f4b" ${s(2)}/></g>`,
-  // Lassalle: the shepherd's crook.
-  crook: `<path d="M106 134V88c0-12 14-12 14-1" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>
-    <path d="M106 134V88c0-12 14-12 14-1" fill="none" stroke="${WOOD}" stroke-width="3.4" stroke-linecap="round"/>`,
-  // Riner: gold, again.
-  medal: `<g><path d="M50 96l10 18 10-18" fill="none" stroke="#2f5fe0" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M52 96l8 15 8-15" fill="none" stroke="#e5383b" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="60" cy="119" r="8.5" fill="#ffd23f" ${s(2.2)}/><path d="M60 114.500l1.500 3h3l-2.300 2.200.800 3.300-3-1.800-3 1.800.800-3.300-2.300-2.200h3z" fill="#c98a00"/></g>`,
-  // Squeezie: a story, and the followers turn up.
-  story: `<g transform="rotate(10 100 108)"><rect x="88" y="86" width="26" height="42" rx="5" fill="${INK}"/><rect x="91" y="90" width="20" height="32" rx="2" fill="#fff"/>
-    <circle cx="101" cy="104" r="7" fill="none" stroke="#e1306c" stroke-width="3"/><circle cx="101" cy="104" r="3.200" fill="#f6aa1c"/><path d="M95 116h12" ${thin('#9aa3b8', 2)}/></g>`,
-  // HugoDécrypte: one question for everybody.
-  mic: `<g transform="rotate(-22 100 110)"><rect x="96" y="102" width="9" height="30" rx="3" fill="#3a3f4b" ${s(2.2)}/>
-    <circle cx="100.500" cy="95" r="9.500" fill="#aab6cc" ${s(2.4)}/><path d="M93 95h15M100.500 87.500v15" ${thin('rgba(23,32,63,.35)', 1.6)}/></g>`,
-  // Élise Lucet: the microphone held out at the door, and the file on the money.
-  doorstep: `<g transform="rotate(-10 22 114)"><path d="M4 100h12l3 4h17v28H4z" fill="#f2d98b" ${s(2.2)}/><path d="M4 106h32" fill="none" ${s(1.8)}/>
-    <text x="20" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="13" fill="#8a5300">€</text></g>
-    <g transform="rotate(-26 100 110)"><rect x="96" y="104" width="9" height="30" rx="3" fill="#3a3f4b" ${s(2.2)}/>
-    <rect x="90.500" y="99" width="20" height="13" rx="2" fill="#e5383b" ${s(2.2)}/>
-    <text x="100.500" y="109.500" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="11" fill="${PAPER}">?</text>
-    <circle cx="100.500" cy="90" r="9" fill="#aab6cc" ${s(2.4)}/><path d="M93 90h15M100.500 82.500v15" ${thin('rgba(23,32,63,.35)', 1.6)}/></g>`,
-  // Trump: tariffs.
-  pricetag: `<g transform="rotate(-10 100 106)"><path d="M82 96l8-8h28v28H90l-8-8z" fill="${PAPER}" ${s(2.4)}/><circle cx="90" cy="102" r="2.600" fill="${INK}"/>
-    <text x="104" y="107" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="11" fill="#e5383b">+25%</text></g>`,
-};
+/** Tie colours: the four card families, as on the cards' labels. */
+export const ROLE_TIE: Record<Category, string> = { money: '#ffd23f', attack: '#e5383b', effect: '#9a7be0', defence: '#3f7be8' };
+const JACKET = '#2b3147';
+const LAPEL = '#1f2436';
 
-// Props added in 3.0.
-Object.assign(PROPS, {
-  // Ségolène Royal: "Fraternité !", a heart on a stick.
-  fraternite: `<g><path d="M104 134v-26" fill="none" ${s(3)}/>
-    <path d="M104 112c-12-8-17-14-17-20 0-5 4-9 9-9 4 0 6 2 8 5 2-3 4-5 8-5 5 0 9 4 9 9 0 6-5 12-17 20z" fill="#e5383b" ${s(2.4)}/>
-    <path d="M94 92c1-3 3-4 5-4" ${thin('#ffc2c2', 2)}/></g>`,
-  // Xavier Niel: an internet box, and no signal.
-  router: `<g transform="rotate(-6 100 112)"><rect x="82" y="104" width="38" height="22" rx="5" fill="#f2f3f6" ${s(2.4)}/>
-    <circle cx="92" cy="115" r="2.400" fill="#e5383b"/><circle cx="100" cy="115" r="2.400" fill="#9aa3b8"/><circle cx="108" cy="115" r="2.400" fill="#9aa3b8"/>
-    <path d="M90 96a16 16 0 0 1 22 0M95 100a9 9 0 0 1 12 0" ${thin(INK, 2.6)}/><circle cx="101" cy="103" r="1.800" fill="${INK}"/>
-    <path d="M88 86l26 20" fill="none" stroke="#e5383b" stroke-width="4" stroke-linecap="round"/></g>`,
-});
+/** Every named figure: the four line-ups and the guests. */
+const FIGURES = new Set([...Object.values(UNITS).filter((u) => u.camp !== 'neutre').map((u) => u.id), ...GUESTS]);
 
-// ───────────────────────────── the cast ─────────────────────────────
+/** Where a photo head sits on a puppet (viewBox units): the face is about 66 units wide, chin on the collar. Same ratio as the cut-outs of scripts/build-heads.ts (360 × 440). */
+export const HEAD_BOX = { x: 8, y: -16, w: 104, h: 127.1 };
 
-const SUIT = '#232d55';
-const NAVY = '#1a2247';
-const CHARCOAL = '#343844';
-
-const LOOKS: Record<string, Look> = {
-  // ── Gauche
-  glucksmann: { skin: '#efc19c', face: 'oval', hair: 'tousled', hairColor: '#2e2420', brows: '#241c18', thickBrows: true, nose: 'long', mouth: 'smile', stubble: true, outfit: 'open', jacket: NAVY, shirt: WHITE, prop: 'stars' },
-  hollande: { skin: '#f3c9a5', face: 'round', hair: 'thin', hairColor: '#35302e', brows: '#35302e', browStyle: 'arched', nose: 'round', mouth: 'smile', glasses: 'round', jacket: SUIT, shirt: WHITE, tie: '#2f5fe0', tieTilt: 14, prop: 'rain' },
-  royal: { skin: '#f4cfae', face: 'oval', hair: 'shoulder', hairColor: '#4a2f22', brows: '#3a251a', browStyle: 'arched', nose: 'small', mouth: 'grin', blush: true, outfit: 'coat', jacket: '#fbfaf5', shirt: WHITE, prop: 'fraternite' },
-  ruffin: { skin: '#efbf98', face: 'long', hair: 'short', hairColor: '#4a3a2c', brows: '#3a2c20', nose: 'long', mouth: 'smirk', stubble: true, outfit: 'casual', jacket: '#6b5a48', shirt: '#d9d2c2', prop: 'camera' },
-  melenchon: { skin: '#f0bf9a', face: 'round', hair: 'tuft', hairColor: '#c9ccd3', brows: '#4b4f58', browStyle: 'angry', thickBrows: true, nose: 'round', mouth: 'open', glasses: 'rect', wrinkles: true, jacket: '#2b2f3a', shirt: WHITE, tie: '#e5383b', scarf: '#e5383b', prop: 'fist' },
-
-  // ── Centre
-  bayrou: { skin: '#f3c9a5', face: 'oval', hair: 'side', hairColor: '#d5d8de', brows: '#9aa0aa', nose: 'long', mouth: 'smile', ears: 7.5, wrinkles: true, jacket: SUIT, shirt: WHITE, tie: '#f08a1c', prop: 'bank' },
-  attal: { skin: '#f6d2b3', face: 'oval', hair: 'slick', hairColor: '#3b2a20', brows: '#2e2018', nose: 'small', mouth: 'smile', eyes: 'wide', eyeColor: '#5b4030', jacket: SUIT, shirt: WHITE, tie: '#6fa8ff', prop: 'pencil' },
-  philippe: { skin: '#f0bf9a', face: 'long', hair: 'bald', hairColor: '#000', brows: '#c9c4bb', nose: 'long', mouth: 'smirk', glasses: 'thin', jacket: '#4a5263', shirt: WHITE, tie: '#1c3fa8', prop: 'gloves' },
-  borne: { skin: '#f6d2b3', face: 'oval', hair: 'bob', hairColor: '#6a4a36', brows: '#4e3626', nose: 'small', mouth: 'flat', glasses: 'rect', outfit: 'coat', jacket: '#3a6fd8', shirt: WHITE, prop: 'sign493' },
-  macron: { skin: '#f3c9a5', face: 'oval', hair: 'macron', hairColor: '#6b5140', brows: '#4e3a2c', eyes: 'wide', eyeColor: '#4d8fe0', nose: 'long', mouth: 'gap', jacket: NAVY, shirt: WHITE, tie: '#1c3fa8', prop: 'arrows' },
-
-  // ── Droite
-  sarkozy: { skin: '#e8b08a', face: 'long', hair: 'wavy', hairColor: '#5a5552', brows: '#2a2422', browStyle: 'angry', thickBrows: true, nose: 'hook', mouth: 'smirk', ears: 6.5, jacket: NAVY, shirt: WHITE, tie: SUIT, prop: 'coin' },
-  bardella: { skin: '#f3c9a5', face: 'square', hair: 'quiff', hairColor: '#1f1a18', brows: '#1f1a18', thickBrows: true, nose: 'small', mouth: 'grin', jacket: NAVY, shirt: WHITE, tie: '#2f5fe0', prop: 'phone' },
-  retailleau: { skin: '#f6d2b3', face: 'long', hair: 'side', hairColor: '#b9bcc4', brows: '#8d9199', browStyle: 'angry', nose: 'long', mouth: 'flat', glasses: 'thin', wrinkles: true, jacket: CHARCOAL, shirt: WHITE, tie: '#1c3fa8', prop: 'order' },
-  zemmour: { skin: '#e9b48f', face: 'long', hair: 'balding', hairColor: '#2a2422', brows: '#2a2422', browStyle: 'sad', thickBrows: true, eyes: 'tired', nose: 'hook', mouth: 'open', ears: 7.5, jacket: CHARCOAL, shirt: WHITE, tie: '#5e1c1c', prop: 'book' },
-  lepen: { skin: '#f6d2b3', face: 'square', hair: 'boblong', hairColor: '#f1d27a', brows: '#b8963c', browStyle: 'arched', nose: 'small', mouth: 'laugh', blush: true, outfit: 'coat', jacket: '#1c3fa8', shirt: WHITE, prop: 'cat' , tag: true },
-
-
-  // ── Les Autres
-  bmacron: { skin: '#f4cfae', face: 'oval', hair: 'bobfringe', hairColor: '#f3dc96', brows: '#b89a4c', browStyle: 'arched', eyes: 'wide', eyeColor: '#4d8fe0', nose: 'small', mouth: 'smile', blush: true, outfit: 'coat', jacket: '#8fc1ee', shirt: WHITE, prop: 'coins' },
-  villepin: { skin: '#e6b088', face: 'long', hair: 'mane', hairColor: '#dfe2e7', brows: '#8d9199', browStyle: 'arched', nose: 'long', mouth: 'smirk', wrinkles: true, jacket: NAVY, shirt: WHITE, tie: '#5e1c1c', prop: 'lectern' },
-  lassalle: { skin: '#e9b48f', face: 'long', hair: 'wavy', hairColor: '#b9bcc4', brows: '#7d8088', thickBrows: true, nose: 'broad', mouth: 'laugh', ears: 6.5, wrinkles: true, outfit: 'open', jacket: '#5a4a3a', shirt: '#e9e2d0', hat: 'beret', prop: 'crook' },
-  poutou: { skin: '#efbf98', face: 'oval', hair: 'messy', hairColor: '#6b4a2f', brows: '#4a321f', nose: 'round', mouth: 'grin', stubble: true, outfit: 'casual', jacket: '#5a7d5a', shirt: '#e9e2d0', prop: 'megaphone' },
-  riner: { skin: '#8d5a3c', face: 'square', hair: 'crop', hairColor: '#1c1512', brows: '#1c1512', thickBrows: true, nose: 'broad', mouth: 'laugh', beard: '#1c1512', outfit: 'judogi', jacket: '#f6f5ef', shirt: '#f6f5ef', prop: 'medal' },
-
-  // ── The guests
-  squeezie: { skin: '#f3c9a5', face: 'oval', hair: 'quiff', hairColor: '#5a3d2b', brows: '#3f2a1c', nose: 'small', mouth: 'grin', stubble: true, outfit: 'casual', jacket: '#2b2f3a', shirt: '#e5383b', prop: 'story' },
-  lucet: { skin: '#f4cfae', face: 'oval', hair: 'swept', hairColor: '#e8d29c', brows: '#a88a50', browStyle: 'arched', nose: 'small', mouth: 'smirk', outfit: 'open', jacket: '#232733', shirt: WHITE, prop: 'doorstep' },
-  hugo: { skin: '#f4cfae', face: 'oval', hair: 'side', hairColor: '#4a3626', brows: '#3a2a1c', eyes: 'wide', eyeColor: '#5b4030', nose: 'small', mouth: 'smile', stubble: true, outfit: 'open', jacket: '#3a4a6b', shirt: WHITE, prop: 'mic' },
-  niel: { skin: '#e9b48f', face: 'long', hair: 'mane', hairColor: '#3b2e26', brows: '#2e2520', nose: 'long', mouth: 'smile', outfit: 'open', jacket: '#1f2433', shirt: WHITE, prop: 'router' },
-  trump: { skin: '#f3a96b', face: 'square', hair: 'swoop', hairColor: '#f6cf62', brows: '#e9c46a', browStyle: 'angry', eyes: 'narrow', eyePatch: '#fbe0c6', nose: 'round', mouth: 'pout', wrinkles: true, jacket: NAVY, shirt: WHITE, tie: '#e5383b', longTie: true, prop: 'pricetag' },
-};
-
-// ───────────────────────────── anatomy ─────────────────────────────
-
-const FACE: Record<Face, { rx: number; ry: number }> = {
-  oval: { rx: 27, ry: 31 },
-  round: { rx: 30, ry: 30 },
-  long: { rx: 25, ry: 33 },
-  square: { rx: 28, ry: 31 },
-};
-
-function head(look: Look): string {
-  const { rx, ry } = FACE[look.face];
-  const cy = 56;
-  if (look.face === 'square') {
-    // A wider jaw than the ellipse gives.
-    return `<path d="M${60 - rx} ${cy - 4}C${60 - rx} ${cy - ry - 8} ${60 + rx} ${cy - ry - 8} ${60 + rx} ${cy - 4}L${60 + rx - 1} ${cy + 12}C${60 + rx - 4} ${cy + ry + 3} ${60 - rx + 4} ${cy + ry + 3} ${60 - rx + 1} ${cy + 12}Z" fill="${look.skin}" ${s()}/>`;
-  }
-  return `<ellipse cx="60" cy="${cy}" rx="${rx}" ry="${ry}" fill="${look.skin}" ${s()}/>`;
-}
-
-interface HairParts {
-  back?: string;
-  front?: string;
-}
-
-/** Hairstyles. `f` is the fill + outline attributes for the hair colour. */
-function hair(look: Look): HairParts {
-  const f = `fill="${look.hairColor}" ${s()}`;
-  const strand = (d: string, color = 'rgba(255,255,255,.45)') => `<path d="${d}" ${thin(color, 2)}/>`;
-  switch (look.hair) {
-    case 'side':
-      return { front: `<path d="M31 55C26 30 40 16 62 16c21 0 32 14 27 39-2-10-7-18-15-21-12-4-22 1-30-3-6 5-11 14-13 24z" ${f}/>` };
-    case 'macron':
-      // Side parting, a little length over the ears and proper sideburns.
-      return {
-        front: `<path d="M30 62C23 32 38 12 62 12c23 0 35 18 28 50l-4-2c1-12-3-22-12-26-12-5-23 2-31-4-6 5-9 14-9 28z" ${f}/>
-          ${strand('M46 27c7-6 17-8 28-5', 'rgba(255,255,255,.3)')}`,
-      };
-    case 'slick':
-      return { front: `<path d="M31 53C25 26 42 11 61 11s36 15 28 42c-2-11-7-18-17-20-8-2-18-2-26 0-8 2-13 9-15 20z" ${f}/>` };
-    case 'quiff':
-      // Short sides, volume brushed up and back.
-      return {
-        front: `<path d="M31 54C23 21 44 4 65 7c19 2 31 20 24 47-2-11-7-19-16-21-11-4-23-3-29 1-7 4-11 10-13 20z" ${f}/>
-          ${strand('M45 21c9-8 23-9 34-2', 'rgba(255,255,255,.28)')}`,
-      };
-    case 'thin':
-      // A thin dark cap over a high forehead.
-      return {
-        front: `<path d="M33 48c-1-18 11-28 27-28s28 10 27 28c-4-11-13-19-27-19s-23 8-27 19z" ${f}/>
-          <path d="M32 60c-5-8-4-17 1-23-1 8 0 15 1 23z" ${f}/><path d="M88 60c5-8 4-17-1-23 1 8 0 15-1 23z" ${f}/>`,
-      };
-    case 'balding':
-      return {
-        front: `<path d="M32 60c-6-8-4-21 4-27-1 9-1 18 0 27z" ${f}/><path d="M88 60c6-8 4-21-4-27 1 9 1 18 0 27z" ${f}/>
-          ${strand('M44 28q16-8 32 0', look.hairColor)}${strand('M48 33q12-5 24 0', look.hairColor)}`,
-      };
-    case 'bob':
-      return {
-        back: `<path d="M28 52C22 24 44 10 61 10s39 14 33 42l1 22c-2 6-10 6-13 1V50H40v25c-3 5-11 5-13-1z" ${f}/>`,
-        front: `<path d="M33 48c1-19 15-28 29-28s24 9 25 28c-7-10-17-15-27-13-10-2-20 3-27 13z" ${f}/>`,
-      };
-    case 'boblong':
-      // Straight, to the shoulders, with a side-swept fringe.
-      return {
-        back: `<path d="M27 52C21 22 44 9 61 9s40 13 34 43l3 38c-4 7-13 6-15 0V50H39v40c-2 6-11 7-15 0z" ${f}/>`,
-        front: `<path d="M33 50c0-20 14-30 28-30s26 10 26 30c-4-9-9-14-16-16-8 4-22 2-30 6-4 2-6 6-8 10z" ${f}/>`,
-      };
-    case 'bobfringe':
-      // A full blonde fringe and a neat bob.
-      return {
-        back: `<path d="M26 52C20 22 44 8 61 8s41 14 35 44l2 26c-3 8-13 7-15 1V50H39v29c-2 6-12 7-15-1z" ${f}/>`,
-        front: `<path d="M32 53c-2-23 13-34 29-34s30 11 27 34c-2-6-5-10-9-12-6 3-12 4-18 4s-13-1-19-4c-5 2-8 6-10 12z" ${f}/>
-          ${strand('M50 26v13M60 25v15M70 26v13', 'rgba(23,32,63,.18)')}`,
-      };
-    case 'swept':
-      // Light and layered, down to the jaw, with a long fringe swept to one side.
-      return {
-        back: `<path d="M27 52C21 23 43 9 61 9s40 14 34 43l2 24c-3 7-12 7-14 1V50H39v27c-2 6-11 6-14-1z" ${f}/>`,
-        front: `<path d="M32 57c-4-25 10-37 29-37s33 12 28 37c-2-9-6-15-11-18-13 1-27 4-38 11-4 2-6 4-8 7z" ${f}/>
-          ${strand('M44 29c10-6 24-6 35 1', 'rgba(255,255,255,.4)')}${strand('M40 45c9-5 20-7 32-7', 'rgba(23,32,63,.16)')}`,
-      };
-    case 'shoulder':
-      // Dark, shoulder length, parted on the side.
-      return {
-        back: `<path d="M27 52C21 22 44 9 61 9s40 13 34 43l3 36c-4 7-13 6-15 0V50H39v38c-2 6-11 7-15 0z" ${f}/>`,
-        front: `<path d="M33 50c0-20 13-31 28-31s27 11 27 31c-3-9-8-15-15-18-9 2-18 0-26 4-7 3-11 8-14 14z" ${f}/>`,
-      };
-    case 'long':
-      return {
-        back: `<path d="M26 52C20 20 44 8 61 8s41 12 35 44l4 50c-8 7-19 5-19-3V52H41v49c0 8-11 10-19 3z" ${f}/>`,
-        front: `<path d="M33 50c0-20 15-31 27-31s27 11 27 31c-5-12-15-19-27-20-12 1-22 8-27 20z" ${f}/>`,
-      };
-    case 'wavy':
-    case 'tousled':
-      return { front: `<path d="M30 55c-6-20 4-38 20-40 6-5 18-5 24 0 14 2 22 20 16 40-2-10-6-16-12-20-6 2-12-3-18-1-6-2-14 3-18 0-6 5-10 13-12 21z" ${f}/>` };
-    case 'messy':
-      return { front: `<path d="M30 53l-2-17 7 4 1-16 9 7 5-15 8 11 8-13 5 13 11-8v14l10-1-4 12 2 9c-4-12-12-20-30-21-16 1-26 9-30 21z" ${f}/>` };
-    case 'short':
-      return { front: `<path d="M32 51c-2-20 12-31 28-31s30 11 28 31c-4-12-14-20-28-20s-24 8-28 20z" ${f}/>` };
-    case 'crop':
-      return { front: `<path d="M33 47c-1-18 11-27 27-27s28 9 27 27c-5-10-14-15-27-15s-22 5-27 15z" ${f}/>` };
-    case 'tuft':
-      return {
-        front: `<path d="M31 55c-4-18 5-32 21-34-4 6-6 10-5 14-7 2-13 10-16 20z" ${f}/><path d="M89 55c4-18-5-32-21-34 4 6 6 10 5 14 7 2 13 10 16 20z" ${f}/><path d="M50 22c6-4 14-4 20 0-6 2-14 2-20 0z" ${f}/>`,
-      };
-    case 'mane':
-      // A silver mane swept back, falling behind the ears.
-      return {
-        back: `<path d="M31 70c-9-10-9-28-1-40l7 36z" ${f}/><path d="M89 70c9-10 9-28 1-40l-7 36z" ${f}/>`,
-        front: `<path d="M28 56C22 24 40 7 62 7c23 0 37 17 30 49-3-12-9-20-19-22-10-3-21-1-28 1-8 3-14 9-17 21z" ${f}/>
-          ${strand('M38 26c9-10 24-12 38-5', 'rgba(23,32,63,.25)')}${strand('M34 36c6-8 15-11 24-11', 'rgba(23,32,63,.25)')}${strand('M62 15c8 1 15 5 20 11', 'rgba(23,32,63,.25)')}`,
-      };
-    case 'swoop':
-      // The famous golden swoop.
-      return {
-        back: `<path d="M27 62c-7-11-5-26 2-34l5 32z" ${f}/><path d="M93 62c7-11 5-26-2-34l-5 32z" ${f}/>`,
-        front: `<path d="M26 50C20 24 40 7 67 7c21 0 32 14 27 38-4-7-10-11-18-12-17-9-35-4-43 10-2 2-5 5-7 7z" ${f}/>
-          ${strand('M36 36c10-13 31-17 49-8', '#d9a93a')}${strand('M42 28c10-9 26-11 40-5', '#d9a93a')}`,
-      };
-    default:
-      return {};
-  }
-}
-
-function nose(kind: Nose): string {
-  switch (kind) {
-    case 'long':
-      return `<path d="M61 55c-3 8-6 13-1 16 2 1 4 0 5-1" fill="none" ${s(2.2)}/>`;
-    case 'round':
-      return `<path d="M60 58v5" fill="none" ${s(2.2)}/><path d="M55.500 67a4.800 4.800 0 0 0 9 0" fill="none" ${s(2.2)}/>`;
-    case 'hook':
-      return `<path d="M59 54c4 6 7 12 2 16-2 1-5 0-6-2" fill="none" ${s(2.3)}/>`;
-    case 'broad':
-      return `<path d="M60 58v6" fill="none" ${s(2.2)}/><path d="M54 68q6 5 12 0" fill="none" ${s(2.3)}/>`;
-    default:
-      return `<path d="M60 60c-2 5-3 8 1 9" fill="none" ${s(2.2)}/>`;
-  }
-}
-
-function mouth(kind: Mouth): string {
-  switch (kind) {
-    case 'smile':
-      return `<path d="M50 76q10 8 20 0" fill="none" ${s(2.6)}/>`;
-    case 'grin':
-      return `<path d="M48 74q12 13 24 0z" fill="${WHITE}" ${s(2.4)}/>`;
-    case 'gap':
-      // A confident grin with the gap between the front teeth.
-      return `<path d="M48 74q12 13 24 0z" fill="${WHITE}" ${s(2.4)}/><path d="M60 74.500v5" fill="none" ${s(1.8)}/>`;
-    case 'laugh':
-      return `<path d="M46 73q14 18 28 0z" fill="#5b1220" ${s(2.4)}/><path d="M48.500 74.500h23l-2 4h-19z" fill="${WHITE}"/>`;
-    case 'open':
-      return `<ellipse cx="60" cy="78" rx="8" ry="6.500" fill="#5b1220" ${s(2.4)}/><path d="M55 81q5-3 10 0-5 4-10 0z" fill="#ff7a8a"/>`;
-    case 'flat':
-      return `<path d="M52 77h16" fill="none" ${s(2.6)}/>`;
-    case 'smirk':
-      return `<path d="M51 77q11 5 19-4" fill="none" ${s(2.6)}/>`;
-    case 'pout':
-      return `<path d="M53 77q7-5 14 0q-7 5-14 0z" fill="#e58f76" ${s(2.2)}/>`;
-  }
-}
-
-function eyes(look: Look): string {
-  const kind = look.eyes ?? 'dot';
-  const at = (x: number) => {
-    if (kind === 'wide') {
-      return `<ellipse cx="${x}" cy="57" rx="5" ry="5.400" fill="${WHITE}" ${s(1.8)}/><circle cx="${x + 0.6}" cy="57.400" r="3" fill="${look.eyeColor ?? INK}"/><circle cx="${x + 0.6}" cy="57.400" r="1.400" fill="${INK}"/><circle cx="${x + 1.6}" cy="56" r=".900" fill="#fff"/>`;
-    }
-    if (kind === 'narrow') {
-      return `<path d="M${x - 4.5} 57.500q4.500-4 9 0" fill="none" ${s(2.4)}/><circle cx="${x}" cy="57.800" r="1.700" fill="${INK}"/>`;
-    }
-    const bag = kind === 'tired' ? `<path d="M${x - 5} 63q5 3 10 0" fill="none" stroke="rgba(23,32,63,.45)" stroke-width="1.800" stroke-linecap="round"/>` : '';
-    return `<ellipse cx="${x}" cy="57" rx="3" ry="3.800" fill="${INK}"/><circle cx="${x + 1}" cy="55.500" r="1" fill="#fff"/>${bag}`;
-  };
-  return at(49) + at(71);
-}
-
-function brows(look: Look): string {
-  const width = look.thickBrows ? 4.2 : 2.6;
-  const d = {
-    flat: 'M43 48.500l12-2M65 46.500l12 2',
-    angry: 'M42 45.500l13 4.500M65 50l13-4.500',
-    arched: 'M42 49q6-6 13-2M65 47q7-4 13 2',
-    sad: 'M42 50.500l13-5M65 45.500l13 5',
-  }[look.browStyle ?? 'flat'];
-  return `<path d="${d}" fill="none" stroke="${look.brows}" stroke-width="${width}" stroke-linecap="round"/>`;
-}
-
-function glasses(kind: NonNullable<Look['glasses']>): string {
-  if (kind === 'round') {
-    return `<g fill="rgba(255,255,255,.35)" ${s(2.4)}><circle cx="48.500" cy="57" r="8.500"/><circle cx="71.500" cy="57" r="8.500"/><path d="M57 57h6" fill="none"/></g>`;
-  }
-  if (kind === 'rect') {
-    return `<g fill="rgba(255,255,255,.35)" ${s(2.6)}><rect x="39.500" y="50.500" width="17" height="12" rx="3"/><rect x="63.500" y="50.500" width="17" height="12" rx="3"/><path d="M56.500 56h7" fill="none"/></g>`;
-  }
-  return `<g fill="rgba(255,255,255,.3)" ${s(1.6)}><rect x="40" y="51" width="16" height="11" rx="5"/><rect x="64" y="51" width="16" height="11" rx="5"/><path d="M56 56h8" fill="none"/></g>`;
-}
-
-const HATS: Record<string, string> = {
-  // The Béarn beret.
-  beret: `<path d="M29 34c1-15 15-24 32-24s31 7 32 20c-11 6-22 8-33 8s-23-1-31-4z" fill="#232733" ${s()}/><path d="M61 10V5" fill="none" ${s(3)}/>`,
-};
-
-function torso(look: Look): string {
-  const base = `<path d="M22 134c0-26 12-38 28-40h20c16 2 28 14 28 40z" fill="${look.jacket}" ${s()}/>`;
-  const dark = 'rgba(0,0,0,.22)';
-  switch (look.outfit ?? 'suit') {
-    case 'casual':
-      return `${base}<path d="M49 94q11 12 22 0z" fill="${look.shirt}" ${s(2.2)}/>`;
-    case 'open':
-      // Jacket, open collar, no tie.
-      return `${base}<path d="M49 94l11 22 11-22z" fill="${look.shirt}" ${s(2.2)}/>
-        <path d="M49 94l11 22-9 4-8-20z" fill="${dark}" ${s(2.2)}/><path d="M71 94l-11 22 9 4 8-20z" fill="${dark}" ${s(2.2)}/>
-        <path d="M54 96l6 8 6-8" fill="none" ${s(2)}/>`;
-    case 'coat':
-      // A neat tailored jacket with a round neckline.
-      return `${base}<path d="M48 94q12 12 24 0l3 5q-15 13-30 0z" fill="${look.shirt}" ${s(2.2)}/>
-        <path d="M60 106v28" fill="none" stroke="rgba(23,32,63,.35)" stroke-width="2"/>
-        <circle cx="60" cy="114" r="2.200" fill="#ffd23f" ${s(1.4)}/><circle cx="60" cy="125" r="2.200" fill="#ffd23f" ${s(1.4)}/>`;
-    case 'judogi':
-      return `<path d="M18 134c0-27 13-39 30-41h24c17 2 30 14 30 41z" fill="${look.jacket}" ${s()}/>
-        <path d="M49 93l15 31M71 93l-19 31" fill="none" ${s(2.6)}/><path d="M49 93l11 14 11-14" fill="${look.skin}" ${s(2.2)}/>
-        <path d="M20 121h80v10H20z" fill="#17181d" ${s(2.2)}/>`;
-    default: {
-      const tie = look.tie
-        ? look.longTie
-          ? `<path d="M57 100h6l4 36h-14z" fill="${look.tie}" ${s(2)}/>`
-          : `<path d="M57 100h6l3 26-6 6-6-6z" fill="${look.tie}" ${s(2)} transform="rotate(${look.tieTilt ?? 0} 60 100)"/>`
-        : '';
-      return `${base}<path d="M49 94l11 20 11-20z" fill="${look.shirt}" ${s(2.2)}/>${tie}
-        <path d="M49 94l11 20-9 6-8-20z" fill="${dark}" ${s(2.2)}/><path d="M71 94l-11 20 9 6 8-20z" fill="${dark}" ${s(2.2)}/>`;
-    }
-  }
-}
-
-/** Where a photo head sits on a puppet (viewBox units): the face is about 66 units wide, chin near the collar. */
-export const HEAD_BOX = { x: 16, y: -6, w: 88, h: 107.6 };
-
+/** An electronic tag around the stick, where an ankle would be (Marine Le Pen). */
 function tag(): string {
   return `<rect x="51" y="134" width="18" height="10" rx="3" fill="#2a2e38" ${s(2)}/><circle cx="64.500" cy="139" r="2" fill="#5bd16b"/>
     <path d="M51 137h-3M69 137h3" fill="none" ${s(2)}/>`;
 }
 
-function figure(look: Look, photo: string | null): string {
-  const { rx, ry } = FACE[look.face];
-  const ear = look.ears ?? 5;
-  const parts = photo ? {} : hair(look);
-  const stickAndBody = `
-    <rect x="56" y="126" width="8" height="24" rx="2" fill="${WOOD}" ${s(2.2)}/>
-    ${look.tag ? tag() : ''}`;
-  if (photo) {
-    const b = HEAD_BOX;
-    return `${stickAndBody}
-    ${torso(look)}
-    ${look.scarf ? `<path d="M44 92q16 12 32 0l3 8q-19 13-38 0z" fill="${look.scarf}" ${s(2.2)}/><path d="M68 100l8 22-9 3-5-22z" fill="${look.scarf}" ${s(2.2)}/>` : ''}
-    <rect x="52" y="80" width="16" height="15" rx="4" fill="${look.skin}" ${s(2.4)}/>
-    <image href="${photo}" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" preserveAspectRatio="none"/>
-    ${look.prop ? PROPS[look.prop] : ''}`;
-  }
+/** The suit: jacket, shirt and, for a playable figure, a tie in the colour of its card family. */
+function suit(id: string): string {
+  const unit = UNITS[id];
+  const tie = unit && unit.camp !== 'neutre' ? ROLE_TIE[categoryOf(unit)] : null;
+  return `<path d="M20 134c0-26 13-39 30-41h20c17 2 30 15 30 41z" fill="${JACKET}" ${s()}/>
+    <path d="M47 92l13 26 13-26z" fill="${WHITE}" ${s(2.2)}/>
+    <path d="M47 92l13 26-10 6-9-22z" fill="${LAPEL}" ${s(2.2)}/>
+    <path d="M73 92l-13 26 10 6 9-22z" fill="${LAPEL}" ${s(2.2)}/>
+    ${tie
+      ? `<path d="M55 96h10l-1.500 7h-7z" fill="${tie}" ${s(2)}/><path d="M56.500 103h7l4 23-7.500 8-7.500-8z" fill="${tie}" ${s(2)}/>`
+      : `<path d="M52 93l8 10 8-10" fill="none" ${s(2)}/>`}`;
+}
 
-  return `${stickAndBody}
-    ${parts.back ?? ''}
-    ${torso(look)}
-    ${look.scarf ? `<path d="M44 92q16 12 32 0l3 8q-19 13-38 0z" fill="${look.scarf}" ${s(2.2)}/><path d="M68 100l8 22-9 3-5-22z" fill="${look.scarf}" ${s(2.2)}/>` : ''}
-    <rect x="52" y="80" width="16" height="15" rx="4" fill="${look.skin}" ${s(2.4)}/>
-    <circle cx="${60 - rx}" cy="59" r="${ear}" fill="${look.skin}" ${s(2.4)}/><circle cx="${60 + rx}" cy="59" r="${ear}" fill="${look.skin}" ${s(2.4)}/>
-    ${head(look)}
-    ${look.beard ? `<path d="M${60 - rx + 2} 62c1 18 9 28 ${rx - 2} 28s${rx - 3}-10 ${rx - 2}-28c-3 8-8 11-14 9-4-3-18-3-22 0-6 2-11-1-14-9z" fill="${look.beard}" opacity=".92"/>` : ''}
-    ${look.stubble ? `<path d="M${60 - rx + 3} 66q${rx - 3} ${ry - 2} ${2 * rx - 6} 0q-${rx - 3} ${ry - 12}-${2 * rx - 6} 0z" fill="rgba(60,45,35,.22)"/>` : ''}
-    ${look.blush ? `<circle cx="42" cy="69" r="5.500" fill="#ff7f8f" opacity=".45"/><circle cx="78" cy="69" r="5.500" fill="#ff7f8f" opacity=".45"/>` : look.beard ? '' : `<circle cx="42" cy="69" r="5" fill="#ff8f8f" opacity=".28"/><circle cx="78" cy="69" r="5" fill="#ff8f8f" opacity=".28"/>`}
-    ${look.eyePatch ? `<ellipse cx="49" cy="57" rx="8.500" ry="7" fill="${look.eyePatch}"/><ellipse cx="71" cy="57" rx="8.500" ry="7" fill="${look.eyePatch}"/>` : ''}
-    ${look.wrinkles ? `<path d="M50 38q10-3 20 0M52 43q8-2 16 0" ${thin('rgba(23,32,63,.3)', 1.6)}/><path d="M45 69q-2 5 0 9M75 69q2 5 0 9" ${thin('rgba(23,32,63,.3)', 1.6)}/>` : ''}
-    ${parts.front ?? ''}
-    ${look.hat ? HATS[look.hat] : ''}
-    ${eyes(look)}
-    ${brows(look)}
-    ${nose(look.nose ?? 'small')}
-    ${mouth(look.mouth)}
-    ${look.glasses ? glasses(look.glasses) : ''}
-    ${look.prop ? PROPS[look.prop] : ''}`;
+function figure(id: string, photo: string | null): string {
+  const b = HEAD_BOX;
+  const head = photo
+    ? `<image href="${photo}" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" preserveAspectRatio="none"/>`
+    : // No photo at hand (offline, first visit): a plain head stands in.
+      `<ellipse cx="60" cy="50" rx="28" ry="33" fill="#d8c3ab" ${s()}/>`;
+  return `<rect x="56" y="126" width="8" height="24" rx="2" fill="${WOOD}" ${s(2.2)}/>
+    ${id === 'lepen' ? tag() : ''}
+    ${suit(id)}
+    ${head}`;
 }
 
 // ───────────────────────────── extras ─────────────────────────────
@@ -519,7 +97,7 @@ function campExtra(kind: string): string {
       <path d="M52 76h16" fill="none" ${s(2.4)}/>
       <path d="M60 148V92" fill="none" ${s(4)}/>
       <rect x="20" y="84" width="80" height="48" rx="4" fill="${PAPER}" ${s(3)}/>
-      <path d="M60 94v20" fill="none" stroke="#e5383b" stroke-width="7" stroke-linecap="round"/><circle cx="60" cy="123" r="4" fill="#e5383b"/>`;
+      <text x="60" y="119" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="24" fill="#e5383b">NON</text>`;
   }
   if (kind === 'pundit') {
     return `${plainBody('#7d8597')}
@@ -802,7 +380,7 @@ function catSvg(): string {
 // ───────────────────────────── public API ─────────────────────────────
 
 /** Everything `portraitSvg` can draw: the 20 roster figures, the guests and the two reinforcements. */
-export const PORTRAIT_IDS = [...Object.keys(LOOKS), 'crs', 'pompiers'];
+export const PORTRAIT_IDS = [...FIGURES, 'crs', 'pompiers'];
 
 /** Public path of a photo head (or null when the figure has no photo, or not that expression). */
 export function headUrl(id: string, expression: Expression = 'neutral'): string | null {
@@ -847,10 +425,9 @@ function wrap(inner: string, viewBox: [number, number], key: string, options: Po
 export function portraitSvg(id: string, options: PortraitOptions = {}): string {
   const street = STREET[id];
   if (street) return wrap(street(), [120, 150], id, options);
-  const look = LOOKS[id];
-  if (!look) throw new Error(`No portrait for ${id}`);
+  if (!FIGURES.has(id)) throw new Error(`No portrait for ${id}`);
   const photo = options.headHref ?? headUrl(id, options.expression) ?? headUrl(id);
-  return wrap(figure(look, photo), [120, 150], `${id}${options.expression && options.expression !== 'neutral' ? `-${options.expression}` : ''}`, options);
+  return wrap(figure(id, photo), [120, 150], `${id}${options.expression && options.expression !== 'neutral' ? `-${options.expression}` : ''}`, options);
 }
 
 /** Extras: every kind has a single look. */
@@ -862,7 +439,7 @@ export function extraSvg(kind: string, options: PortraitOptions = {}): string {
   if (kind === 'cnews') return wrap(cnewsSvg(), [172, 114], 'cnews', options);
   if (kind === 'poubelle') return wrap(poubelleSvg(), [96, 118], 'poubelle', options);
   if (kind === 'cat') return wrap(catSvg(), [80, 72], 'cat', options);
-  if (STREET[kind] || LOOKS[kind]) return portraitSvg(kind, options);
+  if (STREET[kind] || FIGURES.has(kind)) return portraitSvg(kind, options);
   const portrait = EXTRAS[kind]?.portrait;
   if (portrait) return portraitSvg(portrait, options);
   return wrap(campExtra(kind), [120, 150], kind, options);

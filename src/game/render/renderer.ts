@@ -30,7 +30,7 @@ const MAX_BUBBLES = 3;
 /** Headliners march this much bigger than everybody else. */
 const BOSS_SCALE = 1.42;
 /** Where the night's goal stands in every row (inside the phone crop, left of the board). */
-const GOAL_X = 128;
+const GOAL_X = 135;
 
 interface Particle { x: number; y: number; vx: number; vy: number; rot: number; spin: number; life: number; max: number; size: number; color: string }
 interface FloatText { x: number; y: number; text: string; color: string; size: number; life: number; max: number }
@@ -1282,7 +1282,7 @@ export class Renderer {
       if (fading && !this.reducedMotion) {
         g.translate(0, -(1 - fading.life / 0.8) * 30);
       }
-      drawGoal(g, state.level.goal, GOAL_X, feetY(row) - 2);
+      drawGoal(g, state.level.goal, this.strings.goals[state.level.goal].label, GOAL_X, feetY(row) - 2);
       g.restore();
     }
     for (let i = this.taken.length - 1; i >= 0; i--) {

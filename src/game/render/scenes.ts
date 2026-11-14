@@ -306,31 +306,19 @@ function street(g: Ctx, pal: Palette): void {
     }
     g.stroke();
   }
-  // Shop fronts and striped awnings
-  const awnings = [RED, '#3c8a57', BLUE, GOLD];
+  // Shop fronts, each with its sign.
+  const shops: [string, string][] = [['BOULANGERIE', '#b5533c'], ['PHARMACIE', '#2e9e5b'], ['TABAC', '#c62f3a'], ['SUPÉRETTE', '#2f5fe0'], ['BAR', '#6b4a2f'], ['BOUCHERIE', '#9c2f2f'], ['BOULANGERIE', '#b5533c'], ['PHARMACIE', '#2e9e5b'], ['TABAC', '#c62f3a']];
   for (let i = -1; i < 8; i++) {
+    const [name, color] = shops[i + 1];
     const x = 10 + i * 160;
-    box(g, x, 96, 140, BOARD_Y - 96, '#3a3f4b', 0, 2.5);
-    box(g, x + 8, 104, 124, BOARD_Y - 108, '#dff1ff', 0, 2);
-    g.beginPath();
-    g.moveTo(x - 6, 104);
-    g.lineTo(x + 4, 86);
-    g.lineTo(x + 136, 86);
-    g.lineTo(x + 146, 104);
-    g.closePath();
-    g.fillStyle = awnings[i % awnings.length];
-    g.fill();
-    outline(g, 2.5);
+    box(g, x, 84, 140, BOARD_Y - 84, '#3a3f4b', 0, 2.5);
+    box(g, x + 8, 108, 124, BOARD_Y - 112, '#dff1ff', 0, 2);
+    box(g, x + 4, 86, 132, 20, color, 3, 2.5);
+    g.font = `400 14px ${DISPLAY}`;
     g.fillStyle = PAPER;
-    for (let st = 0; st < 5; st++) {
-      g.beginPath();
-      g.moveTo(x + 14 + st * 28, 86);
-      g.lineTo(x + 28 + st * 28, 86);
-      g.lineTo(x + 30 + st * 29, 104);
-      g.lineTo(x + 14 + st * 29, 104);
-      g.closePath();
-      g.fill();
-    }
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(name, x + 70, 97, 120);
   }
 }
 
@@ -371,8 +359,15 @@ function studio(g: Ctx, pal: Palette): void {
   ] as const) {
     box(g, x, 20, w, 86, '#17203f', 10);
     box(g, x + 8, 28, w - 16, 70, '#3b6fe0', 6, 0);
-    g.fillStyle = 'rgba(255,255,255,.75)';
-    for (let i = 0; i < 6; i++) g.fillRect(x + 26 + i * 34, 86 - (20 + ((i * 37) % 40)), 20, 20 + ((i * 37) % 40));
+    // A live broadcast: the red DIRECT tag and the speaking-time bars.
+    box(g, x + 16, 36, 70, 20, '#e5383b', 4, 0);
+    g.font = `400 14px ${DISPLAY}`;
+    g.fillStyle = PAPER;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText('● DIRECT', x + 51, 47);
+    g.fillStyle = 'rgba(255,255,255,.8)';
+    for (let i = 0; i < 4; i++) g.fillRect(x + 104, 34 + i * 15, 30 + ((i * 53) % 90), 9);
   }
   // Spotlights
   for (let i = 0; i < 6; i++) {
@@ -480,7 +475,7 @@ function floorDetails(g: Ctx, scene: SceneId, lanes: number[]): void {
       for (let x = BOARD_X + CELL_W * 1.3; x < BOARD_X + BOARD_W - 30; x += 70) g.fillRect(x, laneTop(lane) + CELL_H / 2 - 3, 36, 6);
     }
   } else if (scene === 'lycee') {
-    // Painted court lines and a hopscotch in the yard.
+    // Painted court lines in the yard.
     g.strokeStyle = 'rgba(255,255,255,.45)';
     g.lineWidth = 3;
     for (const lane of lanes) {
@@ -489,10 +484,6 @@ function floorDetails(g: Ctx, scene: SceneId, lanes: number[]): void {
       g.lineTo(BOARD_X + BOARD_W - 20, laneTop(lane) + CELL_H / 2);
       g.stroke();
     }
-    const hx = BOARD_X + CELL_W * 4.2;
-    const hy = laneTop(lanes[Math.floor(lanes.length / 2)]) + 20;
-    g.strokeStyle = 'rgba(255,214,63,.7)';
-    for (let i = 0; i < 4; i++) g.strokeRect(hx + i * 26, hy, 24, 24);
   } else if (scene === 'salon') {
     g.strokeStyle = 'rgba(150,110,30,.28)';
     g.lineWidth = 2;
@@ -541,50 +532,17 @@ function floorDetails(g: Ctx, scene: SceneId, lanes: number[]): void {
 }
 
 function entrance(g: Ctx, pal: Palette): void {
+  // Where the crowd comes from: the floor goes on into the shade, nothing in the way.
   const x = BOARD_X + BOARD_W;
-  const w = VIEW_W - x;
-  if (pal.edge === 'curtain') {
-    for (let i = 0; i < 6; i++) {
-      g.fillStyle = i % 2 ? '#a3222b' : '#c62f3a';
-      g.fillRect(x + (i * w) / 6, BOARD_Y, w / 6 + 0.5, BOARD_H);
-    }
-  } else if (pal.edge === 'barrier') {
-    g.fillStyle = '#6c7482';
-    g.fillRect(x, BOARD_Y, w, BOARD_H);
-    for (let lane = 0; lane < ROWS; lane++) {
-      const y = laneTop(lane) + CELL_H / 2 - 16;
-      box(g, x + 6, y, w - 12, 32, PAPER, 4, 2.5);
-      g.fillStyle = RED;
-      for (let s = 0; s < 3; s++) g.fillRect(x + 10 + s * 18, y + 2, 9, 28);
-    }
-  } else if (pal.edge === 'fence') {
-    g.fillStyle = pal.closed;
-    g.fillRect(x, BOARD_Y, w, BOARD_H);
-    for (let y = BOARD_Y + 6; y < BOARD_Y + BOARD_H; y += 40) box(g, x + 8, y, w - 16, 12, '#b98558', 3, 2.5);
-    box(g, x + 14, BOARD_Y, 10, BOARD_H, '#a8744e', 0, 2.5);
-    box(g, x + w - 24, BOARD_Y, 10, BOARD_H, '#a8744e', 0, 2.5);
-  } else {
-    g.fillStyle = pal.dark ? '#1b2046' : '#b9c4d6';
-    g.fillRect(x, BOARD_Y, w, BOARD_H);
-    for (let y = BOARD_Y + 8; y < BOARD_Y + BOARD_H; y += 20) {
-      g.fillStyle = INK;
-      g.fillRect(x + 4, y, w - 8, 5);
-    }
-    for (let i = 0; i < 4; i++) {
-      g.fillStyle = INK;
-      g.fillRect(x + 8 + i * 16, BOARD_Y, 6, BOARD_H);
-      g.fillStyle = GOLD;
-      for (let lane = 0; lane < ROWS; lane++) {
-        g.beginPath();
-        g.arc(x + 11 + i * 16, laneTop(lane) + CELL_H / 2, 5, 0, Math.PI * 2);
-        g.fill();
-      }
-    }
+  for (let lane = 0; lane < ROWS; lane++) {
+    g.fillStyle = pal.ground[(lane + COLS) % 2];
+    g.fillRect(x, laneTop(lane), VIEW_W - x, CELL_H);
   }
-  g.beginPath();
-  g.moveTo(x, BOARD_Y);
-  g.lineTo(x, BOARD_Y + BOARD_H);
-  outline(g);
+  const shade = g.createLinearGradient(x, 0, VIEW_W, 0);
+  shade.addColorStop(0, 'rgba(23,32,63,0)');
+  shade.addColorStop(1, 'rgba(23,32,63,.35)');
+  g.fillStyle = shade;
+  g.fillRect(x, BOARD_Y, VIEW_W - x, BOARD_H);
 }
 
 // ───────────────────────────── entry point ─────────────────────────────
@@ -707,12 +665,11 @@ export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: st
   g.fillRect(40, BOARD_Y, BOARD_X - 40, BOARD_H);
   facade(g, pal);
   for (let lane = 0; lane < ROWS; lane++) {
-    // A low plinth under each piece.
-    g.beginPath();
-    g.ellipse(128, laneTop(lane) + CELL_H - 12, 42, 9, 0, 0, Math.PI * 2);
-    g.fillStyle = pal.steps[2];
-    g.fill();
-    box(g, 8, laneTop(lane) + 22, 24, CELL_H - 44, pal.door, [12, 12, 2, 2]);
+    // A strip between the rows, so that each piece sits in its own row.
+    if (lane > 0) {
+      g.fillStyle = pal.steps[2];
+      g.fillRect(96, laneTop(lane) - 2, BOARD_X - 96, 4);
+    }
   }
   g.beginPath();
   g.moveTo(40, BOARD_Y);

@@ -1132,18 +1132,29 @@ kbd {
   border: 2px dashed var(--gauche);
   border-radius: 8px;
 }
+/* The other figures of the camp: cards of one size, side by side. */
+.figure-others h2 {
+  margin-bottom: 1.5rem;
+}
 .figure-others__list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
-  gap: 0.8rem;
-  margin: 1rem 0 0;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
+.figure-others__list li {
+  display: flex;
+}
 .figure-others__list a {
   display: grid;
+  flex: 1;
+  grid-template-rows: auto 1fr;
   justify-items: center;
-  gap: 0.3rem;
+  align-items: start;
+  gap: 0.5rem;
+  text-align: center;
   padding: 0.6rem;
   border: var(--border);
   border-radius: var(--radius);
@@ -1152,9 +1163,12 @@ kbd {
   text-align: center;
   text-decoration: none;
 }
-.figure-others__list svg {
-  width: 4.5rem;
-  height: auto;
+.figure-others__list .puppet {
+  width: 7.5rem;
+}
+/* Room between the stats and the camp's trump card under them. */
+.figure-page__body .stats + .trump {
+  margin-top: 1.5rem;
 }
 .night-page {
   display: grid;

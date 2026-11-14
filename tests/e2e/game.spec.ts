@@ -63,7 +63,7 @@ test('placing with the mouse spends votes and reports errors', async ({ page }) 
   // (The card is aria-disabled but stays clickable on purpose, hence `force`.)
   await page.locator('.card[data-unit="sarkozy"]').click({ force: true });
   await page.locator('[data-cell]').nth(2 * 9 + 0).click();
-  await expect(page.locator('[data-slot="alert"]')).toHaveText('Not enough votes.');
+  await expect(page.locator('[data-slot="alert"]')).toHaveText('Not enough votes');
   expect(await page.evaluate(() => window.__P2027__.state()!.units.length)).toBe(1);
 });
 

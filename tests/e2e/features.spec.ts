@@ -50,7 +50,7 @@ test('the calendar says who turns up each night, guests included', async ({ page
   await expect(firstRound.getByText('Squeezie')).toBeHidden();
   await expect(page.locator('[data-level="3"] .level-card__cast')).toContainText('Xavier Niel');
   // And what the crowd is after.
-  await expect(page.locator('[data-level="2"] .level-card__goal')).toContainText('Les subventions de la PAC');
+  await expect(page.locator('[data-level="2"] .level-card__goal')).toContainText('Les subventions agricoles');
 });
 
 test('hard mode is a choice on the calendar, remembered and applied to the match', async ({ page }) => {

@@ -48,7 +48,7 @@ const fr: PageStrings = {
     guest: 'Invité',
     boss: 'Boss de fin de soirée',
     photo: 'Photo :',
-    photoNote: '(Wikimedia Commons, recadrée et détourée).',
+    photoNote: '(Wikimedia Commons, recadrée et détourée)',
     unlocked: 'Jouable dès la soirée « {night} »',
     guestOf: 'Apparaît lors de : {nights}',
     onlyAgainst: 'seulement face à {camp}',
@@ -62,7 +62,7 @@ const fr: PageStrings = {
     trump: 'Atout du camp',
     others: 'Les autres figures',
     play: 'Jouer avec {camp}',
-    satire: 'Caricature satirique d’une personnalité publique : le pouvoir et la plupart des répliques sont inventés pour rire.',
+    satire: 'Caricature satirique d’une personnalité publique : le pouvoir et la plupart des répliques sont inventés pour rire',
     legal: 'Satire et mentions légales',
   },
   night: {
@@ -77,7 +77,7 @@ const fr: PageStrings = {
     all: 'Toutes les soirées',
     sceneAlt: 'La soirée « {name} » en cours de partie',
     listTitle: 'Les soirées de la campagne',
-    listLead: 'Neuf soirées à thème, de la chasse aux parrainages au second tour en passant par le 17 octobre, puis la Cohabitation sans fin.',
+    listLead: 'Neuf soirées à thème, de la chasse aux parrainages au second tour en passant par le 17 octobre, puis la Cohabitation sans fin',
   },
 };
 
@@ -88,7 +88,7 @@ const en: PageStrings = {
     guest: 'Guest',
     boss: 'End-of-night boss',
     photo: 'Photo:',
-    photoNote: '(Wikimedia Commons, cropped and cut out).',
+    photoNote: '(Wikimedia Commons, cropped and cut out)',
     unlocked: 'Playable from the night "{night}"',
     guestOf: 'Turns up on: {nights}',
     onlyAgainst: 'only against {camp}',
@@ -102,7 +102,7 @@ const en: PageStrings = {
     trump: "Camp's trump card",
     others: 'The other figures',
     play: 'Play with {camp}',
-    satire: 'A satirical caricature of a public figure: the power and most of the lines are made up for laughs.',
+    satire: 'A satirical caricature of a public figure: the power and most of the lines are made up for laughs',
     legal: 'Satire and legal notice',
   },
   night: {
@@ -117,7 +117,7 @@ const en: PageStrings = {
     all: 'Every night',
     sceneAlt: 'The night "{name}" during a match',
     listTitle: 'The campaign nights',
-    listLead: 'Nine themed nights, from the hunt for endorsements to the run-off by way of 17 October, then the endless Cohabitation.',
+    listLead: 'Nine themed nights, from the hunt for endorsements to the run-off by way of 17 October, then the endless Cohabitation',
   },
 };
 

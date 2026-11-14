@@ -136,7 +136,7 @@ const jsonLd = [
             {photos.map((c, i) => (
               <>
                 {i > 0 && ' · '}
-                <a href={c.source} rel="noopener">{c.author}</a>, {c.license}
+                <a href={c.source} target="_blank" rel="noopener noreferrer">{c.author}</a>, {c.license}
               </>
             ))}
             {' '}{p.photoNote}
@@ -154,7 +154,7 @@ const jsonLd = [
           {others.map((o) => (
             <li>
               <a href={figurePath(lang, o)}>
-                <Puppet id={o} uid={`other-${o}`} size={72} />
+                <Puppet id={o} uid={`other-${o}`} size={120} />
                 <span>{g.figures[o].name}</span>
               </a>
             </li>

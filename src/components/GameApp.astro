@@ -229,8 +229,10 @@ function castOf(id: number) {
           </div>
         </div>
         <div class="hud__sys">
-          <button type="button" class="icon-btn icon-btn--speed" data-action="speed" aria-pressed="false" aria-keyshortcuts="F" aria-label={`${t.ui.speed} ×1 (${t.ui.speedNormal})`} title={`${t.ui.speed} ×1 (${t.ui.speedNormal})`}>
-            <Icon name="fast" />
+          <button type="button" class="icon-btn icon-btn--speed" data-action="speed" data-speed="1" aria-pressed="false" aria-keyshortcuts="F" aria-label={`${t.ui.speed} ×1 (${t.ui.speedNormal})`} title={`${t.ui.speed} ×1 (${t.ui.speedNormal})`}>
+            <span data-speed-icon="0.5"><Icon name="slow" /></span>
+            <span data-speed-icon="1"><Icon name="play" /></span>
+            <span data-speed-icon="2"><Icon name="fast" /></span>
             <span class="speed-badge" data-slot="speed-badge" aria-hidden="true">×1</span>
           </button>
           <button type="button" class="icon-btn" data-action="mute" aria-pressed="false" aria-keyshortcuts="M" aria-label={t.ui.soundOn} title={t.ui.soundOn}>

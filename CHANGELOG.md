@@ -12,6 +12,20 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [3.0.1] — 2026-11-14
+
+Clearer faces, clearer bodies, clearer nights. Saves are untouched.
+
+### Changed
+
+- **Every head re-cut.** The cutter now separates the head from its background with GrabCut (two colour models and a minimum cut) instead of a colour flood: whole faces, hair included, a smooth outline and a thinner ink line. Three photos were replaced by sharper, front-facing ones (François Hollande, Dominique de Villepin, Xavier Niel). Heads are drawn bigger on the puppets.
+- **One body for everybody, and the tie tells the role.** Every named figure wears the same dark suit; the colour of the tie is the family of the card — **yellow** for votes, **red** for attack, **purple** for effect, **blue** for defence. Guests come without a tie. The caricature bodies and their props (scarf, fist, cat, umbrella…) are gone.
+- **The goal says what it is.** Each piece at the end of the lanes is now a card with a plain icon and its name written under it (PARRAINAGES, SUBVENTIONS, PORTABLES, COURSES, MICROS…). "PAC" is now "farm subsidies".
+- **Nothing odd on the right of the board**: the fences, rails and barriers where the crowd comes in are gone (the floor simply fades out), as are the little doors at the far left. The hopscotch of the school yard is gone; the street's shops have signs (bakery, chemist, tobacconist…); the studio screens show a "DIRECT" tag. The sign bearer's sign says "NON".
+- **The speed button shows the speed**: ▷ slow, ▶ normal, ▶▶ fast.
+- **No full stop at the end of sentences** across the site and the game (the legal pages keep theirs).
+- Figure pages: links to photos open in a new tab; more room between the stats and the camp's trump card; "The other figures" cards are all the same size, with bigger puppets and room under the title.
+
 ## [3.0.0] — 2026-11-14
 
 Real faces, boss fights and nine themed nights. A smaller cast that everybody knows, ballots instead of endorsements, and a goal you can see at the end of every lane. The save format changes (version 4): older saves are converted, and every night keeps its stars.

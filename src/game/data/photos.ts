@@ -215,11 +215,11 @@ export const CREDITS: PhotoCredit[] = [
   {
     "id": "niel",
     "expression": "neutral",
-    "title": "Xavier Niel, FreeIliad.jpg",
+    "title": "Université d'été du MEDEF 2009, Campus HEC - Jouy-en-Josas.jpg",
     "author": "Rodrigo SEPÚLVEDA SCHULZ",
     "license": "CC BY-SA 2.0",
     "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Xavier_Niel,_FreeIliad.jpg"
+    "source": "https://commons.wikimedia.org/wiki/File:Universit%C3%A9_d%27%C3%A9t%C3%A9_du_MEDEF_2009,_Campus_HEC_-_Jouy-en-Josas.jpg"
   },
   {
     "id": "niel",
@@ -278,11 +278,11 @@ export const CREDITS: PhotoCredit[] = [
   {
     "id": "hollande",
     "expression": "neutral",
-    "title": "François hollande 173638.jpg",
-    "author": "Protogonos69",
-    "license": "CC BY-SA 4.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Fran%C3%A7ois_hollande_173638.jpg"
+    "title": "François Hollande par Claude Truong-Ngoc 26 avril 2015.jpg",
+    "author": "Claude Truong-Ngoc",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Fran%C3%A7ois_Hollande_par_Claude_Truong-Ngoc_26_avril_2015.jpg"
   },
   {
     "id": "bayrou",
@@ -386,11 +386,11 @@ export const CREDITS: PhotoCredit[] = [
   {
     "id": "villepin",
     "expression": "neutral",
-    "title": "Dominique de Villepin (2010).jpg",
-    "author": "Georges Seguin (Okki)",
-    "license": "CC BY-SA 3.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Dominique_de_Villepin_(2010).jpg"
+    "title": "Launch Republique Solidaire 2010-06-19 n05.jpg",
+    "author": "Marie-Lan Nguyen",
+    "license": "CC BY 2.5",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
+    "source": "https://commons.wikimedia.org/wiki/File:Launch_Republique_Solidaire_2010-06-19_n05.jpg"
   },
   {
     "id": "bmacron",

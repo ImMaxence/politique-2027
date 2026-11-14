@@ -9,7 +9,6 @@
    0.86,
    0.75
   ],
-  "tol": 30,
   "author": "VOX España",
   "license": "Public domain",
   "licenseUrl": "",
@@ -25,7 +24,6 @@
    0.71,
    0.47
   ],
-  "tol": 40,
   "author": "Elekes Andor",
   "license": "CC BY 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
@@ -41,7 +39,6 @@
    0.85,
    0.6
   ],
-  "tol": 35,
   "author": "Vox España",
   "license": "CC0",
   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
@@ -57,7 +54,6 @@
    0.78,
    0.58
   ],
-  "tol": 30,
   "author": "jlm2017.fr",
   "license": "CC BY 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
@@ -73,7 +69,6 @@
    0.73,
    0.6
   ],
-  "tol": 30,
   "author": "jlm2017.fr",
   "license": "CC BY 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
@@ -89,7 +84,6 @@
    0.74,
    0.6
   ],
-  "tol": 35,
   "author": "jlm2017.fr",
   "license": "CC BY 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
@@ -105,7 +99,6 @@
    0.75,
    0.6
   ],
-  "tol": 35,
   "author": "European Commission",
   "license": "CC BY 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
@@ -121,13 +114,10 @@
    0.84,
    0.66
   ],
-  "tol": 18,
-  "ry": 0.96,
   "author": "Alexandros Michaildis / European Council",
   "license": "Attribution",
   "licenseUrl": "",
-  "source": "https://commons.wikimedia.org/wiki/File:Macron_Alden-Biesen_2026_(cropped).jpg",
-  "grad": 25
+  "source": "https://commons.wikimedia.org/wiki/File:Macron_Alden-Biesen_2026_(cropped).jpg"
  },
  {
   "id": "macron",
@@ -139,7 +129,6 @@
    0.83,
    0.66
   ],
-  "tol": 30,
   "author": "Belgian Presidency of the Council of the EU 2024 from Belgium",
   "license": "CC BY 2.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
@@ -155,7 +144,6 @@
    0.8,
    0.6
   ],
-  "tol": 35,
   "author": "Gage Skidmore from Surprise, AZ, United States of America",
   "license": "CC BY-SA 2.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
@@ -171,11 +159,12 @@
    0.86,
    0.66
   ],
-  "tol": 35,
   "author": "Gage Skidmore from Surprise, AZ, United States of America",
   "license": "CC BY-SA 2.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
-  "source": "https://commons.wikimedia.org/wiki/File:Donald_Trump_(53067668020)_(cropped).jpg"
+  "source": "https://commons.wikimedia.org/wiki/File:Donald_Trump_(53067668020)_(cropped).jpg",
+  "ry": 1,
+  "dy": 0.02
  },
  {
   "id": "trump",
@@ -187,28 +176,25 @@
    0.85,
    0.7
   ],
-  "tol": 10,
   "author": "The White House",
   "license": "Public domain",
   "licenseUrl": "",
-  "source": "https://commons.wikimedia.org/wiki/File:President_Donald_Trump_participates_in_a_bilateral_meeting_with_Crown_Prince_and_Prime_Minister_Mohammed_bin_Salman_Al_Saud_of_Saudi_Arabia,_Tuesday,_November_18,_2025_52_ite_24_(cropped).jpg",
-  "grad": 20
+  "source": "https://commons.wikimedia.org/wiki/File:President_Donald_Trump_participates_in_a_bilateral_meeting_with_Crown_Prince_and_Prime_Minister_Mohammed_bin_Salman_Al_Saud_of_Saudi_Arabia,_Tuesday,_November_18,_2025_52_ite_24_(cropped).jpg"
  },
  {
   "id": "niel",
   "expr": "neutral",
-  "file": "File:Xavier Niel, FreeIliad.jpg",
+  "file": "File:Université d'été du MEDEF 2009, Campus HEC - Jouy-en-Josas.jpg",
   "box": [
-   0.33,
-   0,
-   0.86,
-   0.86
+   0.28,
+   0.13,
+   0.8,
+   0.6
   ],
-  "tol": 0,
   "author": "Rodrigo SEPÚLVEDA SCHULZ",
   "license": "CC BY-SA 2.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
-  "source": "https://commons.wikimedia.org/wiki/File:Xavier_Niel,_FreeIliad.jpg"
+  "source": "https://commons.wikimedia.org/wiki/File:Universit%C3%A9_d%27%C3%A9t%C3%A9_du_MEDEF_2009,_Campus_HEC_-_Jouy-en-Josas.jpg"
  },
  {
   "id": "niel",
@@ -220,7 +206,6 @@
    0.84,
    0.78
   ],
-  "tol": 30,
   "author": "Olivier Ezratty",
   "license": "CC BY-SA 3.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
@@ -236,7 +221,6 @@
    0.62,
    0.66
   ],
-  "tol": 30,
   "author": "Nicolas Richoffer",
   "license": "CC BY-SA 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
@@ -252,7 +236,6 @@
    0.8,
    0.6
   ],
-  "tol": 30,
   "author": "Librairie Mollat",
   "license": "CC BY-SA 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
@@ -268,12 +251,12 @@
    0.86,
    0.66
   ],
-  "tol": 14,
   "author": "Georges Biard",
   "license": "CC BY-SA 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
   "source": "https://commons.wikimedia.org/wiki/File:SEGOLENE_ROYAL_DEAUVILLE_2020_2_(cropped).jpg",
-  "grad": 22
+  "core": 1.45,
+  "coreY": -0.25
  },
  {
   "id": "ruffin",
@@ -285,7 +268,6 @@
    0.76,
    0.62
   ],
-  "tol": 30,
   "author": "Thinkerview",
   "license": "CC BY-SA 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
@@ -301,7 +283,6 @@
    0.7,
    0.5
   ],
-  "tol": 25,
   "author": "BootEXE",
   "license": "CC BY-SA 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
@@ -310,19 +291,17 @@
  {
   "id": "hollande",
   "expr": "neutral",
-  "file": "File:François hollande 173638.jpg",
+  "file": "File:François Hollande par Claude Truong-Ngoc 26 avril 2015.jpg",
   "box": [
-   0.5,
-   0.06,
-   0.84,
-   0.42
+   0.29,
+   0.09,
+   0.76,
+   0.47
   ],
-  "tol": 22,
-  "author": "Protogonos69",
-  "license": "CC BY-SA 4.0",
-  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-  "source": "https://commons.wikimedia.org/wiki/File:Fran%C3%A7ois_hollande_173638.jpg",
-  "grad": 30
+  "author": "Claude Truong-Ngoc",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Fran%C3%A7ois_Hollande_par_Claude_Truong-Ngoc_26_avril_2015.jpg"
  },
  {
   "id": "bayrou",
@@ -334,7 +313,6 @@
    0.8,
    0.57
   ],
-  "tol": 30,
   "author": "Nicolas Kovarik - European Commission",
   "license": "CC BY 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
@@ -350,7 +328,6 @@
    0.76,
    0.57
   ],
-  "tol": 25,
   "author": "Stenbocki maja",
   "license": "CC BY 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
@@ -366,7 +343,6 @@
    0.82,
    0.64
   ],
-  "tol": 25,
   "author": "Wasasaq8",
   "license": "CC0",
   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
@@ -382,7 +358,6 @@
    0.79,
    0.55
   ],
-  "tol": 20,
   "author": "Benoît Granier",
   "license": "Licence Ouverte",
   "licenseUrl": "https://www.etalab.gouv.fr/licence-ouverte-open-licence",
@@ -398,7 +373,6 @@
    0.76,
    0.53
   ],
-  "tol": 30,
   "author": "首相官邸",
   "license": "CC BY 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
@@ -414,7 +388,6 @@
    0.82,
    0.6
   ],
-  "tol": 30,
   "author": "© European Union, 1998 – 2025",
   "license": "Attribution",
   "licenseUrl": "",
@@ -430,11 +403,11 @@
    0.96,
    0.88
   ],
-  "tol": 20,
   "author": "Anh De France",
   "license": "CC0",
   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-  "source": "https://commons.wikimedia.org/wiki/File:Portrait_d%27%C3%89ric_Zemmour,_avril_2022_(cropped).jpg"
+  "source": "https://commons.wikimedia.org/wiki/File:Portrait_d%27%C3%89ric_Zemmour,_avril_2022_(cropped).jpg",
+  "rx": 0.92
  },
  {
   "id": "squeezie",
@@ -446,7 +419,6 @@
    0.72,
    0.58
   ],
-  "tol": 25,
   "author": "Zack Nani",
   "license": "CC BY-SA 3.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
@@ -462,7 +434,6 @@
    0.74,
    0.6
   ],
-  "tol": 25,
   "author": "Julien Potié",
   "license": "CC BY-SA 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
@@ -476,14 +447,14 @@
    0.22,
    0.07,
    0.78,
-   0.66
+   0.71
   ],
-  "tol": 12,
   "author": "Nikeush",
   "license": "CC BY-SA 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
   "source": "https://commons.wikimedia.org/wiki/File:%C3%89lise_Lucet_2010_(cropped).jpg",
-  "grad": 20
+  "core": 1.35,
+  "coreY": -0.22
  },
  {
   "id": "poutou",
@@ -495,44 +466,43 @@
    0.83,
    0.66
   ],
-  "tol": 10,
   "author": "Patrice CALATAYU from Bordeaux, France",
   "license": "CC BY-SA 2.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
   "source": "https://commons.wikimedia.org/wiki/File:Philippe_Poutou_-_Gilets_jaunes_(2019).jpg",
-  "grad": 18
+  "rx": 1.16
  },
  {
   "id": "villepin",
   "expr": "neutral",
-  "file": "File:Dominique de Villepin (2010).jpg",
+  "file": "File:Launch Republique Solidaire 2010-06-19 n05.jpg",
   "box": [
    0.17,
-   0.01,
-   0.92,
-   0.78
+   0.02,
+   0.88,
+   0.58
   ],
-  "tol": 25,
-  "author": "Georges Seguin (Okki)",
-  "license": "CC BY-SA 3.0",
-  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
-  "source": "https://commons.wikimedia.org/wiki/File:Dominique_de_Villepin_(2010).jpg"
+  "author": "Marie-Lan Nguyen",
+  "license": "CC BY 2.5",
+  "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
+  "source": "https://commons.wikimedia.org/wiki/File:Launch_Republique_Solidaire_2010-06-19_n05.jpg"
  },
  {
   "id": "bmacron",
   "expr": "neutral",
   "file": "File:Brigitte Macron - June 2025.png",
   "box": [
-   0.08,
-   0.08,
-   0.92,
-   0.72
+   0.15,
+   0.1,
+   0.85,
+   0.66
   ],
-  "tol": 30,
   "author": "European Commission",
   "license": "CC BY 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
-  "source": "https://commons.wikimedia.org/wiki/File:Brigitte_Macron_-_June_2025.png"
+  "source": "https://commons.wikimedia.org/wiki/File:Brigitte_Macron_-_June_2025.png",
+  "core": 1.35,
+  "coreY": -0.15
  },
  {
   "id": "lassalle",
@@ -544,7 +514,6 @@
    0.85,
    0.56
   ],
-  "tol": 30,
   "author": "Antoine Lamielle",
   "license": "CC BY-SA 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",

@@ -1,16 +1,22 @@
 /**
  * Cuts the photo heads out of freely licensed pictures from Wikimedia Commons.
  *
- *   npm run heads            rebuild every head listed in scripts/heads.json
- *   npm run heads -- macron  rebuild one figure (or "macron-angry")
- *   npm run heads -- --review   also write .cache/heads/review.jpg (all heads on one sheet)
+ *   npm run heads                 rebuild every head listed in scripts/heads.json
+ *   npm run heads -- macron       rebuild one figure (or "macron-angry")
+ *   npm run heads -- --review     also write .cache/heads/review.jpg (the heads on one sheet)
  *
  * For each entry: download the picture (a 960 px rendition, cached in .cache/heads),
- * crop an oval around the head (`box` = left, top, right and chin as fractions of the
- * picture), remove a plain background by flooding in from the edge of the oval
- * (`tol` = colour tolerance, 0 to keep the oval as is; `grad` = edges the flood may
- * not cross), keep the biggest blob, and draw an ink outline around it. The white
- * sticker edge is added by the SVG filter of the puppet (see portraits.ts).
+ * crop around the head (`box` = left, top, right and chin as fractions of the picture),
+ * and separate the head from the background with GrabCut: two colour models (head and
+ * background, Gaussian mixtures) and a minimum cut over the pixel graph, refined a few
+ * times. The face's core is always kept and everything far from the head always goes,
+ * so that the whole face stays visible. The outline is then smoothed, so that the cut
+ * looks like scissors went round it, and given a thin ink line. The white sticker edge
+ * is added by the SVG filter of the puppet (see portraits.ts).
+ *
+ * Optional per-entry tweaks: `rx`/`ry` widen or narrow the head oval (default 1.08 / 1.1),
+ * `dx`/`dy` move it (fractions of the crop), `neck` lowers the cut under the chin,
+ * `core`/`coreY` enlarge or move the part that is always kept (hair the colour of the wall).
  *
  * Outputs public/heads/<id>-<expression>.webp (committed: the build never needs the
  * network) and src/game/data/photos.ts (which faces exist, and the credits shown in
@@ -28,15 +34,14 @@ interface Entry {
   expr: 'neutral' | 'angry' | 'hurt';
   file: string;
   box: [number, number, number, number];
-  tol?: number;
-  grad?: number;
   rx?: number;
   ry?: number;
   dx?: number;
   dy?: number;
-  side?: number;
-  sampleTo?: number;
-  floodBottom?: number;
+  neck?: number;
+  /** Size of the part that is always kept (1 = eyes, nose and mouth), and its vertical shift (negative: up, towards the hair). */
+  core?: number;
+  coreY?: number;
   author: string;
   license: string;
   licenseUrl: string;
@@ -49,11 +54,16 @@ const CACHE = path.join(ROOT, '.cache/heads');
 const OUT = path.join(ROOT, 'public/heads');
 const MANIFEST = path.join(ROOT, 'src/game/data/photos.ts');
 const UA = 'politique2027-asset-script/1.0';
-const OUT_W = 256;
-const OUT_H = 320;
-const PAD = 16;
+/** Size of the cut-out (without its padding); the output keeps the HEAD_BOX ratio of portraits.ts. */
+const OUT_W = 320;
+const OUT_H = 400;
+const PAD = 20;
+/** Share of the width taken by the head, ear to ear. */
+const HEAD_SHARE = 0.72;
 const INK = [23, 32, 63];
-const INK_R = 6.5;
+const INK_R = 3.5;
+/** GrabCut works on a half-size copy (fast enough, and the outline is smoothed anyway). */
+const WORK = 2;
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -85,6 +95,8 @@ async function download(title: string): Promise<string> {
   await fs.writeFile(file, buffer);
   return file;
 }
+
+// ───────────────────────────── geometry helpers ─────────────────────────────
 
 /** Squared Euclidean distance to the nearest set pixel (Felzenszwalb & Huttenlocher). */
 function edt(mask: ArrayLike<number>, w: number, h: number): Float64Array {
@@ -125,6 +137,359 @@ function edt(mask: ArrayLike<number>, w: number, h: number): Float64Array {
   return grid;
 }
 
+/** Keeps the biggest blob and fills its holes (eyes, teeth or glasses the cut may have missed). */
+function cleanBlob(mask: Uint8Array, w: number, h: number): void {
+  const label = new Int32Array(w * h);
+  let best = 0;
+  let bestSize = 0;
+  let n = 0;
+  const flood = (start: number, value: number, wanted: number, out: Int32Array): number => {
+    let size = 0;
+    const stack = [start];
+    out[start] = value;
+    while (stack.length) {
+      const p = stack.pop()!;
+      size++;
+      const x = p % w;
+      for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, p - w, p + w]) {
+        if (q >= 0 && q < w * h && mask[q] === wanted && !out[q]) {
+          out[q] = value;
+          stack.push(q);
+        }
+      }
+    }
+    return size;
+  };
+  for (let p = 0; p < w * h; p++) {
+    if (!mask[p] || label[p]) continue;
+    const size = flood(p, ++n, 1, label);
+    if (size > bestSize) {
+      bestSize = size;
+      best = n;
+    }
+  }
+  for (let p = 0; p < w * h; p++) mask[p] = label[p] === best ? 1 : 0;
+  // Holes: background pixels that cannot reach the border.
+  const outside = new Int32Array(w * h);
+  for (let x = 0; x < w; x++) {
+    for (const p of [x, (h - 1) * w + x]) if (!mask[p] && !outside[p]) flood(p, 1, 0, outside);
+  }
+  for (let y = 0; y < h; y++) {
+    for (const p of [y * w, y * w + w - 1]) if (!mask[p] && !outside[p]) flood(p, 1, 0, outside);
+  }
+  for (let p = 0; p < w * h; p++) if (!mask[p] && !outside[p]) mask[p] = 1;
+}
+
+// ───────────────────────────── GrabCut ─────────────────────────────
+
+const K = 5;
+
+/** A Gaussian mixture over RGB colours (0…1). */
+interface Gmm {
+  weight: Float64Array;
+  mean: Float64Array;
+  inv: Float64Array;
+  logNorm: Float64Array;
+}
+
+function fitGmm(rgb: Float32Array, pixels: number[], comp: Uint8Array): Gmm {
+  const weight = new Float64Array(K);
+  const mean = new Float64Array(K * 3);
+  const cov = new Float64Array(K * 9);
+  const count = new Float64Array(K);
+  for (const p of pixels) {
+    const k = comp[p];
+    count[k]++;
+    for (let c = 0; c < 3; c++) mean[k * 3 + c] += rgb[p * 3 + c];
+  }
+  for (let k = 0; k < K; k++) for (let c = 0; c < 3; c++) mean[k * 3 + c] /= Math.max(1, count[k]);
+  for (const p of pixels) {
+    const k = comp[p];
+    const d0 = rgb[p * 3] - mean[k * 3];
+    const d1 = rgb[p * 3 + 1] - mean[k * 3 + 1];
+    const d2 = rgb[p * 3 + 2] - mean[k * 3 + 2];
+    const dv = [d0, d1, d2];
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) cov[k * 9 + i * 3 + j] += dv[i] * dv[j];
+  }
+  const inv = new Float64Array(K * 9);
+  const logNorm = new Float64Array(K);
+  for (let k = 0; k < K; k++) {
+    weight[k] = count[k] / Math.max(1, pixels.length);
+    const c = Array.from({ length: 9 }, (_, i) => cov[k * 9 + i] / Math.max(1, count[k]) + (i % 4 === 0 ? 1e-4 : 0));
+    const det = c[0] * (c[4] * c[8] - c[5] * c[7]) - c[1] * (c[3] * c[8] - c[5] * c[6]) + c[2] * (c[3] * c[7] - c[4] * c[6]);
+    const id = 1 / det;
+    const m = [
+      c[4] * c[8] - c[5] * c[7], c[2] * c[7] - c[1] * c[8], c[1] * c[5] - c[2] * c[4],
+      c[5] * c[6] - c[3] * c[8], c[0] * c[8] - c[2] * c[6], c[2] * c[3] - c[0] * c[5],
+      c[3] * c[7] - c[4] * c[6], c[1] * c[6] - c[0] * c[7], c[0] * c[4] - c[1] * c[3],
+    ];
+    for (let i = 0; i < 9; i++) inv[k * 9 + i] = m[i] * id;
+    logNorm[k] = weight[k] > 0 ? Math.log(weight[k]) - 0.5 * Math.log(Math.pow(2 * Math.PI, 3) * Math.max(det, 1e-30)) : -Infinity;
+  }
+  return { weight, mean, inv, logNorm };
+}
+
+/** Log-likelihood of a colour under each component (written into `out`), and of the whole mixture. */
+function logLikelihood(g: Gmm, rgb: Float32Array, p: number, out?: Float64Array): number {
+  let max = -Infinity;
+  const terms = out ?? new Float64Array(K);
+  for (let k = 0; k < K; k++) {
+    if (g.logNorm[k] === -Infinity) {
+      terms[k] = -Infinity;
+      continue;
+    }
+    const d0 = rgb[p * 3] - g.mean[k * 3];
+    const d1 = rgb[p * 3 + 1] - g.mean[k * 3 + 1];
+    const d2 = rgb[p * 3 + 2] - g.mean[k * 3 + 2];
+    const i = g.inv.subarray(k * 9, k * 9 + 9);
+    const q = d0 * (i[0] * d0 + i[1] * d1 + i[2] * d2) + d1 * (i[3] * d0 + i[4] * d1 + i[5] * d2) + d2 * (i[6] * d0 + i[7] * d1 + i[8] * d2);
+    terms[k] = g.logNorm[k] - 0.5 * q;
+    if (terms[k] > max) max = terms[k];
+  }
+  let sum = 0;
+  for (let k = 0; k < K; k++) if (terms[k] > -Infinity) sum += Math.exp(terms[k] - max);
+  return max + Math.log(sum);
+}
+
+/** k-means seeding of the components of one colour model. */
+function seedComponents(rgb: Float32Array, pixels: number[], comp: Uint8Array): void {
+  const step = Math.max(1, Math.floor(pixels.length / 4000));
+  const sample = pixels.filter((_, i) => i % step === 0);
+  const centers: number[][] = [];
+  for (let k = 0; k < K; k++) {
+    const p = sample[Math.floor(((k + 0.5) / K) * sample.length)];
+    centers.push([rgb[p * 3], rgb[p * 3 + 1], rgb[p * 3 + 2]]);
+  }
+  const nearest = (p: number) => {
+    let best = 0;
+    let bd = Infinity;
+    for (let k = 0; k < K; k++) {
+      const d = (rgb[p * 3] - centers[k][0]) ** 2 + (rgb[p * 3 + 1] - centers[k][1]) ** 2 + (rgb[p * 3 + 2] - centers[k][2]) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = k;
+      }
+    }
+    return best;
+  };
+  for (let it = 0; it < 10; it++) {
+    const sums = centers.map(() => [0, 0, 0, 0]);
+    for (const p of sample) {
+      const s = sums[nearest(p)];
+      s[0] += rgb[p * 3];
+      s[1] += rgb[p * 3 + 1];
+      s[2] += rgb[p * 3 + 2];
+      s[3]++;
+    }
+    sums.forEach((s, k) => {
+      if (s[3]) centers[k] = [s[0] / s[3], s[1] / s[3], s[2] / s[3]];
+    });
+  }
+  for (const p of pixels) comp[p] = nearest(p);
+}
+
+/** Maximum flow (Dinic) on a graph stored as arrays; returns the nodes on the source side of the minimum cut. */
+class FlowGraph {
+  head: Int32Array;
+  next: Int32Array;
+  to: Int32Array;
+  cap: Float64Array;
+  edges = 0;
+
+  constructor(private nodes: number, maxEdges: number) {
+    this.head = new Int32Array(nodes).fill(-1);
+    this.next = new Int32Array(maxEdges);
+    this.to = new Int32Array(maxEdges);
+    this.cap = new Float64Array(maxEdges);
+  }
+
+  /** u→v with capacity a, and v→u with capacity b. */
+  add(u: number, v: number, a: number, b: number): void {
+    const e = this.edges;
+    this.to[e] = v;
+    this.cap[e] = a;
+    this.next[e] = this.head[u];
+    this.head[u] = e;
+    this.to[e + 1] = u;
+    this.cap[e + 1] = b;
+    this.next[e + 1] = this.head[v];
+    this.head[v] = e + 1;
+    this.edges += 2;
+  }
+
+  sourceSide(s: number, t: number): Uint8Array {
+    const n = this.nodes;
+    const level = new Int32Array(n);
+    const it = new Int32Array(n);
+    const queue = new Int32Array(n);
+    const stack = new Int32Array(n);
+    const eps = 1e-9;
+    const bfs = (): boolean => {
+      level.fill(-1);
+      level[s] = 0;
+      let qh = 0;
+      let qt = 0;
+      queue[qt++] = s;
+      while (qh < qt) {
+        const u = queue[qh++];
+        for (let e = this.head[u]; e !== -1; e = this.next[e]) {
+          const v = this.to[e];
+          if (this.cap[e] > eps && level[v] < 0) {
+            level[v] = level[u] + 1;
+            queue[qt++] = v;
+          }
+        }
+      }
+      return level[t] >= 0;
+    };
+    while (bfs()) {
+      for (let u = 0; u < n; u++) it[u] = this.head[u];
+      // Iterative depth-first search for blocking flows.
+      let depth = 0;
+      let u = s;
+      for (;;) {
+        if (u === t) {
+          let push = Infinity;
+          for (let i = 0; i < depth; i++) push = Math.min(push, this.cap[stack[i]]);
+          let cut = depth;
+          for (let i = 0; i < depth; i++) {
+            const e = stack[i];
+            this.cap[e] -= push;
+            this.cap[e ^ 1] += push;
+            if (this.cap[e] <= eps && cut === depth) cut = i;
+          }
+          depth = cut;
+          u = depth === 0 ? s : this.to[stack[depth - 1]];
+          continue;
+        }
+        let e = it[u];
+        while (e !== -1 && !(this.cap[e] > eps && level[this.to[e]] === level[u] + 1)) e = this.next[e];
+        it[u] = e;
+        if (e !== -1) {
+          stack[depth++] = e;
+          u = this.to[e];
+        } else {
+          if (u === s) break;
+          level[u] = -1; // dead end
+          depth--;
+          u = depth === 0 ? s : this.to[stack[depth - 1]];
+          it[u] = this.next[it[u]];
+        }
+      }
+    }
+    // Source side of the cut: reachable through unsaturated edges.
+    const side = new Uint8Array(n);
+    let qh = 0;
+    let qt = 0;
+    queue[qt++] = s;
+    side[s] = 1;
+    while (qh < qt) {
+      const u = queue[qh++];
+      for (let e = this.head[u]; e !== -1; e = this.next[e]) {
+        const v = this.to[e];
+        if (this.cap[e] > eps && !side[v]) {
+          side[v] = 1;
+          queue[qt++] = v;
+        }
+      }
+    }
+    return side;
+  }
+}
+
+/**
+ * trimap: 0 surely background, 1 probably background, 2 probably head, 3 surely head.
+ * Returns 1 for the head.
+ */
+function grabCut(rgb: Float32Array, w: number, h: number, trimap: Uint8Array, rounds = 5): Uint8Array {
+  const n = w * h;
+  const fg = new Uint8Array(n);
+  for (let p = 0; p < n; p++) fg[p] = trimap[p] >= 2 ? 1 : 0;
+  // Smoothness: neighbours of similar colour want the same side.
+  // Each pixel with its right, lower and two lower diagonal neighbours: [p, q, distance, colour difference²].
+  const pairs: [number, number, number, number][] = [];
+  let sum = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const p = y * w + x;
+      const around: [number, number][] = [];
+      if (x + 1 < w) around.push([p + 1, 1]);
+      if (y + 1 < h) around.push([p + w, 1]);
+      if (x + 1 < w && y + 1 < h) around.push([p + w + 1, Math.SQRT2]);
+      if (x > 0 && y + 1 < h) around.push([p + w - 1, Math.SQRT2]);
+      for (const [q, dist] of around) {
+        const d = (rgb[p * 3] - rgb[q * 3]) ** 2 + (rgb[p * 3 + 1] - rgb[q * 3 + 1]) ** 2 + (rgb[p * 3 + 2] - rgb[q * 3 + 2]) ** 2;
+        sum += d;
+        pairs.push([p, q, dist, d]);
+      }
+    }
+  }
+  const beta = 1 / (2 * (sum / pairs.length) || 1);
+  const gamma = 50;
+  const smooth = pairs.map(([p, q, dist, d]) => [p, q, (gamma / dist) * Math.exp(-beta * d)] as [number, number, number]);
+  const SURE = 1e6;
+  const comp = new Uint8Array(n);
+  const terms = new Float64Array(K);
+  for (let round = 0; round < rounds; round++) {
+    const fgPx: number[] = [];
+    const bgPx: number[] = [];
+    for (let p = 0; p < n; p++) (fg[p] ? fgPx : bgPx).push(p);
+    if (!fgPx.length || !bgPx.length) break;
+    if (round === 0) {
+      seedComponents(rgb, fgPx, comp);
+      seedComponents(rgb, bgPx, comp);
+    }
+    let fgModel = fitGmm(rgb, fgPx, comp);
+    let bgModel = fitGmm(rgb, bgPx, comp);
+    // Each pixel joins its most likely component, then the models are refitted.
+    for (const p of fgPx) {
+      logLikelihood(fgModel, rgb, p, terms);
+      comp[p] = terms.indexOf(Math.max(...terms));
+    }
+    for (const p of bgPx) {
+      logLikelihood(bgModel, rgb, p, terms);
+      comp[p] = terms.indexOf(Math.max(...terms));
+    }
+    fgModel = fitGmm(rgb, fgPx, comp);
+    bgModel = fitGmm(rgb, bgPx, comp);
+
+    const graph = new FlowGraph(n + 2, smooth.length * 2 + n * 2);
+    const S = n;
+    const T = n + 1;
+    for (let p = 0; p < n; p++) {
+      let toS: number;
+      let toT: number;
+      if (trimap[p] === 3) {
+        toS = SURE;
+        toT = 0;
+      } else if (trimap[p] === 0) {
+        toS = 0;
+        toT = SURE;
+      } else {
+        toS = -logLikelihood(bgModel, rgb, p); // the cost of calling it background
+        toT = -logLikelihood(fgModel, rgb, p); // the cost of calling it head
+      }
+      const common = Math.min(toS, toT);
+      toS -= common;
+      toT -= common;
+      if (toS > 0) graph.add(S, p, toS, 0);
+      if (toT > 0) graph.add(p, T, toT, 0);
+    }
+    for (const [p, q, wgt] of smooth) graph.add(p, q, wgt, wgt);
+    const side = graph.sourceSide(S, T);
+    let changed = 0;
+    for (let p = 0; p < n; p++) {
+      const v = side[p];
+      if (v !== fg[p]) changed++;
+      fg[p] = v;
+    }
+    if (changed < n * 0.001) break;
+  }
+  return fg;
+}
+
+// ───────────────────────────── one head ─────────────────────────────
+
 /** Crop around the head, resized to OUT_W × OUT_H, as raw RGBA. */
 async function crop(src: string, entry: Entry): Promise<{ raw: Buffer; scale: number; hw: number; hh: number }> {
   const meta = await sharp(src).metadata();
@@ -133,7 +498,7 @@ async function crop(src: string, entry: Entry): Promise<{ raw: Buffer; scale: nu
   const [l, t, r, b] = entry.box;
   const hw = (r - l) * W;
   const hh = (b - t) * H;
-  const scale = (OUT_W * 0.8) / hw; // ear to ear fills 80% of the width
+  const scale = (OUT_W * HEAD_SHARE) / hw;
   const cropW = OUT_W / scale;
   const cropH = OUT_H / scale;
   const ext = Math.ceil(Math.max(cropW, cropH));
@@ -146,8 +511,8 @@ async function crop(src: string, entry: Entry): Promise<{ raw: Buffer; scale: nu
       height: Math.round(cropH),
     })
     .resize(OUT_W, OUT_H)
-    .modulate({ saturation: 1.08 })
-    .linear(1.04, -4)
+    .modulate({ saturation: 1.06 })
+    .linear(1.03, -3)
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -155,151 +520,64 @@ async function crop(src: string, entry: Entry): Promise<{ raw: Buffer; scale: nu
   return { raw: data, scale, hw, hh };
 }
 
-/** Pixels of the oval that are not background: a flood from the oval's edge through background-like colours. */
-function mask(raw: Buffer, entry: Entry, scale: number, hw: number, hh: number): Uint8Array {
-  const w = OUT_W;
-  const h = OUT_H;
-  const ecx = w / 2 + (entry.dx ?? 0) * w;
-  const ecy = h / 2 + (entry.dy ?? 0) * h;
-  const erx = ((hw * scale) / 2) * (entry.rx ?? 1.06);
-  const ery = ((hh * scale) / 2) * (entry.ry ?? 1.1);
-  const inside = new Uint8Array(w * h);
+/** The head's mask at full size (soft alpha, 0…255). */
+async function headMask(raw: Buffer, entry: Entry, scale: number, hw: number, hh: number): Promise<Buffer> {
+  const w = OUT_W / WORK;
+  const h = OUT_H / WORK;
+  const small = await sharp(raw, { raw: { width: OUT_W, height: OUT_H, channels: 4 } }).resize(w, h).removeAlpha().raw().toBuffer();
+  const rgb = new Float32Array(w * h * 3);
+  for (let i = 0; i < w * h * 3; i++) rgb[i] = small[i] / 255;
+  const alphaSmall = await sharp(raw, { raw: { width: OUT_W, height: OUT_H, channels: 4 } }).extractChannel(3).resize(w, h).raw().toBuffer();
+
+  // The head's oval, in work pixels.
+  const cx = w / 2 + (entry.dx ?? 0) * w;
+  const cy = h / 2 + (entry.dy ?? 0) * h;
+  const rx = ((hw * scale) / 2 / WORK) * (entry.rx ?? 1.08);
+  const ry = ((hh * scale) / 2 / WORK) * (entry.ry ?? 1.1);
+  const chin = cy + ((hh * scale) / 2 / WORK) * (1 + (entry.neck ?? 0.14));
+  const trimap = new Uint8Array(w * h);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      const nx = (x - ecx) / erx;
-      const ny = (y - ecy) / ery;
-      if (nx * nx + ny * ny <= 1 && raw[(y * w + x) * 4 + 3] > 0) inside[y * w + x] = 1;
+      const p = y * w + x;
+      const nx = (x - cx) / rx;
+      const ny = (y - cy) / ry;
+      const d = Math.sqrt(nx * nx + ny * ny);
+      // The face's core: eyes, nose and mouth always stay.
+      const fx = (x - cx) / (rx * 0.5 * (entry.core ?? 1));
+      const fy = (y - (cy + ry * (0.12 + (entry.coreY ?? 0)))) / (ry * 0.55 * (entry.core ?? 1));
+      if (alphaSmall[p] < 128 || d > 1.18 || y > chin) trimap[p] = 0;
+      else if (fx * fx + fy * fy <= 1) trimap[p] = 3;
+      else if (d <= 1) trimap[p] = 2;
+      else trimap[p] = 1;
     }
   }
-  const fg = new Uint8Array(inside);
-  const tol = entry.tol ?? 0;
-  if (tol > 0) {
-    // Background colours: the outer columns and the top band of the crop, outside the oval.
-    const samples: number[][] = [];
-    const side = entry.side ?? 0.1;
-    for (let y = 0; y < h * (entry.sampleTo ?? 0.5); y += 2) {
-      for (let x = 0; x < w; x += 2) {
-        const outer = x < w * side || x > w * (1 - side) || y < h * 0.05;
-        const i = (y * w + x) * 4;
-        if (outer && !inside[y * w + x] && raw[i + 3] > 0) samples.push([raw[i], raw[i + 1], raw[i + 2]]);
-      }
-    }
-    // k-means down to a handful of colours.
-    let centers = samples.filter((_, i) => i % Math.max(1, Math.floor(samples.length / 8)) === 0).slice(0, 8);
-    for (let it = 0; it < 8; it++) {
-      const sums = centers.map(() => [0, 0, 0, 0]);
-      for (const c of samples) {
-        let bi = 0;
-        let bd = Infinity;
-        centers.forEach((k, j) => {
-          const dd = (c[0] - k[0]) ** 2 + (c[1] - k[1]) ** 2 + (c[2] - k[2]) ** 2;
-          if (dd < bd) {
-            bd = dd;
-            bi = j;
-          }
-        });
-        const sm = sums[bi];
-        sm[0] += c[0];
-        sm[1] += c[1];
-        sm[2] += c[2];
-        sm[3]++;
-      }
-      centers = sums.filter((sm) => sm[3] > samples.length * 0.03).map((sm) => [sm[0] / sm[3], sm[1] / sm[3], sm[2] / sm[3]]);
-    }
-    // The flood stops at sharp edges (hair against a wall of the same colour).
-    const lum = new Float32Array(w * h);
-    for (let p = 0; p < w * h; p++) lum[p] = raw[p * 4] * 0.3 + raw[p * 4 + 1] * 0.59 + raw[p * 4 + 2] * 0.11;
-    const grad = new Float32Array(w * h);
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        const p = y * w + x;
-        const gx = lum[p + 1 - w] + 2 * lum[p + 1] + lum[p + 1 + w] - lum[p - 1 - w] - 2 * lum[p - 1] - lum[p - 1 + w];
-        const gy = lum[p + w - 1] + 2 * lum[p + w] + lum[p + w + 1] - lum[p - w - 1] - 2 * lum[p - w] - lum[p - w + 1];
-        grad[p] = Math.sqrt(gx * gx + gy * gy) / 4;
-      }
-    }
-    const gradTol = entry.grad ?? 40;
-    const near = (p: number) => {
-      if (grad[p] > gradTol) return false;
-      const i = p * 4;
-      let best = Infinity;
-      for (const [r2, g2, b2] of centers) best = Math.min(best, (raw[i] - r2) ** 2 + (raw[i + 1] - g2) ** 2 + (raw[i + 2] - b2) ** 2);
-      return Math.sqrt(best) < tol;
-    };
-    const bottom = h * (entry.floodBottom ?? 0.7);
-    const seen = new Uint8Array(w * h);
-    const queue: number[] = [];
-    for (let y = 0; y < bottom; y++) {
-      for (let x = 0; x < w; x++) {
-        const p = y * w + x;
-        if (!inside[p]) continue;
-        const edge = !inside[p - 1] || !inside[p + 1] || !inside[p - w] || !inside[p + w];
-        if (edge && near(p)) {
-          seen[p] = 1;
-          queue.push(p);
-        }
-      }
-    }
-    while (queue.length) {
-      const p = queue.pop()!;
-      fg[p] = 0;
-      for (const q of [p - 1, p + 1, p - w, p + w]) {
-        if (q < 0 || q >= w * h || seen[q] || !inside[q] || Math.floor(q / w) > bottom + 20) continue;
-        seen[q] = 1;
-        if (near(q)) queue.push(q);
-      }
-    }
-    // Opening (radius 2): drop thin leftovers of background.
-    const dOut = edt(fg.map((v) => (v ? 0 : 1)), w, h);
-    for (let p = 0; p < w * h; p++) if (fg[p] && dOut[p] <= 4) fg[p] = 0;
-    const dIn = edt(fg, w, h);
-    for (let p = 0; p < w * h; p++) if (dIn[p] <= 4 && inside[p]) fg[p] = 1;
-  }
-  // Keep the biggest blob only.
-  const label = new Int32Array(w * h);
-  let best = 0;
-  let bestSize = 0;
-  let n = 0;
-  for (let p0 = 0; p0 < w * h; p0++) {
-    if (!fg[p0] || label[p0]) continue;
-    n++;
-    let size = 0;
-    const stack = [p0];
-    label[p0] = n;
-    while (stack.length) {
-      const p = stack.pop()!;
-      size++;
-      for (const q of [p - 1, p + 1, p - w, p + w]) {
-        if (q >= 0 && q < w * h && fg[q] && !label[q]) {
-          label[q] = n;
-          stack.push(q);
-        }
-      }
-    }
-    if (size > bestSize) {
-      bestSize = size;
-      best = n;
-    }
-  }
-  for (let p = 0; p < w * h; p++) if (fg[p] && label[p] !== best) fg[p] = 0;
-  return fg;
+  const cut = grabCut(rgb, w, h, trimap);
+  cleanBlob(cut, w, h);
+
+  // Back to full size, with a smooth outline: blur the mask and cut it again at half height.
+  const up = await sharp(Buffer.from(cut.map((v) => v * 255)), { raw: { width: w, height: h, channels: 1 } })
+    .resize(OUT_W, OUT_H, { kernel: 'cubic' })
+    .blur(3.2)
+    .extractChannel(0)
+    .raw()
+    .toBuffer();
+  const hard = Buffer.alloc(OUT_W * OUT_H);
+  for (let i = 0; i < hard.length; i++) hard[i] = up[i] >= 128 ? 255 : 0;
+  // A soft edge one pixel wide.
+  return sharp(hard, { raw: { width: OUT_W, height: OUT_H, channels: 1 } }).blur(0.7).extractChannel(0).raw().toBuffer();
 }
 
 async function cut(entry: Entry): Promise<string> {
   const src = await download(entry.file);
   const { raw, scale, hw, hh } = await crop(src, entry);
-  const fg = mask(raw, entry, scale, hw, hh);
+  const soft = await headMask(raw, entry, scale, hw, hh);
   const w = OUT_W;
   const h = OUT_H;
-  const alpha = Buffer.alloc(w * h);
-  for (let p = 0; p < w * h; p++) alpha[p] = fg[p] ? 255 : 0;
-  const soft = await sharp(alpha, { raw: { width: w, height: h, channels: 1 } }).blur(0.8).extractChannel(0).raw().toBuffer();
-
-  // Ink outline around the cut-out, then the photo.
+  // Ink line around the cut-out, then the photo.
   const OW = w + PAD * 2;
   const OH = h + PAD * 2;
   const solid = new Uint8Array(OW * OH);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (soft[y * w + x] > 110) solid[(y + PAD) * OW + x + PAD] = 1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (soft[y * w + x] > 127) solid[(y + PAD) * OW + x + PAD] = 1;
   const dist = edt(solid, OW, OH);
   const out = Buffer.alloc(OW * OH * 4);
   for (let y = 0; y < OH; y++) {
@@ -332,7 +610,7 @@ async function cut(entry: Entry): Promise<string> {
   }
   await fs.mkdir(OUT, { recursive: true });
   const file = path.join(OUT, `${entry.id}-${entry.expr}.webp`);
-  await sharp(out, { raw: { width: OW, height: OH, channels: 4 } }).webp({ quality: 82, alphaQuality: 90, effort: 6 }).toFile(file);
+  await sharp(out, { raw: { width: OW, height: OH, channels: 4 } }).webp({ quality: 84, alphaQuality: 95, effort: 6 }).toFile(file);
   return file;
 }
 
@@ -367,14 +645,15 @@ export const CREDITS: PhotoCredit[] = ${JSON.stringify(credits, null, 2)};
 
 const args = process.argv.slice(2);
 const review = args.includes('--review');
-const only = args.find((a) => !a.startsWith('--'));
+const only = args.filter((a) => !a.startsWith('--'));
 const all = JSON.parse(await fs.readFile(CONFIG, 'utf8')) as Entry[];
-const todo = all.filter((e) => !only || e.id === only || `${e.id}-${e.expr}` === only);
+const todo = all.filter((e) => !only.length || only.includes(e.id) || only.includes(`${e.id}-${e.expr}`));
 const made: { entry: Entry; file: string }[] = [];
 for (const entry of todo) {
   try {
+    const started = Date.now();
     made.push({ entry, file: await cut(entry) });
-    console.log('ok', entry.id, entry.expr);
+    console.log('ok', entry.id, entry.expr, `${Date.now() - started} ms`);
   } catch (error) {
     console.error('FAILED', entry.id, entry.expr, (error as Error).message);
     process.exitCode = 1;
@@ -383,13 +662,13 @@ for (const entry of todo) {
 await writeManifest(all);
 
 if (review && made.length) {
-  const TW = 288;
-  const TH = 352 + 24;
+  const TW = 240;
+  const TH = Math.round((240 * (OUT_H + PAD * 2)) / (OUT_W + PAD * 2)) + 24;
   const cols = 6;
   const tiles: OverlayOptions[] = [];
   for (const [i, m] of made.entries()) {
-    tiles.push({ input: await sharp(m.file).png().toBuffer(), left: (i % cols) * TW, top: Math.floor(i / cols) * TH });
-    tiles.push({ input: Buffer.from(`<svg width="${TW}" height="24"><text x="6" y="18" font-size="16" font-family="Arial" fill="#fff">${m.entry.id}-${m.entry.expr}</text></svg>`), left: (i % cols) * TW, top: Math.floor(i / cols) * TH + 352 });
+    tiles.push({ input: await sharp(m.file).resize(TW).png().toBuffer(), left: (i % cols) * TW, top: Math.floor(i / cols) * TH });
+    tiles.push({ input: Buffer.from(`<svg width="${TW}" height="24"><text x="6" y="18" font-size="16" font-family="Arial" fill="#fff">${m.entry.id}-${m.entry.expr}</text></svg>`), left: (i % cols) * TW, top: Math.floor(i / cols) * TH + TH - 24 });
   }
   await sharp({ create: { width: TW * Math.min(cols, made.length), height: TH * Math.ceil(made.length / cols), channels: 3, background: '#26305e' } })
     .composite(tiles)

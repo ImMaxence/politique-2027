@@ -239,9 +239,17 @@
   -webkit-user-select: none;
   user-select: none;
 }
-/* The speed button says which speed is on: ×1, ×2 or ×½. */
+/* The speed button says which speed is on: ▷ slow, ▶ normal, ▶▶ fast, and ×½, ×1 or ×2. */
 .icon-btn--speed {
   position: relative;
+}
+.icon-btn--speed [data-speed-icon] {
+  display: none;
+}
+.icon-btn--speed[data-speed='0.5'] [data-speed-icon='0.5'],
+.icon-btn--speed[data-speed='1'] [data-speed-icon='1'],
+.icon-btn--speed[data-speed='2'] [data-speed-icon='2'] {
+  display: inline-flex;
 }
 .speed-badge {
   position: absolute;

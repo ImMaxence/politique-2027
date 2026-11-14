@@ -736,6 +736,7 @@ class GameApp {
       const badge = this.save.speed === 0.5 ? '×½' : `×${this.save.speed}`;
       const name = this.save.speed === 0.5 ? this.t.ui.speedSlow : this.save.speed === 2 ? this.t.ui.speedFast : this.t.ui.speedNormal;
       speed.setAttribute('aria-pressed', String(this.save.speed !== 1));
+      speed.dataset.speed = String(this.save.speed);
       speed.setAttribute('aria-label', fmt(this.t.ui.speedIs, { badge, speed: name }));
       speed.title = speed.getAttribute('aria-label')!;
       $(speed, '[data-slot="speed-badge"]').textContent = badge;

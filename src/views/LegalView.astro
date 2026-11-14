@@ -67,8 +67,8 @@ const updated = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-GB', { dat
                   <tr>
                     <td>{GAME_STRINGS[lang].figures[c.id]?.name ?? c.id}</td>
                     <td>{t.legalLayout.faces[c.expression]}</td>
-                    <td><a href={c.source} rel="noopener">{c.author}</a></td>
-                    <td>{c.licenseUrl ? <a href={c.licenseUrl} rel="noopener license">{c.license}</a> : c.license}</td>
+                    <td><a href={c.source} target="_blank" rel="noopener noreferrer">{c.author}</a></td>
+                    <td>{c.licenseUrl ? <a href={c.licenseUrl} target="_blank" rel="noopener noreferrer license">{c.license}</a> : c.license}</td>
                   </tr>
                 ))}
               </tbody>
