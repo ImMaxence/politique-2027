@@ -12,6 +12,14 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [4.1.1] — 2026-11-14
+
+Saves are untouched.
+
+### Fixed
+
+- **Locked nights no longer take a whole phone screen each.** The sentence saying how to unlock a night slipped under its date, and the date column grew as wide as that sentence: the rest of the card was squeezed into a column of single words. Everything but the date now sits in the right-hand column, on every screen.
+
 ## [4.1.0] — 2026-11-14
 
 Numbers everywhere: what each card does, what each hit takes off, what each figure gives back. Levels are easier to tell apart. Saves are untouched.

@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version 4.1.0" src="https://img.shields.io/badge/version-4.1.0-d62b30">
+  <img alt="Version 4.1.1" src="https://img.shields.io/badge/version-4.1.1-d62b30">
   <img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-2f5fe0">
   <img alt="Astro 7" src="https://img.shields.io/badge/Astro-7-17203f">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-17203f">
