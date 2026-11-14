@@ -390,6 +390,7 @@ class GameApp {
       button.innerHTML = `
         <span class="card__key" data-label="${index + 1}" aria-hidden="true"></span>
         <span class="card__art" aria-hidden="true">${portraitSvg(card.def.id, { size: 96, sticker: false })}</span>
+        <span class="card__timer" aria-hidden="true" hidden></span>
         <span class="card__name">${text.short}</span>
         <span class="card__type" aria-hidden="true">${this.t.types[category]}</span>
         <span class="card__cost" data-label="${card.def.cost}" aria-hidden="true"></span>
@@ -1259,6 +1260,13 @@ class GameApp {
       const poor = state.resources < cost;
       const blocked = card.cooldown > 0 || poor;
       this.put(`cd:${card.def.id}`, cooldown, () => button.style.setProperty('--cd', String(cooldown)));
+      // Seconds left before the card can be played again, over the portrait.
+      const seconds = Math.ceil(card.cooldown);
+      this.put(`timer:${card.def.id}`, seconds, () => {
+        const timer = button.querySelector<HTMLElement>('.card__timer')!;
+        timer.hidden = seconds <= 0;
+        timer.textContent = String(seconds);
+      });
       // Tariffs change the price on the card itself.
       this.put(`cost:${card.def.id}`, cost, () => {
         button.querySelector<HTMLElement>('.card__cost')!.dataset.label = String(cost);

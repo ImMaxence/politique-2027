@@ -12,6 +12,17 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [3.0.2] — 2026-11-14
+
+Polish. Saves are untouched.
+
+### Changed
+
+- **New photos** for François Hollande, Édouard Philippe, Emmanuel Macron, Bruno Retailleau, Éric Zemmour, Jean Lassalle, Philippe Poutou, Dominique de Villepin, Xavier Niel (the only free photo of him with his whole head is in black and white) and Squeezie. HugoDécrypte and Élise Lucet have no other free photo on Wikimedia Commons: theirs are framed again, tighter.
+- **A countdown on every card** while it recharges: the seconds left, big, over the portrait.
+- **Speech bubbles** are drawn in one outline with their tail: no more white line under the arrow.
+- **Characters page**: names on two lines are spaced out and readable.
+
 ## [3.0.1] — 2026-11-14
 
 Clearer faces, clearer bodies, clearer nights. Saves are untouched.

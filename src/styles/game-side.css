@@ -225,10 +225,14 @@ html.game-locked body {
   background: #e9dfca;
 }
 /* Zoom on the face: the bust and the stick are cropped out. */
+.game.is-compact .card__timer {
+  grid-area: art;
+  font-size: calc(var(--tickets) * 0.15);
+}
 .game.is-compact .card__art svg {
   width: calc(var(--tickets) * 0.35);
   max-width: none;
-  margin: calc(var(--tickets) * -0.0353) 0 0 calc(var(--tickets) * -0.045);
+  margin: calc(var(--tickets) * -0.008) 0 0 calc(var(--tickets) * -0.045);
 }
 .game.is-compact .card__name {
   grid-area: name;

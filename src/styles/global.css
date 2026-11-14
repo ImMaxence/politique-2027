@@ -706,12 +706,18 @@ ol[role='list'] {
 }
 .figure-card h3,
 .figure-card h4 {
-  margin: 0;
+  margin: 0.15rem 0 0.2rem;
   font-family: var(--font-display);
   font-weight: 400;
   font-size: 1.3rem;
-  line-height: 1.1;
+  /* Room between the two lines of a long name, and for the link's underline. */
+  line-height: 1.35;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+}
+.figure-card h3 a {
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
 }
 .figure-card__title {
   margin: 0.1rem 0 0;

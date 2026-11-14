@@ -45,6 +45,27 @@ function easeOutBack(t: number): number {
   return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2);
 }
 
+/**
+ * A speech bubble and its tail as one closed path: a rounded box (left, top, width,
+ * height, radius) with a tail of half-width `tw` leaving the bottom edge at `tx` and
+ * pointing at (px, py).
+ */
+function bubblePath(g: CanvasRenderingContext2D, left: number, top: number, w: number, h: number, r: number, tx: number, tw: number, px: number, py: number): void {
+  const right = left + w;
+  const bottom = top + h;
+  tx = Math.max(left + r + tw, Math.min(right - r - tw, tx));
+  g.beginPath();
+  g.moveTo(left + r, top);
+  g.arcTo(right, top, right, bottom, r);
+  g.arcTo(right, bottom, left, bottom, r);
+  g.lineTo(tx + tw, bottom);
+  g.lineTo(px, py);
+  g.lineTo(tx - tw, bottom);
+  g.arcTo(left, bottom, left, top, r);
+  g.arcTo(left, top, right, top, r);
+  g.closePath();
+}
+
 function pick<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)];
 }
@@ -916,14 +937,7 @@ export class Renderer {
   private speechShape(glyph: string): void {
     const g = this.ctx;
     g.fillStyle = PAPER;
-    g.beginPath();
-    g.roundRect(-15, -12, 30, 21, 8);
-    g.fill();
-    g.stroke();
-    g.beginPath();
-    g.moveTo(-8, 8);
-    g.lineTo(-13, 16);
-    g.lineTo(-1, 9);
+    bubblePath(g, -15, -12, 30, 21, 8, -6, 4, -13, 16);
     g.fill();
     g.stroke();
     g.fillStyle = INK;
@@ -1117,19 +1131,11 @@ export class Renderer {
       g.strokeStyle = INK;
       g.lineWidth = 3;
       g.lineJoin = 'round';
-      g.beginPath();
-      g.roundRect(-bubble.width / 2, -height, bubble.width, height, 10);
+      // The bubble and its tail, pointing at the speaker, in one outline.
+      const tail = Math.max(-bubble.width / 2 + 18, Math.min(bubble.width / 2 - 18, anchorX - x));
+      bubblePath(g, -bubble.width / 2, -height, bubble.width, height, 10, tail, 8, tail, 13);
       g.fill();
       g.stroke();
-      // Tail pointing at the speaker.
-      const tail = Math.max(-bubble.width / 2 + 14, Math.min(bubble.width / 2 - 14, anchorX - x));
-      g.beginPath();
-      g.moveTo(tail - 8, -2);
-      g.lineTo(tail, 12);
-      g.lineTo(tail + 8, -2);
-      g.fill();
-      g.stroke();
-      g.fillRect(tail - 9, -5, 18, 5);
       g.fillStyle = INK;
       g.font = `700 ${bubble.size}px ${BODY}`;
       g.textAlign = 'center';
@@ -1246,14 +1252,7 @@ export class Renderer {
       g.fillStyle = PAPER;
       g.strokeStyle = INK;
       g.lineWidth = 4;
-      g.beginPath();
-      g.roundRect(-40, -28, 80, 50, 14);
-      g.fill();
-      g.stroke();
-      g.beginPath();
-      g.moveTo(-10, 21);
-      g.lineTo(-18, 36);
-      g.lineTo(4, 21);
+      bubblePath(g, -40, -28, 80, 50, 14, -4, 9, -18, 36);
       g.fill();
       g.stroke();
       g.fillStyle = ratio < 0.35 ? RED : INK;

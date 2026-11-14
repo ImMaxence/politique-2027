@@ -351,6 +351,25 @@
   max-width: 3rem;
   line-height: 0;
 }
+/* Seconds left before the card is ready again, big and centred on the portrait
+   (in the portrait's grid cell, above the cooldown veil, never greyed out with it). */
+.card__timer {
+  position: relative;
+  z-index: 2;
+  grid-row: 1;
+  grid-column: 1;
+  place-self: center;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #fffdf6;
+  -webkit-text-stroke: 1px #17203f;
+  text-shadow: 0 0 3px #17203f, 0 2px 0 #17203f, 0 0 8px rgba(23, 32, 63, 0.8);
+  pointer-events: none;
+}
+.card__timer[hidden] {
+  display: none;
+}
 .card__art svg {
   width: 100%;
   height: auto;

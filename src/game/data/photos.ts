@@ -161,11 +161,11 @@ export const CREDITS: PhotoCredit[] = [
   {
     "id": "macron",
     "expression": "neutral",
-    "title": "Emmanuel Macron - June 2025.jpg",
-    "author": "European Commission",
-    "license": "CC BY 4.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Emmanuel_Macron_-_June_2025.jpg"
+    "title": "Emmanuel Macron portrait.jpg",
+    "author": "Nebojša Tejić",
+    "license": "Public domain",
+    "licenseUrl": "",
+    "source": "https://commons.wikimedia.org/wiki/File:Emmanuel_Macron_portrait.jpg"
   },
   {
     "id": "macron",
@@ -215,11 +215,11 @@ export const CREDITS: PhotoCredit[] = [
   {
     "id": "niel",
     "expression": "neutral",
-    "title": "Université d'été du MEDEF 2009, Campus HEC - Jouy-en-Josas.jpg",
-    "author": "Rodrigo SEPÚLVEDA SCHULZ",
-    "license": "CC BY-SA 2.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Universit%C3%A9_d%27%C3%A9t%C3%A9_du_MEDEF_2009,_Campus_HEC_-_Jouy-en-Josas.jpg"
+    "title": "Xavier Niel004.jpg",
+    "author": "cmichel67",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Xavier_Niel004.jpg"
   },
   {
     "id": "niel",
@@ -278,11 +278,11 @@ export const CREDITS: PhotoCredit[] = [
   {
     "id": "hollande",
     "expression": "neutral",
-    "title": "François Hollande par Claude Truong-Ngoc 26 avril 2015.jpg",
-    "author": "Claude Truong-Ngoc",
-    "license": "CC BY-SA 3.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Fran%C3%A7ois_Hollande_par_Claude_Truong-Ngoc_26_avril_2015.jpg"
+    "title": "Nolwenn Febvre et François Hollande, lors de la remise de médaille du Chevalier de l'ordre du mérite en 2020..jpg",
+    "author": "Les P'tits Doudous",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Nolwenn_Febvre_et_Fran%C3%A7ois_Hollande,_lors_de_la_remise_de_m%C3%A9daille_du_Chevalier_de_l%27ordre_du_m%C3%A9rite_en_2020..jpg"
   },
   {
     "id": "bayrou",
@@ -305,11 +305,11 @@ export const CREDITS: PhotoCredit[] = [
   {
     "id": "philippe",
     "expression": "neutral",
-    "title": "Edouard Philippe 3x4 crop.jpg",
-    "author": "Wasasaq8",
-    "license": "CC0",
-    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-    "source": "https://commons.wikimedia.org/wiki/File:Edouard_Philippe_3x4_crop.jpg"
+    "title": "Edouard Philippe en 2025.png",
+    "author": "Maxime Davaine",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Edouard_Philippe_en_2025.png"
   },
   {
     "id": "borne",
@@ -332,29 +332,29 @@ export const CREDITS: PhotoCredit[] = [
   {
     "id": "retailleau",
     "expression": "neutral",
-    "title": "Bruno RETAILLEAU (Minister for the Interior, France).jpg",
-    "author": "© European Union, 1998 – 2025",
-    "license": "Attribution",
-    "licenseUrl": "",
-    "source": "https://commons.wikimedia.org/wiki/File:Bruno_RETAILLEAU_(Minister_for_the_Interior,_France).jpg"
+    "title": "EPP Summit, Brussels, 26 June 2025, 27.jpg",
+    "author": "More pictures and videos: connect@epp.eu",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:EPP_Summit,_Brussels,_26_June_2025,_27.jpg"
   },
   {
     "id": "zemmour",
     "expression": "neutral",
-    "title": "Portrait d'Éric Zemmour, avril 2022 (cropped).jpg",
+    "title": "Portrait d'Éric Zemmour, avril 2022.jpg",
     "author": "Anh De France",
     "license": "CC0",
     "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-    "source": "https://commons.wikimedia.org/wiki/File:Portrait_d%27%C3%89ric_Zemmour,_avril_2022_(cropped).jpg"
+    "source": "https://commons.wikimedia.org/wiki/File:Portrait_d%27%C3%89ric_Zemmour,_avril_2022.jpg"
   },
   {
     "id": "squeezie",
     "expression": "neutral",
-    "title": "Squeezie Zack en Roue Libre 2025 (cropped).png",
-    "author": "Zack Nani",
-    "license": "CC BY-SA 3.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Squeezie_Zack_en_Roue_Libre_2025_(cropped).png"
+    "title": "Squeezie-2.jpg",
+    "author": "SnakseDeutsche",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Squeezie-2.jpg"
   },
   {
     "id": "hugo",
@@ -377,20 +377,20 @@ export const CREDITS: PhotoCredit[] = [
   {
     "id": "poutou",
     "expression": "neutral",
-    "title": "Philippe Poutou - Gilets jaunes (2019).jpg",
+    "title": "C'était un 14 Janvier 2020 (49385538518).png",
     "author": "Patrice CALATAYU from Bordeaux, France",
     "license": "CC BY-SA 2.0",
     "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Philippe_Poutou_-_Gilets_jaunes_(2019).jpg"
+    "source": "https://commons.wikimedia.org/wiki/File:C%27%C3%A9tait_un_14_Janvier_2020_(49385538518).png"
   },
   {
     "id": "villepin",
     "expression": "neutral",
-    "title": "Launch Republique Solidaire 2010-06-19 n05.jpg",
-    "author": "Marie-Lan Nguyen",
-    "license": "CC BY 2.5",
-    "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
-    "source": "https://commons.wikimedia.org/wiki/File:Launch_Republique_Solidaire_2010-06-19_n05.jpg"
+    "title": "Dominique de Villepin 20100330 Salon du livre de Paris 2 cropped.jpg",
+    "author": "Georges Seguin (Okki)",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Dominique_de_Villepin_20100330_Salon_du_livre_de_Paris_2_cropped.jpg"
   },
   {
     "id": "bmacron",
@@ -404,10 +404,10 @@ export const CREDITS: PhotoCredit[] = [
   {
     "id": "lassalle",
     "expression": "neutral",
-    "title": "Jean Lassalle 05 (cropped).jpg",
+    "title": "Jean Lassalle 04 (cropped).jpg",
     "author": "Antoine Lamielle",
     "license": "CC BY-SA 4.0",
     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Jean_Lassalle_05_(cropped).jpg"
+    "source": "https://commons.wikimedia.org/wiki/File:Jean_Lassalle_04_(cropped).jpg"
   }
 ];
