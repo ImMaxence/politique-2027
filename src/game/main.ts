@@ -9,15 +9,15 @@ import { Audio } from './audio';
 import { unlockAchievements } from './achievements';
 import { dailySetup, duelCode, parseDuel, today, type Mode, type Setup } from './modes';
 import { COLS, LAST_LEVEL, LEVELS, ROWS, VERSUS, levelDef } from './data/levels';
-import { CAMP_IDS, type CampId } from './data/types';
+import { CAMP_IDS, type CampId, type Category, type UnitDef } from './data/types';
 import {
-  CAMPS, DECK_SIZE, EXTRAS, MAX_UPGRADE, REINFORCEMENTS, TRANSFUGES, UNITS, UPGRADE_COST, cardPool, categoryOf, headlinerOf, reinforcementsFor, transfugesFor,
+  CAMPS, DECK_SIZE, EXTRAS, MAX_TIER, REINFORCEMENTS, TRANSFUGES, UNITS, canMerge, cardPool, categoryOf, headlinerOf, reinforcementsFor, rivalsOf, transfugesFor, tierDef,
 } from './data/units';
 import { enemySvg, portraitSvg } from './render/portraits';
 import { Renderer, type ViewState } from './render/renderer';
 import { SpriteStore } from './render/sprites';
 import {
-  TICK, ULT_CHARGE_TIME, VERSUS_KINDS, catchPunchline, costOf, createGame, placeUnit, removeUnit, scoreFor, spawnEnemy, starsFor, step,
+  TICK, ULT_CHARGE_TIME, VERSUS_KINDS, catchPunchline, costOf, createGame, mergeCost, placeUnit, removeUnit, scoreFor, spawnEnemy, starsFor, step,
   ultimateReady, useUltimate, versusSend, type GameEvent, type GameState, type PlaceError, type VersusKind,
 } from './sim/engine';
 import { registerServiceWorker, setupInstallTip } from './pwa';
@@ -102,6 +102,8 @@ class GameApp {
   private cards = new Map<string, HTMLButtonElement>();
   /** The night being prepared on the team screen, and the cards picked so far. */
   private team: { level: number; seed: number; pool: string[]; transfuges: string[]; picked: string[] } | null = null;
+  /** The family shown on the team screen ('all' for every card). */
+  private teamFilter: Category | 'all' = 'all';
   private shown: Record<string, string | number> = {};
 
   private screens: Record<ScreenName, HTMLElement>;
@@ -230,7 +232,6 @@ class GameApp {
       });
     }
 
-    this.renderUpgrades();
     const earned = new Set(this.save.achievements);
     for (const item of this.root.querySelectorAll<HTMLElement>('[data-achievement]')) {
       item.classList.toggle('is-earned', earned.has(item.dataset.achievement as never));
@@ -279,19 +280,54 @@ class GameApp {
     return deck;
   }
 
-  /** A card on the team screen or in the upgrades list: portrait, name, family and level. */
+/** What a card does, in numbers: damage and pace, votes, credibility, freeze time… */
+  private statLine(def: UnitDef): string {
+    const u = this.t.ui;
+    const a = def.ability;
+    const s = (n: number) => String(Math.round(n * 10) / 10).replace('.', this.lang === 'fr' ? ',' : '.');
+    const join = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(' · ');
+    switch (a.kind) {
+      case 'generator':
+        return fmt(u.statProduce, { n: a.amount, s: s(a.interval) });
+      case 'shooter':
+        return join(
+          fmt(u.statDamage, { n: a.burst ? `${a.damage} × ${a.burst}` : a.damage, s: s(a.interval) }),
+          a.stun ? fmt(u.statStun, { s: s(a.stun) }) : a.slow ? u.statSlow : a.lanes ? u.statLanes : a.pierce ? fmt(u.statPierce, { n: a.pierce + 1 }) : '',
+        );
+      case 'wall':
+        return join(
+          fmt(u.statHp, { n: def.hp }),
+          a.thorns ? fmt(u.statThorns, { n: a.thorns }) : a.healAura ? u.statHealAura : a.regen ? u.statRegen : a.checkpoint ? fmt(u.statStun, { s: s(a.checkpoint.stun) }) : a.zone ? u.statSlow : '',
+        );
+      case 'bomb':
+        return join(fmt(u.statBomb, { n: a.damage }), a.area === 'lane' ? u.statLane : u.statSquare);
+      case 'shout':
+        return a.stun
+          ? join(fmt(u.statStun, { s: s(a.stun) }), fmt(u.statRange, { n: s(a.range) }))
+          : join(fmt(u.statDamage, { n: a.damage, s: s(a.interval) }), u.statKnockback, fmt(u.statRange, { n: s(a.range) }));
+      case 'flash':
+        return join(fmt(u.statDamage, { n: a.damage, s: s(a.interval) }), u.statSlowLane);
+      case 'heal':
+        return fmt(u.statHeal, { n: a.amount, s: s(a.interval) });
+      case 'expel':
+        return fmt(u.statExpel, { s: s(a.interval) });
+      case 'hose':
+        return u.statHose;
+    }
+  }
+
+  /** A card on the team screen: portrait, name, family, power, what it does in numbers and price. */
   private teamCard(id: string, picked: boolean, transfuge: boolean): string {
     const def = UNITS[id];
     const text = this.t.figures[id];
-    const camp = this.save.camp!;
-    const level = def.camp === camp || def.camp === 'neutre' ? (this.save.upgrades[camp][id] ?? 1) : 1;
     const category = categoryOf(def);
-    return `<li><button type="button" class="team-card" data-card="${id}" data-type="${category}" aria-pressed="${picked}">
+    return `<li><button type="button" class="team-card" data-card="${id}" data-type="${category}" aria-pressed="${picked}" title="${text.desc.replace(/"/g, '&quot;')}">
       <span class="team-card__art" aria-hidden="true">${portraitSvg(id, { size: 72, sticker: false })}</span>
       <span class="team-card__name">${text.short}${transfuge ? ` <small>· ${this.t.ui.transfuge}</small>` : ''}</span>
       <span class="team-card__type">${this.t.types[category]}</span>
-      <span class="team-card__cost">${def.cost}</span>
-      ${level > 1 ? `<span class="team-card__level">${'★'.repeat(level - 1)}</span>` : ''}
+      <span class="team-card__power">${text.power}</span>
+      <span class="team-card__stats">${this.statLine(def)}</span>
+      <span class="team-card__cost">${this.t.ui.cost} ${def.cost}</span>
     </button></li>`;
   }
 
@@ -300,17 +336,33 @@ class GameApp {
     if (!team) return;
     const t = this.t.ui;
     const picked = new Set(team.picked);
+    const shown = (id: string) => this.teamFilter === 'all' || categoryOf(UNITS[id]) === this.teamFilter;
+    const list = (ids: string[], transfuge: boolean) => {
+      const visible = ids.filter(shown);
+      return visible.length ? visible.map((id) => this.teamCard(id, picked.has(id), transfuge)).join('') : `<li class="team__none">${t.teamNone}</li>`;
+    };
     const figures = team.pool.filter((id) => UNITS[id].camp !== 'neutre');
     const reinforcements = team.pool.filter((id) => UNITS[id].camp === 'neutre');
+    for (const button of this.root.querySelectorAll<HTMLElement>('[data-filter]')) {
+      button.setAttribute('aria-pressed', String(button.dataset.filter === this.teamFilter));
+    }
     const poached = team.picked.filter((id) => team.transfuges.includes(id)).length;
     $(this.root, '[data-slot="team-hint"]').textContent = fmt(t.teamHint, { max: DECK_SIZE, transfuges: TRANSFUGES });
     $(this.root, '[data-slot="team-count"]').textContent = fmt(t.teamCount, { n: team.picked.length, max: DECK_SIZE });
-    $(this.root, '[data-slot="team-camp"]').innerHTML = figures.map((id) => this.teamCard(id, picked.has(id), false)).join('');
-    $(this.root, '[data-slot="team-reinforcements"]').innerHTML = reinforcements.map((id) => this.teamCard(id, picked.has(id), false)).join('');
+    $(this.root, '[data-slot="team-camp"]').innerHTML = list(figures, false);
+    $(this.root, '[data-slot="team-reinforcements"]').innerHTML = list(reinforcements, false);
     const transfugeTitle = $(this.root, '[data-slot="team-transfuges-title"]');
     transfugeTitle.textContent = fmt(t.teamTransfuges, { n: poached, max: TRANSFUGES });
     transfugeTitle.hidden = !team.transfuges.length;
-    $(this.root, '[data-slot="team-transfuges"]').innerHTML = team.transfuges.map((id) => this.teamCard(id, picked.has(id), true)).join('');
+    $(this.root, '[data-slot="team-transfuges-explain"]').hidden = !team.transfuges.length;
+    // Turncoats, camp by camp.
+    $(this.root, '[data-slot="team-transfuges"]').innerHTML = rivalsOf(this.save.camp!)
+      .map((camp) => {
+        const ids = team.transfuges.filter((id) => UNITS[id].camp === camp);
+        if (!ids.length) return '';
+        return `<h4 class="team__camp" data-camp="${camp}">${this.t.camps[camp].name}</h4><ul class="team__cards" role="list">${list(ids, true)}</ul>`;
+      })
+      .join('');
     $(this.root, '[data-action="team-go"]').setAttribute('aria-disabled', String(!team.picked.length));
   }
 
@@ -345,59 +397,6 @@ class GameApp {
     await this.startMatch({ mode: 'campaign', level: team.level, camp, seed: team.seed, deck: [...team.picked] });
   }
 
-  /** Stars a camp has earned and not spent yet. */
-  private starsLeft(camp: CampId): number {
-    const earned = Object.values(this.save.progress[camp].stars).reduce((sum, n) => sum + n, 0);
-    const spent = Object.values(this.save.upgrades[camp]).reduce((sum, level) => {
-      let cost = 0;
-      for (let l = 2; l <= level; l++) cost += UPGRADE_COST[l];
-      return sum + cost;
-    }, 0);
-    return earned - spent;
-  }
-
-  /** The upgrades panel of the calendar: every card the camp has unlocked so far. */
-  private renderUpgrades(): void {
-    const camp = this.save.camp;
-    if (!camp) return;
-    const progress = this.save.progress[camp];
-    const night = levelDef(Math.min(LAST_LEVEL, progress.unlocked));
-    const cards = [...CAMPS[camp].roster.slice(0, night.slots), ...reinforcementsFor(night.id)];
-    const left = this.starsLeft(camp);
-    $(this.root, '[data-slot="upgrades-title"]').textContent = fmt(this.t.ui.upgradesTitle, { n: left });
-    $(this.root, '[data-slot="upgrades-list"]').innerHTML = cards
-      .map((id) => {
-        const level = this.save.upgrades[camp][id] ?? 1;
-        const cost = UPGRADE_COST[level + 1];
-        const max = level >= MAX_UPGRADE;
-        const label = max ? this.t.ui.upgradeMax : fmt(this.t.ui.upgradeButton, { cost });
-        return `<li>
-          <span class="upgrades__art" aria-hidden="true">${portraitSvg(id, { size: 48, sticker: false })}</span>
-          <span class="upgrades__name"><b>${this.t.figures[id].short}</b> <small>${fmt(this.t.ui.upgradeLevel, { n: level })}</small></span>
-          <button type="button" class="btn btn--small" data-upgrade="${id}" aria-disabled="${max || left < cost}" aria-label="${label} — ${this.t.figures[id].name}">${label}</button>
-        </li>`;
-      })
-      .join('');
-  }
-
-  private upgrade(id: string): void {
-    const camp = this.save.camp;
-    if (!camp) return;
-    const level = this.save.upgrades[camp][id] ?? 1;
-    const cost = UPGRADE_COST[level + 1];
-    if (level >= MAX_UPGRADE || this.starsLeft(camp) < cost) {
-      this.audio.play('error');
-      return;
-    }
-    this.save.upgrades[camp][id] = level + 1;
-    unlockAchievements(this.save);
-    storeSave(this.save);
-    this.audio.play('coin');
-    this.say(fmt(this.t.announce.upgraded, { name: this.t.figures[id].name, n: level + 1 }));
-    this.renderModes();
-    this.root.querySelector<HTMLElement>(`[data-upgrade="${id}"]`)?.focus();
-  }
-
   private async startMatch(setup: Setup): Promise<void> {
     const camp = setup.camp;
     const levelId = setup.level;
@@ -409,11 +408,11 @@ class GameApp {
     await document.fonts?.ready;
     this.root.classList.remove('is-loading');
 
-    // The daily challenge, duels and head to head are the same for everybody: default deck, no upgrades.
+    // The daily challenge, duels and head to head are the same for everybody: default deck.
     const personal = setup.mode === 'campaign';
     const state = createGame({
       camp, level: levelId, seed: setup.seed, hard: personal && this.save.hard,
-      deck: personal ? setup.deck : undefined, upgrades: personal ? this.save.upgrades[camp] : undefined,
+      deck: personal ? setup.deck : undefined,
     });
     this.root.dataset.camp = camp;
     this.root.dataset.mode = setup.mode;
@@ -618,11 +617,12 @@ class GameApp {
       if (card) this.toggleTeamCard(card.dataset.card!);
     });
     on('[data-action="team-go"]', () => void this.launchTeam());
-    on('[data-action="team-back"]', () => this.show('levels'));
-    $(this.root, '[data-slot="upgrades-list"]').addEventListener('click', (event) => {
-      const button = (event.target as HTMLElement).closest<HTMLElement>('[data-upgrade]');
-      if (button) this.upgrade(button.dataset.upgrade!);
+    on('[data-filter]', (el) => {
+      this.teamFilter = el.dataset.filter as Category | 'all';
+      this.renderTeam();
+      el.focus();
     });
+    on('[data-action="team-back"]', () => this.show('levels'));
 
     on('[data-action="remove"]', () => this.toggleRemove());
     on('[data-action="ultimate"]', () => this.fireUltimate());
@@ -874,6 +874,7 @@ class GameApp {
       case 'cost': return a.errCost;
       case 'cooldown': return fmt(a.errCooldown, { name: this.t.figures[unitId].name });
       case 'occupied': return a.errOccupied;
+      case 'maxed': return fmt(a.errMaxed, { name: this.t.figures[unitId].name });
       default: return a.errLane;
     }
   }
@@ -921,6 +922,7 @@ class GameApp {
   private overlay(name: 'pause' | 'result' | 'intro', visible: boolean): HTMLElement {
     const el = $(this.root, `[data-overlay="${name}"]`);
     el.hidden = !visible;
+    if (name === 'intro') el.classList.remove('is-tier');
     const anyOpen = [...this.root.querySelectorAll<HTMLElement>('[data-overlay]')].some((o) => !o.hidden);
     this.hud.inert = anyOpen;
     this.grid.inert = anyOpen;
@@ -1025,6 +1027,7 @@ class GameApp {
       scored ? [this.t.ui.statScore, String(score)] : [this.t.ui.statTime, clockText(state.time)],
       [this.t.ui.statKills, String(state.stats.kills)],
       [this.t.ui.statPlaced, String(state.stats.placed)],
+      ...(state.stats.merged ? [[this.t.ui.statMerged, String(state.stats.merged)] as [string, string]] : []),
       level.endless ? [this.t.ui.statWaves, String(wavesHeld)] : [this.t.goals[level.goal].name, `${state.polls}/${level.polls}`],
     ];
     const list = $(el, '[data-slot="stats"]');
@@ -1131,6 +1134,29 @@ class GameApp {
     if (!this.introOpen) this.introFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.introOpen = true;
     this.save.seen.push(next.id);
+    storeSave(this.save);
+    $(el, '[data-action="intro-ok"]').focus({ preventScroll: true });
+  }
+
+  /** Merging, explained the first time a second copy of a figure reaches the board. */
+  private mergeTip(unitId: string): void {
+    const state = this.state;
+    if (!this.introsEnabled || this.introOpen || this.save.seen.includes('tip:merge') || !state || state.status !== 'playing') return;
+    const text = this.t.figures[unitId];
+    const def = UNITS[unitId];
+    const el = this.overlay('intro', true);
+    $(el, '[data-slot="intro-tag"]').textContent = this.t.ui.tipTag;
+    $(el, '[data-slot="intro-art"]').innerHTML = portraitSvg(unitId, { size: 150, uid: 'tip' });
+    $(el, '[data-slot="intro-name"]').textContent = this.t.ui.mergeTipTitle;
+    const power = $(el, '[data-slot="intro-power"]');
+    power.hidden = false;
+    const level2 = tierDef(def, 2);
+    power.textContent = fmt(this.t.ui.mergeTipHow, { name: text.short, cost: mergeCost(state, def, 2), hp: level2.hp });
+    $(el, '[data-slot="intro-desc"]').textContent = this.t.ui.mergeTipDesc;
+    el.classList.add('is-tier');
+    this.introFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.introOpen = true;
+    this.save.seen.push('tip:merge');
     storeSave(this.save);
     $(el, '[data-action="intro-ok"]').focus({ preventScroll: true });
   }
@@ -1249,7 +1275,7 @@ class GameApp {
     if (!state.level.lanes.includes(lane)) return `${where} : ${this.t.ui.closed}`;
     const unit = state.grid[lane][col];
     const what = unit
-      ? `${this.t.figures[unit.def.id].name}, ${this.t.ui.credibility.toLowerCase()} ${Math.round((unit.hp / unit.def.hp) * 100)} %`
+      ? `${this.t.figures[unit.def.id].name}${unit.tier > 1 ? `, ${fmt(this.t.ui.tierLabel, { n: unit.tier })}` : ''}, ${this.t.ui.credibility.toLowerCase()} ${Math.round((unit.hp / unit.def.hp) * 100)} %`
       : this.t.ui.empty;
     const rivals = state.enemies.filter((e) => e.lane === lane).length;
     const suffix = rivals ? ` — ${fmt(this.t.ui.rivalsInLane, { n: rivals })}` : '';
@@ -1270,8 +1296,15 @@ class GameApp {
           const figure = this.t.figures[e.unitId];
           this.audio.play('place');
           this.say(`${fmt(a.placed, { name: figure.name, row: e.lane + 1, col: e.col + 1 })} « ${figure.lines[0]} »`);
+          // A second copy of the same figure: time to explain merging, once.
+          if (canMerge(UNITS[e.unitId]) && state.units.filter((u) => u.def.id === e.unitId).length >= 2) this.mergeTip(e.unitId);
           break;
         }
+        case 'merge':
+          this.audio.play('levelUp');
+          this.say(fmt(e.tier === MAX_TIER ? a.mergedMax : a.merged, { name: this.t.figures[e.unitId].name, n: e.tier, cost: e.cost }));
+          if (e.tier === MAX_TIER) this.save.counters.maxed++;
+          break;
         case 'remove':
           this.audio.play('click');
           this.say(fmt(a.removed, { name: this.t.figures[e.unitId].name, refund: e.refund }));

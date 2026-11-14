@@ -107,11 +107,10 @@ describe('saves', () => {
     expect('bench' in save).toBe(false);
   });
 
-  it('keeps the decks and the upgrades, and drops what makes no sense', () => {
-    withStorage({ v: 4, teams: { gauche: ['hollande', 'samu', 'nobody', 3] }, upgrades: { gauche: { hollande: 3, royal: 9, nobody: 2, ruffin: 1 } } });
+  it('keeps the decks, and drops what makes no sense', () => {
+    withStorage({ v: 4, teams: { gauche: ['hollande', 'samu', 'nobody', 3] } });
     const save = loadSave();
     expect(save.teams.gauche).toEqual(['hollande', 'samu']);
-    expect(save.upgrades.gauche).toEqual({ hollande: 3, royal: 3 });
     expect(save.teams.centre).toEqual([]);
   });
 

@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { ENDLESS, LAST_LEVEL, LEVELS, VERSUS } from '../../src/game/data/levels';
 import { CAMP_IDS, type CampId } from '../../src/game/data/types';
 import {
-  CAMPS, DECK_SIZE, EXTRAS, GUESTS, REINFORCEMENTS, UNITS, cardPool, categoryOf, headlinerOf, reinforcementsFor, transfugesFor, upgradedDef,
+  CAMPS, DECK_SIZE, EXTRAS, GUESTS, REINFORCEMENTS, TIER_BOOST, UNITS, canMerge, cardPool, categoryOf, headlinerOf, reinforcementsFor, tierDef, transfugesFor,
 } from '../../src/game/data/units';
 import { botAct } from '../../src/game/sim/bot';
 import {
   PASSIVE_AMOUNT, PASSIVE_INTERVAL, REFUND_RATIO, SPAWN_X, TICK, ULT_CHARGE_TIME,
-  costOf, createGame, placeUnit, removeUnit, spawnEnemy, starsFor, step, useUltimate, type GameState,
+  canPlace, costOf, createGame, mergeCost, placeUnit, playOn, removeUnit, spawnEnemy, starsFor, step, useUltimate, type GameState,
 } from '../../src/game/sim/engine';
 import { GAME_STRINGS, LANGS } from '../../src/i18n/game';
 
@@ -103,14 +103,59 @@ describe('placing figures', () => {
     expect(createGame({ camp: 'centre', level: 7, deck }).cards.map((c) => c.def.id)).toEqual(['bayrou', 'samu', 'boulangere', 'ciotti', 'macron']);
   });
 
-  it('upgrades make a card tougher, quicker and stronger', () => {
-    const base = UNITS.hollande;
-    const up = upgradedDef(base, 3);
-    expect(up.hp).toBe(Math.round(base.hp * 1.5));
-    expect(up.recharge).toBeCloseTo(base.recharge * 0.7, 1);
-    expect(up.ability.kind === 'shooter' && base.ability.kind === 'shooter' && up.ability.damage > base.ability.damage).toBe(true);
-    const state = createGame({ camp: 'gauche', level: 2, upgrades: { hollande: 2 } });
-    expect(state.cards.find((c) => c.def.id === 'hollande')!.def.hp).toBe(Math.round(base.hp * 1.25));
+  it('the same figure played on itself goes up a level, for more than the card costs', () => {
+    const state = createGame({ camp: 'droite', level: 2 });
+    state.resources = 2000;
+    const def = UNITS.bardella;
+    const ready = () => (state.cards.find((c) => c.def.id === 'bardella')!.cooldown = 0);
+    expect(placeUnit(state, 'bardella', 2, 2)).toBeNull();
+    const unit = state.grid[2][2]!;
+    unit.hp = 10;
+    ready();
+    expect(playOn(state, 'bardella', 2, 2)).toEqual({ tier: 2, cost: mergeCost(state, def, 2) });
+    expect(mergeCost(state, def, 2)).toBeGreaterThan(def.cost);
+    const before = state.resources;
+    expect(placeUnit(state, 'bardella', 2, 2)).toBeNull();
+    expect(state.units).toHaveLength(1);
+    expect(unit.tier).toBe(2);
+    expect(state.resources).toBe(before - mergeCost(state, def, 2));
+    expect(unit.def.hp).toBe(Math.round(def.hp * TIER_BOOST[2].hp));
+    expect(unit.hp).toBe(unit.def.hp); // all its credibility back
+    const [a, b] = [unit.def.ability, def.ability];
+    expect(a.kind === 'shooter' && b.kind === 'shooter' && a.damage > b.damage && a.interval < b.interval).toBe(true);
+    expect(state.events.some((e) => e.type === 'merge' && e.tier === 2)).toBe(true);
+    // Level 3 is the top; another figure cannot go there at all.
+    ready();
+    expect(mergeCost(state, def, 3)).toBeGreaterThan(mergeCost(state, def, 2));
+    expect(placeUnit(state, 'bardella', 2, 2)).toBeNull();
+    expect(unit.tier).toBe(3);
+    ready();
+    expect(canPlace(state, 'bardella', 2, 2)).toBe('maxed');
+    expect(canPlace(state, 'sarkozy', 2, 2)).toBe('occupied');
+    expect(state.stats).toMatchObject({ placed: 1, merged: 2, maxed: 1 });
+    // Taking it off refunds part of everything spent on it.
+    const spent = unit.spent;
+    expect(spent).toBe(def.cost + mergeCost(state, def, 2) + mergeCost(state, def, 3));
+    const left = state.resources;
+    removeUnit(state, 2, 2);
+    expect(state.resources).toBe(left + Math.floor(spent * REFUND_RATIO));
+  });
+
+  it('a merge costs what it says, and one-shot cards never merge', () => {
+    const state = createGame({ camp: 'droite', level: 2 });
+    state.resources = 2000;
+    expect(placeUnit(state, 'bardella', 1, 1)).toBeNull();
+    state.resources = mergeCost(state, UNITS.bardella, 2) - 1;
+    state.cards.find((c) => c.def.id === 'bardella')!.cooldown = 0;
+    expect(canPlace(state, 'bardella', 1, 1)).toBe('cost');
+    expect(canMerge(UNITS.profs)).toBe(false);
+    expect(canMerge(UNITS.pompiers)).toBe(false);
+    expect(canMerge(UNITS.bayrou)).toBe(true);
+    // Votes stay round numbers.
+    for (const id of ['bayrou', 'sarkozy', 'glucksmann', 'bmacron', 'boulangere']) {
+      const a = tierDef(UNITS[id], 3).ability;
+      expect(a.kind === 'generator' && a.amount % 5 === 0).toBe(true);
+    }
   });
 
   it('charges the cost and starts the card cooldown', () => {

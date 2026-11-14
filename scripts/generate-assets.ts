@@ -14,7 +14,7 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { CAMP_IDS } from '../src/game/data/types';
-import { CAMPS, UNITS } from '../src/game/data/units';
+import { CAMPS, UNITS, headlinerOf } from '../src/game/data/units';
 import { FIGURE_IDS, figureSlug } from '../src/lib/pages';
 import { extraSvg, headUrl, portraitSvg, type PortraitOptions } from '../src/game/render/portraits';
 import { GAME_STRINGS } from '../src/i18n/game';
@@ -44,7 +44,7 @@ function html(body: string, css: string): string {
 
 function socialCard(): string {
   const posters = CAMP_IDS.map((camp, i) => {
-    const leader = CAMPS[camp].roster[CAMPS[camp].roster.length - 1];
+    const leader = headlinerOf(camp);
     const on = camp === 'centre' ? '#17203f' : '#fffdf6';
     return `<div class="poster p${i}">${puppet(leader, { size: 150, uid: 'og' })}
       <span class="display camp" style="background:${CAMPS[camp].color};color:${on}">${g.camps[camp].short}</span></div>`;

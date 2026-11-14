@@ -42,13 +42,15 @@ export interface Counters {
   appeal: number;
   /** Nights played with a turncoat in the deck. */
   transfuges: number;
+  /** Figures taken to level 3 during a match. */
+  maxed: number;
   dailies: number;
   versus: number;
   hardRunoff: number;
 }
 
 export function blankCounters(): Counters {
-  return { exiled: 0, wonOver: 0, unionists: 0, ripostes: 0, lucet: 0, niel: 0, appeal: 0, transfuges: 0, dailies: 0, versus: 0, hardRunoff: 0 };
+  return { exiled: 0, wonOver: 0, unionists: 0, ripostes: 0, lucet: 0, niel: 0, appeal: 0, transfuges: 0, maxed: 0, dailies: 0, versus: 0, hardRunoff: 0 };
 }
 
 function earned(id: AchievementId, save: Save): boolean {
@@ -78,7 +80,7 @@ function earned(id: AchievementId, save: Save): boolean {
     case 'transfuge':
       return c.transfuges >= 1;
     case 'maxed':
-      return CAMP_IDS.some((camp) => Object.values(save.upgrades[camp]).some((level) => level >= 3));
+      return c.maxed >= 1;
     case 'cohabitation':
       return camps.some((p) => p.endlessBest >= 20);
     case 'hardRunoff':

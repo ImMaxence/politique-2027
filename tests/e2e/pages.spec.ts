@@ -50,3 +50,8 @@ test('the characters page links every figure to its page, and the sitemap lists 
   expect(sitemap).not.toContain('bernard-cazeneuve');
   expect(sitemap).toContain('/fr/soirees/cohabitation');
 });
+
+test('the home page shows the four headliners', async ({ page }) => {
+  await page.goto('/fr');
+  await expect(page.locator('.board__name')).toHaveText(['Jean-Luc Mélenchon', 'Emmanuel Macron', 'Marine Le Pen', 'Teddy Riner']);
+});

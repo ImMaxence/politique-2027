@@ -12,6 +12,30 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [4.0.0] — 2026-11-14
+
+Figures now level up on the board: play a card on the same figure and it goes up a level, gold then on fire. This replaces the upgrades bought with stars in 3.1.0: the levels bought there are dropped (stars stay on the calendar as each night's score, and an achievement already earned stays earned). The rest of the save is kept.
+
+### Added
+
+- **Levels, played on the board**: a card played on the same figure merges into it and takes it to level 2, then 3 at most. Level 2 turns it gold (golden aura, glowing yellow eyes, sparks), level 3 sets it on fire (flames, embers), with a badge on the figure. Each level costs more than the card (×1.5, then ×2, rounded up to 25 votes) and brings +60% then +130% credibility, a stronger effect (×1.5, then ×2.2) and quicker actions; the figure gets all its credibility back, and taking it off refunds a quarter of everything spent on it. Selecting a card shows, over each figure it can raise, the next level and its price. Bombs and the fire hose leave the board at once, so they do not merge. A tip explains it all the first time a second copy of a figure reaches the board, and screen readers hear each figure's level.
+- **The deck screen explains itself**: a line says what a turncoat is, turncoats are grouped by camp, filters show one family at a time (Votes, Attack, Effect, Defence), and each card gives its power and what it does in numbers (damage and pace, votes, credibility, freeze time…).
+- The result screen counts the level-ups of the night.
+
+### Changed
+
+- The **Maxed Out** achievement becomes **On Fire**: take a figure to level 3 during a night.
+- Playing a card on a square already taken says why it is refused: only the same figure can go there, to level up.
+
+### Removed
+
+- **Upgrades bought with stars** and their panel on the calendar: replaced by levels on the board.
+
+### Fixed
+
+- **The home page shows the four headliners again** (Mélenchon, Macron, Le Pen, Riner): since 3.1.0 it showed each camp's night-6 figure.
+- **The "Install the app" banner fits narrow phones**: the text gets the whole width and the Install button goes under it, instead of a column of one word per line.
+
 ## [3.1.0] — 2026-11-14
 
 Something new every night until the run-off: four public figures, five reinforcements, a deck to build with turncoats, and upgrades bought with stars. Saves are kept (the new settings start empty).

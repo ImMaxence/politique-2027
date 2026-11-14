@@ -147,24 +147,31 @@ test('from night 6 the deck is picked on the team screen, turncoats included', a
   expect(saved).toContain('attal');
 });
 
-test('stars buy upgrades on the calendar', async ({ page }) => {
+test('a figure played on the same figure goes up a level, up to 3', async ({ page }) => {
   await openGame(page, 'en');
-  await page.evaluate(() => {
-    localStorage.setItem('politique2027:save', '{"v":4,"camp":"droite","progress":{"droite":{"unlocked":4,"stars":{"1":3,"2":2},"endlessBest":0,"finished":false}}}');
-  });
-  await page.reload();
-  await page.waitForSelector('#game[data-ready="true"]');
-  const panel = page.locator('details.upgrades');
-  await panel.locator('summary').click();
-  await expect(panel.locator('summary')).toHaveText('Upgrades (5 ★ to spend)');
-  await panel.locator('[data-upgrade="bardella"]').click();
-  await expect(panel.locator('summary')).toHaveText('Upgrades (3 ★ to spend)');
-  await panel.locator('[data-upgrade="bardella"]').click();
-  await expect(panel.locator('summary')).toHaveText('Upgrades (0 ★ to spend)');
-  await expect(panel.locator('[data-upgrade="bardella"]')).toHaveAttribute('aria-disabled', 'true');
-  await expect(page.locator('[data-achievement="maxed"]')).toHaveClass(/is-earned/);
-  const level = await page.evaluate(() => JSON.parse(localStorage.getItem('politique2027:save')!).upgrades.droite.bardella);
-  expect(level).toBe(3);
+  await startMatch(page, 'droite', 2);
+  const rich = () => page.evaluate(() => void (window.__P2027__.state()!.resources = 2000));
+  await rich();
+  const card = page.locator('.card[data-unit="bardella"]');
+  const cell = page.locator('[data-cell]').nth(2 * 9 + 2);
+  await card.click();
+  await cell.click();
+  await page.evaluate(() => window.__P2027__.advance(20, false));
+  await rich();
+  await card.click();
+  await cell.click();
+  await expect(cell).toHaveAttribute('aria-label', /level 2/);
+  await page.evaluate(() => window.__P2027__.advance(20, false));
+  await rich();
+  await card.click();
+  await cell.click();
+  await expect(cell).toHaveAttribute('aria-label', /level 3/);
+  // At the top: a fourth card is refused, with the reason.
+  await page.evaluate(() => window.__P2027__.advance(20, false));
+  await rich();
+  await card.click();
+  await cell.click();
+  await expect(page.locator('[data-slot="alert"]')).toContainText('already at the top level');
 });
 
 test.describe('on a phone', () => {

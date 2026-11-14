@@ -145,6 +145,9 @@ export const PHOTOS: Record<string, Expression[]> = {
   ]
 };
 
+/** Where the eyes are on each cut-out (left x, y, right x, y, as fractions of the picture), by "<id>-<expression>". */
+export const EYES: Record<string, number[]> = {"lepen-neutral":[0.454,0.614,0.677,0.6],"lepen-angry":[0.369,0.643,0.589,0.651],"lepen-hurt":[0.479,0.6,0.66,0.618],"melenchon-neutral":[0.346,0.512,0.58,0.503],"melenchon-angry":[0.351,0.508,0.591,0.482],"melenchon-hurt":[0.426,0.482,0.649,0.465],"macron-neutral":[0.317,0.567,0.529,0.568],"macron-angry":[0.351,0.562,0.578,0.574],"macron-hurt":[0.38,0.538,0.582,0.541],"riner-neutral":[0.397,0.578,0.643,0.59],"glucksmann-neutral":[0.38,0.559,0.597,0.534],"royal-neutral":[0.369,0.531,0.578,0.531],"ruffin-neutral":[0.529,0.535,0.708,0.544],"bardella-neutral":[0.332,0.489,0.597,0.498],"hollande-neutral":[0.451,0.534,0.631,0.499],"bayrou-neutral":[0.366,0.523,0.589,0.517],"attal-neutral":[0.422,0.567,0.629,0.567],"philippe-neutral":[0.374,0.535,0.603,0.53],"borne-neutral":[0.409,0.558,0.662,0.563],"sarkozy-neutral":[0.411,0.563,0.611,0.556],"retailleau-neutral":[0.283,0.59,0.445,0.548],"zemmour-neutral":[0.443,0.596,0.666,0.601],"poutou-neutral":[0.26,0.641,0.454,0.627],"villepin-neutral":[0.443,0.59,0.66,0.557],"bmacron-neutral":[0.466,0.656,0.649,0.661],"lassalle-neutral":[0.397,0.624,0.611,0.632],"darmanin-neutral":[0.357,0.567,0.566,0.565],"ciotti-neutral":[0.471,0.474,0.671,0.479],"philippot-neutral":[0.331,0.534,0.58,0.534],"rousseau-neutral":[0.429,0.608,0.626,0.629]};
+
 export interface PhotoCredit {
   id: string;
   expression: Expression;

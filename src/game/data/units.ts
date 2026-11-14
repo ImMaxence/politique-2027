@@ -368,44 +368,61 @@ export function defaultDeck(pool: string[]): string[] {
   return pool.slice(0, DECK_SIZE);
 }
 
-/** Stars an upgrade costs, by the level it reaches (2 or 3). */
-export const UPGRADE_COST: Record<number, number> = { 2: 2, 3: 3 };
-export const MAX_UPGRADE = 3;
+/**
+ * Merging, during a match: the same figure placed on itself goes up a level (3 at most).
+ * Each level costs more than the card itself, as a multiple of its price rounded up to 25 votes.
+ */
+export const MAX_TIER = 3;
+export const TIER_PRICE: Record<number, number> = { 2: 1.5, 3: 2 };
+/** What a level multiplies: credibility, effect (damage, votes, care) and the time between two actions. */
+export const TIER_BOOST: Record<number, { hp: number; power: number; pace: number }> = {
+  2: { hp: 1.6, power: 1.5, pace: 0.85 },
+  3: { hp: 2.3, power: 2.2, pace: 0.72 },
+};
 
-/** A card with its upgrades: +25% credibility, -15% recharge and +15% effect per level above 1. */
-export function upgradedDef(def: UnitDef, level = 1): UnitDef {
-  const extra = Math.max(0, Math.min(MAX_UPGRADE, level) - 1);
-  if (!extra) return def;
-  const more = (n: number) => Math.round(n * (1 + 0.15 * extra));
+/** One-shot cards (the bombs, the fire hose) leave the board at once: nothing to merge. */
+export function canMerge(def: UnitDef): boolean {
+  return def.ability.kind !== 'bomb' && def.ability.kind !== 'hose';
+}
+
+/** A figure at a given level (1 to MAX_TIER): tougher, quicker and stronger. */
+export function tierDef(def: UnitDef, tier = 1): UnitDef {
+  const boost = TIER_BOOST[Math.min(MAX_TIER, tier)];
+  if (!boost) return def;
+  const more = (n: number) => Math.round(n * boost.power);
+  const votes = (n: number) => Math.ceil((n * boost.power) / 5) * 5;
+  const quicker = (n: number) => Math.round(n * boost.pace * 10) / 10;
   const a = def.ability;
   let ability = a;
   switch (a.kind) {
     case 'generator':
-      ability = { ...a, amount: more(a.amount) };
+      ability = { ...a, amount: votes(a.amount), interval: quicker(a.interval) };
       break;
     case 'shooter':
-    case 'bomb':
     case 'shout':
     case 'flash':
-    case 'hose':
-      ability = { ...a, damage: more(a.damage) };
+      ability = { ...a, damage: more(a.damage), interval: quicker(a.interval) };
       break;
     case 'heal':
-      ability = { ...a, amount: more(a.amount) };
-      break;
-    case 'wall':
-      ability = { ...a, ...(a.thorns ? { thorns: more(a.thorns) } : {}), ...(a.healAura ? { healAura: more(a.healAura) } : {}), ...(a.regen ? { regen: more(a.regen) } : {}) };
+      ability = { ...a, amount: more(a.amount), interval: quicker(a.interval) };
       break;
     case 'expel':
-      ability = { ...a, interval: Math.round(a.interval * (1 - 0.12 * extra) * 10) / 10 };
+      ability = { ...a, interval: quicker(a.interval * boost.pace) };
+      break;
+    case 'wall':
+      ability = {
+        ...a,
+        ...(a.thorns ? { thorns: more(a.thorns) } : {}),
+        ...(a.healAura ? { healAura: more(a.healAura) } : {}),
+        ...(a.regen ? { regen: more(a.regen) } : {}),
+        ...(a.checkpoint ? { checkpoint: { ...a.checkpoint, interval: quicker(a.checkpoint.interval) } } : {}),
+      };
+      break;
+    case 'bomb':
+    case 'hose':
       break;
   }
-  return {
-    ...def,
-    hp: Math.round(def.hp * (1 + 0.25 * extra)),
-    recharge: Math.round(def.recharge * (1 - 0.15 * extra) * 10) / 10,
-    ability,
-  };
+  return { ...def, hp: Math.round(def.hp * boost.hp), ability };
 }
 
 export function unitsOf(camp: CampId): UnitDef[] {

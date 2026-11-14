@@ -86,15 +86,21 @@
 
 /* Phones only, outside a match: how to get the game on the home screen. */
 /* A sheet pinned to the bottom of the screen: showing it moves nothing on the page. */
+/* Icon, text and the close button on one row; the Install button under the text, so
+   that a narrow phone never squeezes the text into a column of single words. */
 .install-tip {
   position: fixed;
   left: max(0.6rem, env(safe-area-inset-left, 0px));
   right: max(0.6rem, env(safe-area-inset-right, 0px));
   bottom: max(0.6rem, env(safe-area-inset-bottom, 0px));
   z-index: 40;
-  display: flex;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon text close'
+    '. go go';
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.6rem 0.8rem;
   max-width: 40rem;
   margin: 0 auto;
   padding: 0.8rem 0.9rem;
@@ -108,14 +114,19 @@
   display: none;
 }
 .install-tip > svg {
-  flex: none;
+  grid-area: icon;
+  align-self: start;
   width: 2rem;
   height: 2rem;
 }
 .install-tip__text {
-  flex: 1;
+  grid-area: text;
   min-width: 0;
   font-size: 0.9rem;
+}
+.install-tip > .icon-btn {
+  grid-area: close;
+  align-self: start;
 }
 .install-tip__text p {
   margin: 0;
@@ -126,7 +137,25 @@
   text-transform: uppercase;
 }
 .install-tip__go {
-  flex: none;
+  grid-area: go;
+  justify-self: start;
+  min-height: 2.75rem;
+  padding: 0.45rem 1.2rem;
+  font-size: 1rem;
+}
+.install-tip__go[hidden] {
+  display: none;
+}
+/* Wide enough: everything on one row. */
+@media (min-width: 40rem) {
+  .install-tip {
+    grid-template-columns: 2rem minmax(0, 1fr) auto auto;
+    grid-template-areas: 'icon text go close';
+  }
+  .install-tip > svg,
+  .install-tip > .icon-btn {
+    align-self: center;
+  }
 }
 
 /* ───────────────────────────── pause, cards, gazette extras ───────────────────────────── */
@@ -524,7 +553,7 @@
 }
 .team__cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
   gap: 0.6rem;
   margin: 0;
   padding: 0;
@@ -609,66 +638,87 @@
 .team-card[data-type='defence'] .team-card__type {
   background: #1c3fa8;
 }
+.team-card__power {
+  font-weight: 700;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  text-align: center;
+}
+.team-card__stats {
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--ink-soft);
+}
 .team-card__cost {
+  margin-top: auto;
   font-weight: 800;
   font-size: 0.85rem;
 }
-.team-card__level {
-  position: absolute;
-  top: 0.35rem;
-  left: 0.45rem;
-  color: #ffd23f;
-  font-size: 0.85rem;
+.team__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.2rem;
+}
+.team-filter {
+  min-height: 2.75rem;
+  padding: 0.3rem 0.9rem;
+  border: 2px solid var(--ink-soft);
+  border-radius: 99px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.team-filter[aria-pressed='true'] {
+  border-color: #ffd23f;
+  background: #ffd23f;
+  color: #17203f;
+}
+.team__explain {
+  margin: -0.2rem 0 0.6rem;
+  max-width: 48rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.team__explain[hidden] {
+  display: none;
+}
+.team__camp {
+  margin: 0.8rem 0 0.5rem;
+  padding-left: 0.6rem;
+  border-left: 6px solid var(--line);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.05rem;
+  text-transform: uppercase;
+}
+.team__camp[data-camp='gauche'] {
+  border-color: var(--gauche);
+}
+.team__camp[data-camp='centre'] {
+  border-color: var(--centre);
+}
+.team__camp[data-camp='droite'] {
+  border-color: var(--droite);
+}
+.team__camp[data-camp='autres'] {
+  border-color: var(--autres);
+}
+.team__none {
+  color: var(--ink-soft);
+  font-style: italic;
 }
 .team__go {
   margin: 1.5rem 0 0;
 }
 
-/* ── Upgrades, on the calendar ── */
-.upgrades__hint {
-  margin: 0;
-  padding: 0 1rem 0.8rem;
-  font-size: 0.9rem;
-  color: var(--ink-soft);
-}
-.upgrades__list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0 1rem 1rem;
-  list-style: none;
-}
-.upgrades__list li {
-  display: grid;
-  grid-template-columns: 3rem minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.4rem 0.6rem;
-  border: 2px solid var(--line);
-  border-radius: 8px;
-}
-.upgrades__art {
-  line-height: 0;
-}
-.upgrades__art svg {
-  width: 3rem;
-  height: auto;
-}
-.upgrades__name small {
-  display: block;
-  white-space: nowrap;
-  color: var(--ink-soft);
-}
-.upgrades__list .btn {
-  white-space: nowrap;
-}
-.upgrades__list .btn[aria-disabled='true'] {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.btn--small {
-  min-height: 2.75rem;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
+
+
+/* The merge tip: the figure glows gold, as it will on the board. */
+.overlay.is-tier .intro__art svg {
+  filter: drop-shadow(0 0 6px #ffd23f) drop-shadow(0 0 14px #ffb703);
 }

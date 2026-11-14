@@ -4,7 +4,7 @@
  */
 export type Sfx =
   | 'click' | 'place' | 'error' | 'shoot' | 'hit' | 'coin' | 'down' | 'leak'
-  | 'wave' | 'boom' | 'splash' | 'whistle' | 'ult' | 'win' | 'lose';
+  | 'wave' | 'boom' | 'splash' | 'whistle' | 'ult' | 'win' | 'lose' | 'levelUp';
 
 export class Audio {
   muted = false;
@@ -151,6 +151,8 @@ export class Audio {
       case 'ult': this.tone(220, 0, 0.5, 'sawtooth', 0.14, 880); this.tone(440, 0.2, 0.5, 'triangle', 0.16, 1320); break;
       case 'win': [523, 659, 784, 1047].forEach((f, i) => this.tone(f, i * 0.13, 0.3, 'triangle', 0.22)); break;
       case 'lose': [392, 370, 349, 262].forEach((f, i) => this.tone(f, i * 0.22, 0.34, 'sawtooth', 0.12)); break;
+      // Power-up: a quick rising run, then a shimmer.
+      case 'levelUp': [392, 523, 659, 784, 1047].forEach((f, i) => this.tone(f, i * 0.06, 0.16, 'square', 0.1)); this.tone(1568, 0.3, 0.35, 'triangle', 0.12, 2093); break;
     }
   }
 }

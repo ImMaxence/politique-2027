@@ -6,7 +6,7 @@
  * which is what lets the unit tests and the balance bot run it headlessly.
  */
 import { COLS, ROWS, levelDef } from '../data/levels';
-import { CAMPS, DECK_SIZE, UNITS, cardPool, defaultDeck, enemyDef, rivalsOf, upgradedDef } from '../data/units';
+import { CAMPS, DECK_SIZE, MAX_TIER, TIER_PRICE, UNITS, canMerge, cardPool, defaultDeck, enemyDef, rivalsOf, tierDef } from '../data/units';
 import type { CampId, EnemyDef, LevelDef, Power, PowerKind, ProjectileKind, ThemeId, TwistId, UltimateId, UnitDef } from '../data/types';
 
 export const TICK = 1 / 60;
@@ -47,6 +47,11 @@ export interface Unit {
   born: number;
   lastHit: number;
   lastAct: number;
+  /** Level (1 to MAX_TIER): the same figure placed on it again raises it. */
+  tier: number;
+  /** When it last went up a level (for the transformation), and the votes spent on it so far. */
+  tierAt: number;
+  spent: number;
 }
 
 export interface Enemy {
@@ -114,6 +119,8 @@ export interface Card {
 export type GameEvent =
   | { type: 'place'; lane: number; col: number; unitId: string }
   | { type: 'remove'; lane: number; col: number; unitId: string; refund: number }
+  /** The same figure placed on itself: it goes up a level. */
+  | { type: 'merge'; lane: number; col: number; unitId: string; tier: number; cost: number }
   | { type: 'produce'; lane: number; col: number; amount: number }
   | { type: 'passive'; amount: number }
   | { type: 'shoot'; lane: number; col: number; kind: ProjectileKind }
@@ -162,7 +169,7 @@ export type GameEvent =
   | { type: 'win' }
   | { type: 'lose' };
 
-export type PlaceError = 'over' | 'locked' | 'lane' | 'occupied' | 'cost' | 'cooldown';
+export type PlaceError = 'over' | 'locked' | 'lane' | 'occupied' | 'maxed' | 'cost' | 'cooldown';
 
 interface Spawn {
   at: number;
@@ -212,7 +219,7 @@ export interface GameState {
   status: 'playing' | 'won' | 'lost';
   /** Hard mode: bigger waves. */
   hard: boolean;
-  stats: { placed: number; kills: number; leaked: number; produced: number; wavesCleared: number; ripostes: number };
+  stats: { placed: number; merged: number; maxed: number; kills: number; leaked: number; produced: number; wavesCleared: number; ripostes: number };
   events: GameEvent[];
   nextId: number;
   rngState: number;
@@ -257,8 +264,6 @@ export interface GameOptions {
   roster?: string[];
   /** The cards chosen for the night (at most DECK_SIZE); the default deck otherwise. */
   deck?: string[];
-  /** Upgrade level of each card (1-3). */
-  upgrades?: Record<string, number>;
 }
 
 /** In hard mode every wave gets this much more budget. */
@@ -297,7 +302,7 @@ export function createGame(options: GameOptions): GameState {
     units: [],
     enemies: [],
     projectiles: [],
-    cards: deckFor(options, level).map((id) => ({ def: upgradedDef(UNITS[id], options.upgrades?.[id]), cooldown: 0 })),
+    cards: deckFor(options, level).map((id) => ({ def: UNITS[id], cooldown: 0 })),
     ult: { id: camp.ultimate, charge: 0, strike: 0, frenzy: 0 },
     wave: { next: 0, nextAt: level.firstWaveAt, lastStart: 0, pending: [], lastLane: -1 },
     passiveTimer: PASSIVE_INTERVAL,
@@ -311,7 +316,7 @@ export function createGame(options: GameOptions): GameState {
     versus: level.versus ? { budget: VERSUS_START, timeLeft: level.versus.duration } : null,
     tariff: 1,
     status: 'playing',
-    stats: { placed: 0, kills: 0, leaked: 0, produced: 0, wavesCleared: 0, ripostes: 0 },
+    stats: { placed: 0, merged: 0, maxed: 0, kills: 0, leaked: 0, produced: 0, wavesCleared: 0, ripostes: 0 },
     events: [],
     nextId: 1,
     rngState: seed | 0,
@@ -325,14 +330,34 @@ export function costOf(state: GameState, def: UnitDef): number {
   return state.tariff > 1 ? Math.ceil((def.cost * state.tariff) / 5) * 5 : def.cost;
 }
 
+/** What raising a figure to `tier` costs: a multiple of the card's price, rounded up to 25 votes. */
+export function mergeCost(state: GameState, def: UnitDef, tier: number): number {
+  return Math.ceil((costOf(state, def) * (TIER_PRICE[tier] ?? 1)) / 25) * 25;
+}
+
+/**
+ * What playing a card on a square would do: a new figure on an empty square, or the
+ * next level when the same figure already stands there (null when neither is possible).
+ */
+export function playOn(state: GameState, unitId: string, lane: number, col: number): { tier: number; cost: number } | null {
+  const card = state.cards.find((c) => c.def.id === unitId);
+  if (!card || !state.level.lanes.includes(lane) || col < 0 || col >= COLS) return null;
+  const occupant = state.grid[lane][col];
+  if (!occupant) return { tier: 1, cost: costOf(state, card.def) };
+  if (occupant.def.id !== unitId || !canMerge(card.def) || occupant.tier >= MAX_TIER) return null;
+  return { tier: occupant.tier + 1, cost: mergeCost(state, card.def, occupant.tier + 1) };
+}
+
 export function canPlace(state: GameState, unitId: string, lane: number, col: number): PlaceError | null {
   if (state.status !== 'playing') return 'over';
   const card = state.cards.find((c) => c.def.id === unitId);
   if (!card) return 'locked';
   if (!state.level.lanes.includes(lane) || col < 0 || col >= COLS) return 'lane';
-  if (state.grid[lane][col]) return 'occupied';
+  const occupant = state.grid[lane][col];
+  if (occupant && (occupant.def.id !== unitId || !canMerge(card.def))) return 'occupied';
+  if (occupant && occupant.tier >= MAX_TIER) return 'maxed';
   if (card.cooldown > 0) return 'cooldown';
-  if (state.resources < costOf(state, card.def)) return 'cost';
+  if (state.resources < playOn(state, unitId, lane, col)!.cost) return 'cost';
   return null;
 }
 
@@ -340,6 +365,23 @@ export function placeUnit(state: GameState, unitId: string, lane: number, col: n
   const error = canPlace(state, unitId, lane, col);
   if (error) return error;
   const card = state.cards.find((c) => c.def.id === unitId)!;
+  const occupant = state.grid[lane][col];
+  if (occupant) {
+    // Merge: the figure goes up a level, gets all its credibility back, and keeps its square.
+    const tier = occupant.tier + 1;
+    const cost = mergeCost(state, card.def, tier);
+    occupant.def = tierDef(card.def, tier);
+    occupant.tier = tier;
+    occupant.tierAt = state.time;
+    occupant.hp = occupant.def.hp;
+    occupant.spent += cost;
+    state.resources -= cost;
+    card.cooldown = card.def.recharge;
+    state.stats.merged++;
+    if (tier === MAX_TIER) state.stats.maxed++;
+    state.events.push({ type: 'merge', lane, col, unitId, tier, cost });
+    return null;
+  }
   const def = card.def;
   const ability = def.ability;
   let timer = 0;
@@ -352,6 +394,7 @@ export function placeUnit(state: GameState, unitId: string, lane: number, col: n
   const unit: Unit = {
     id: state.nextId++, def, lane, col, hp: def.hp, timer,
     burstLeft: 0, burstTimer: 0, silenced: 0, born: state.time, lastHit: -9, lastAct: -9,
+    tier: 1, tierAt: -9, spent: costOf(state, def),
   };
   state.grid[lane][col] = unit;
   state.units.push(unit);
@@ -367,7 +410,7 @@ export function removeUnit(state: GameState, lane: number, col: number): boolean
   if (state.status !== 'playing') return false;
   const unit = state.grid[lane]?.[col];
   if (!unit) return false;
-  const refund = Math.floor(unit.def.cost * REFUND_RATIO);
+  const refund = Math.floor(unit.spent * REFUND_RATIO);
   state.resources += refund;
   dropUnit(state, unit);
   state.events.push({ type: 'remove', lane, col, unitId: unit.def.id, refund });
@@ -1312,7 +1355,7 @@ function landPower(state: GameState, enemy: Enemy, power: Power, cast: Cast): vo
       if (!zone) break;
       for (const unit of [...state.units]) {
         if (Math.abs(unit.lane - zone.lane) > 1 || Math.abs(unit.col - zone.col) > 1) continue;
-        state.resources += Math.floor(unit.def.cost * power.refund);
+        state.resources += Math.floor(unit.spent * power.refund);
         const card = state.cards.find((c) => c.def.id === unit.def.id);
         if (card) card.cooldown = 0;
         dropUnit(state, unit);

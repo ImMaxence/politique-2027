@@ -173,12 +173,6 @@ function castOf(id: number) {
       </li>
     </ul>
 
-    <details class="achievements upgrades">
-      <summary data-slot="upgrades-title">{t.ui.upgradesTitle.replace('{n}', '0')}</summary>
-      <p class="upgrades__hint">{t.ui.upgradesHint}</p>
-      <ul class="upgrades__list" data-slot="upgrades-list" role="list"></ul>
-    </details>
-
     <details class="achievements">
       <summary data-slot="achievements-title">{t.ui.achievementsTitle.replace('{n}', '0').replace('{total}', String(ACHIEVEMENTS.length))}</summary>
       <ul class="achievements__list" role="list">
@@ -206,12 +200,19 @@ function castOf(id: number) {
       </div>
     </div>
     <p class="team__count" data-slot="team-count" aria-live="polite"></p>
+    <div class="team__filters" role="group" aria-label={t.ui.teamFilter}>
+      <button type="button" class="team-filter" data-filter="all" aria-pressed="true">{t.ui.teamAll}</button>
+      {(['money', 'attack', 'effect', 'defence'] as const).map((c) => (
+        <button type="button" class="team-filter" data-filter={c} aria-pressed="false">{t.types[c]}</button>
+      ))}
+    </div>
     <h3 class="team__title">{t.ui.teamCamp}</h3>
     <ul class="team__cards" data-slot="team-camp" role="list"></ul>
     <h3 class="team__title">{t.ui.teamReinforcements}</h3>
     <ul class="team__cards" data-slot="team-reinforcements" role="list"></ul>
     <h3 class="team__title" data-slot="team-transfuges-title"></h3>
-    <ul class="team__cards" data-slot="team-transfuges" role="list"></ul>
+    <p class="team__explain" data-slot="team-transfuges-explain">{t.ui.teamTransfugesHint}</p>
+    <div data-slot="team-transfuges"></div>
     <p class="team__go"><button type="button" class="btn btn--primary" data-action="team-go">{t.ui.teamGo}</button></p>
   </section>
 
