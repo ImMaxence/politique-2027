@@ -443,7 +443,7 @@ class GameApp {
     // The daily challenge, duels and head to head are the same for everybody: default deck.
     const personal = setup.mode === 'campaign';
     const state = createGame({
-      camp, level: levelId, seed: setup.seed, hard: personal && this.save.hard,
+      camp, level: levelId, seed: setup.seed, hard: personal && this.save.difficulty === 'hard', easy: personal && this.save.difficulty === 'easy',
       deck: personal ? setup.deck : undefined,
     });
     this.root.dataset.camp = camp;
@@ -491,7 +491,7 @@ class GameApp {
     }
     this.updateHud();
     const name = setup.mode === 'versus' ? this.t.ui.versusName : this.t.levels[levelId].name;
-    const extra = setup.mode === 'versus' ? this.t.announce.versusStart : state.hard ? this.t.announce.hardMode : '';
+    const extra = setup.mode === 'versus' ? this.t.announce.versusStart : state.hard ? this.t.announce.hardMode : state.easy ? this.t.announce.easyMode : '';
     this.say(`${fmt(this.t.announce.start, { level: name, camp: this.t.camps[camp].name, goal: this.t.goals[state.level.goal].banner })} ${extra}`.trim());
     this.audio.music(this.save.music);
   }
@@ -694,7 +694,8 @@ class GameApp {
     });
     on('[data-action="mute"]', () => this.toggleMute());
     on('[data-action="difficulty"]', (el) => {
-      this.save.hard = el.dataset.value === 'hard';
+      const value = el.dataset.value;
+      this.save.difficulty = value === 'easy' || value === 'hard' ? value : 'normal';
       storeSave(this.save);
       this.syncToggles();
     });
@@ -946,7 +947,7 @@ class GameApp {
     this.root.querySelector('[data-action="orientation"]')?.setAttribute('aria-pressed', String(this.save.forceLandscape));
     this.root.querySelector('[data-action="music"]')?.setAttribute('aria-pressed', String(this.save.music));
     for (const option of this.root.querySelectorAll<HTMLElement>('[data-action="difficulty"]')) {
-      option.setAttribute('aria-pressed', String((option.dataset.value === 'hard') === this.save.hard));
+      option.setAttribute('aria-pressed', String(option.dataset.value === this.save.difficulty));
     }
   }
 
@@ -1076,9 +1077,10 @@ class GameApp {
       }),
     );
 
-    // Hard mode and a new endless record get a line of their own.
+    // The difficulty and a new endless record get a line of their own.
     const notes: string[] = [];
     if (state.hard) notes.push(this.t.ui.hardBadge);
+    if (state.easy) notes.push(this.t.ui.easyBadge);
     if (level.endless && wavesHeld > previousBest) notes.push(this.t.ui.newRecord);
     let link: LastResult['link'];
     if (setup.mode === 'daily') notes.push(this.t.ui.dailyName);

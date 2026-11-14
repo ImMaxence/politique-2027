@@ -39,6 +39,12 @@
 .difficulty__option[aria-pressed='true']::before {
   content: '✓ ';
 }
+/* A narrow phone: the word on its own line, the three choices side by side under it. */
+@media (max-width: 30rem) {
+  .difficulty__label {
+    flex-basis: 100%;
+  }
+}
 .difficulty__hint {
   flex-basis: 100%;
   font-size: 0.8rem;

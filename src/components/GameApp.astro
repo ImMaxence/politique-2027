@@ -104,9 +104,10 @@ function castOf(id: number) {
       <div class="screen__tools">
         <div class="difficulty" role="group" aria-labelledby="difficulty-label">
           <span id="difficulty-label" class="difficulty__label">{t.ui.difficulty}</span>
+          <button type="button" class="difficulty__option" data-action="difficulty" data-value="easy" aria-pressed="false" aria-describedby="difficulty-hint">{t.ui.easy}</button>
           <button type="button" class="difficulty__option" data-action="difficulty" data-value="normal" aria-pressed="true">{t.ui.normal}</button>
           <button type="button" class="difficulty__option" data-action="difficulty" data-value="hard" aria-pressed="false" aria-describedby="difficulty-hint">{t.ui.hard}</button>
-          <span id="difficulty-hint" class="difficulty__hint">{t.ui.hardHint}</span>
+          <span id="difficulty-hint" class="difficulty__hint">{t.ui.difficultyHint}</span>
         </div>
         <button type="button" class="btn" data-action="change-camp">{t.ui.changeCamp}</button>
       </div>

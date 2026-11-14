@@ -6,9 +6,10 @@ import {
 } from '../../src/game/data/units';
 import { botAct } from '../../src/game/sim/bot';
 import {
-  PASSIVE_AMOUNT, PASSIVE_INTERVAL, REFUND_RATIO, SPAWN_X, TICK, ULT_CHARGE_TIME,
+  EASY_HP, EASY_START, PASSIVE_AMOUNT, PASSIVE_INTERVAL, REFUND_RATIO, SPAWN_X, TICK, ULT_CHARGE_TIME,
   canPlace, costOf, createGame, mergeCost, placeUnit, playOn, removeUnit, spawnEnemy, starsFor, step, useUltimate, type GameState,
 } from '../../src/game/sim/engine';
+import { PORTRAIT_IDS } from '../../src/game/render/portraits';
 import { GAME_STRINGS, LANGS } from '../../src/i18n/game';
 
 function run(state: GameState, seconds: number): void {
@@ -139,6 +140,10 @@ describe('placing figures', () => {
     const left = state.resources;
     removeUnit(state, 2, 2);
     expect(state.resources).toBe(left + Math.floor(spent * REFUND_RATIO));
+  });
+
+  it('every card has a puppet for the board, reinforcements included', () => {
+    for (const id of Object.keys(UNITS)) expect(PORTRAIT_IDS).toContain(id);
   });
 
   it('every hit reports the damage it does, levels included', () => {
@@ -483,6 +488,29 @@ describe('money, taxes and guests', () => {
     const hard = spawned(true);
     expect(hard.count).toBeGreaterThan(normal.count * 1.15);
     expect(hard.start).toBe(normal.start);
+  });
+
+  it('easy mode sends smaller waves of softer opponents, with more votes to start with', () => {
+    const spawned = (easy: boolean) => {
+      const state = createGame({ camp: 'centre', level: 6, seed: 3, easy });
+      const start = state.resources;
+      let count = 0;
+      while (state.time < 150) {
+        step(state);
+        count += state.events.filter((e) => e.type === 'spawn').length;
+        state.events.length = 0;
+        state.polls = 99; // keep the idle match going
+      }
+      return { count, start, state };
+    };
+    const normal = spawned(false);
+    const easy = spawned(true);
+    expect(easy.count).toBeLessThan(normal.count * 0.85);
+    expect(easy.start).toBe(normal.start + EASY_START);
+    const soft = createGame({ camp: 'centre', level: 6, easy: true });
+    expect(spawnEnemy(soft, 'militant', 2, 'gauche')!.hp).toBe(Math.round(EXTRAS.militant.hp * EASY_HP));
+    // Hard wins over easy if both are asked for.
+    expect(createGame({ camp: 'centre', level: 6, easy: true, hard: true }).easy).toBe(false);
   });
 
   it('the benefits office looks at the file from time to time', () => {

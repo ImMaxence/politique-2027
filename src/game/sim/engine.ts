@@ -223,6 +223,8 @@ export interface GameState {
   status: 'playing' | 'won' | 'lost';
   /** Hard mode: bigger waves. */
   hard: boolean;
+  /** Easy mode: smaller waves, softer opponents. */
+  easy: boolean;
   stats: { placed: number; merged: number; maxed: number; kills: number; leaked: number; produced: number; wavesCleared: number; ripostes: number };
   events: GameEvent[];
   nextId: number;
@@ -264,6 +266,8 @@ export interface GameOptions {
   seed?: number;
   /** "Hard" mode: every wave is bigger. */
   hard?: boolean;
+  /** "Easy" mode: smaller waves, softer opponents, more votes to start with (ignored with `hard`). */
+  easy?: boolean;
   /** The player's line-up, when it differs from the camp's roster. */
   roster?: string[];
   /** The cards chosen for the night (at most DECK_SIZE); the default deck otherwise. */
@@ -272,6 +276,10 @@ export interface GameOptions {
 
 /** In hard mode every wave gets this much more budget. */
 export const HARD_BUDGET = 1.3;
+/** Easy mode: waves a quarter smaller, opponents with a fifth less credibility, 50 more votes at the start. */
+export const EASY_BUDGET = 0.75;
+export const EASY_HP = 0.8;
+export const EASY_START = 50;
 
 /** The cards of a match: the chosen deck (unknown cards and rival headliners left out), or the default one. */
 function deckFor(options: GameOptions, level: LevelDef): string[] {
@@ -297,10 +305,11 @@ export function createGame(options: GameOptions): GameState {
   return {
     camp: camp.id,
     hard: options.hard === true,
+    easy: options.easy === true && options.hard !== true,
     level,
     seed,
     time: 0,
-    resources: level.startResources,
+    resources: level.startResources + (options.easy === true && options.hard !== true ? EASY_START : 0),
     polls: level.polls,
     grid,
     units: [],
@@ -468,7 +477,8 @@ export function useUltimate(state: GameState): boolean {
 
 export function spawnEnemy(state: GameState, enemyId: string, lane: number, camp: CampId, x = SPAWN_X): Enemy | null {
   if (state.enemies.length >= MAX_ENEMIES) return null;
-  const def = enemyDef(enemyId);
+  const base = enemyDef(enemyId);
+  const def = state.easy ? { ...base, hp: Math.round(base.hp * EASY_HP) } : base;
   const enemy: Enemy = {
     id: state.nextId++, def, camp: def.camp ?? camp, lane, x, hp: def.hp,
     slowT: 0, slowF: 1, auraSlow: 1, slowed: false, stunT: 0,
@@ -501,6 +511,7 @@ function launchWave(state: GameState): void {
   let budget = level.baseBudget + level.growth * index;
   if (big) budget = budget * 1.5 + 2;
   if (state.hard) budget *= HARD_BUDGET;
+  if (state.easy) budget *= EASY_BUDGET;
 
   const ids: string[] = [];
 

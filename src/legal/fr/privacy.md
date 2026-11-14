@@ -15,7 +15,7 @@ Pour retenir votre progression et vos réglages, le site utilise le stockage loc
 
 | Clé | Contenu | Durée |
 | --- | --- | --- |
-| `politique2027:save` | Camp choisi, niveaux débloqués, étoiles, record du mode sans fin, son coupé ou non, vitesse de jeu, paysage forcé ou non sur téléphone, mode difficile ou non, adversaires déjà présentés (fiches « Nouveau ! »), astuce « écran d'accueil » masquée ou non, meilleurs scores des défis du jour (deux dernières semaines), succès et compteurs qui y mènent, musique activée ou non | Jusqu'à ce que vous l'effaciez |
+| `politique2027:save` | Camp choisi, niveaux débloqués, étoiles, record du mode sans fin, son coupé ou non, vitesse de jeu, paysage forcé ou non sur téléphone, difficulté choisie (facile, normale ou difficile), adversaires déjà présentés (fiches « Nouveau ! »), astuce « écran d'accueil » masquée ou non, meilleurs scores des défis du jour (deux dernières semaines), succès et compteurs qui y mènent, musique activée ou non | Jusqu'à ce que vous l'effaciez |
 
 Pour que le jeu s'ouvre et se joue **hors connexion** (notamment une fois ajouté à l'écran d'accueil), le navigateur garde aussi une copie des fichiers du site — pages, scripts, styles, polices et images — dans son cache (`Cache Storage`, géré par un *service worker*). Ce cache ne contient que les fichiers publics du site, aucune donnée vous concernant ; il est remplacé à chaque nouvelle version du jeu.
 

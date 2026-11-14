@@ -10,6 +10,8 @@ import { UNITS } from './data/units';
  */
 const KEY = 'politique2027:save';
 
+export type Difficulty = 'easy' | 'normal' | 'hard';
+
 export interface CampProgress {
   /** Highest campaign level available. */
   unlocked: number;
@@ -31,7 +33,8 @@ export interface Save {
   /** On a phone held upright, draw the match sideways so that it must be turned (default on). */
   forceLandscape: boolean;
   /** Hard mode: bigger waves (default off). */
-  hard: boolean;
+  /** Campaign difficulty (the daily challenge, duels and head to head ignore it). */
+  difficulty: Difficulty;
   /** Opponents whose "New!" card has already been shown. */
   seen: string[];
   /** True once the "add to home screen" tip has been dismissed. */
@@ -66,7 +69,7 @@ export function blankSave(): Save {
     muted: false,
     speed: 1,
     forceLandscape: true,
-    hard: false,
+    difficulty: 'normal',
     seen: [],
     installTipDismissed: false,
     daily: {},
@@ -84,7 +87,7 @@ export function loadSave(): Save {
     if (!raw) return save;
     const data = JSON.parse(raw) as {
       v?: number; camp?: unknown; muted?: unknown; speed?: unknown; forceLandscape?: unknown;
-      hard?: unknown; seen?: unknown; installTipDismissed?: unknown;
+      hard?: unknown; difficulty?: unknown; seen?: unknown; installTipDismissed?: unknown;
       daily?: unknown; achievements?: unknown; counters?: Record<string, unknown>; music?: unknown;
       teams?: Record<string, unknown>;
       progress?: Record<string, Partial<CampProgress>>;
@@ -97,7 +100,7 @@ export function loadSave(): Save {
     save.muted = data.muted === true;
     save.speed = data.speed === 2 ? 2 : data.speed === 0.5 ? 0.5 : 1;
     save.forceLandscape = data.forceLandscape !== false;
-    save.hard = data.hard === true;
+    save.difficulty = data.difficulty === 'easy' || data.difficulty === 'hard' ? data.difficulty : data.hard === true ? 'hard' : 'normal';
     save.seen = Array.isArray(data.seen) ? data.seen.filter((id): id is string => typeof id === 'string').slice(0, 100) : [];
     save.installTipDismissed = data.installTipDismissed === true;
     save.music = data.music !== false;

@@ -14,7 +14,7 @@
  */
 import { HEAD_FILES, PHOTOS, type Expression } from '../data/photos';
 import type { Category } from '../data/types';
-import { EXTRAS, GUESTS, UNITS, categoryOf } from '../data/units';
+import { EXTRAS, GUESTS, REINFORCEMENTS, UNITS, categoryOf } from '../data/units';
 
 export const INK = '#17203f';
 const PAPER = '#fffdf6';
@@ -443,8 +443,8 @@ function catSvg(): string {
 
 // ───────────────────────────── public API ─────────────────────────────
 
-/** Everything `portraitSvg` can draw: the 20 roster figures, the guests and the two reinforcements. */
-export const PORTRAIT_IDS = [...FIGURES, 'crs', 'pompiers'];
+/** Everything the board shows as a figure: the roster, the guests and every reinforcement (each one needs its sprite). */
+export const PORTRAIT_IDS = [...FIGURES, ...REINFORCEMENTS];
 
 /** Public path of a photo head (or null when the figure has no photo, or not that expression). */
 export function headUrl(id: string, expression: Expression = 'neutral'): string | null {

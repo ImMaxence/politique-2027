@@ -69,6 +69,22 @@ test('hard mode is a choice on the calendar, remembered and applied to the match
   await expect(page.locator('[data-action="difficulty"][data-value="hard"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('easy mode is a choice on the calendar too: smaller waves, more votes to start with', async ({ page }) => {
+  await openGame(page, 'en');
+  await page.locator('[data-camp="gauche"]').click();
+  const easy = page.locator('[data-action="difficulty"][data-value="easy"]');
+  await easy.click();
+  await expect(easy).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-action="difficulty"][data-value="normal"]')).toHaveAttribute('aria-pressed', 'false');
+  await page.locator('[data-level="1"]').click();
+  await page.waitForSelector('[data-screen="match"]:not([hidden])');
+  const state = await page.evaluate(() => window.__P2027__.state()!);
+  expect(state.easy).toBe(true);
+  expect(state.hard).toBe(false);
+  const save = await page.evaluate(() => JSON.parse(localStorage.getItem('politique2027:save')!));
+  expect(save.difficulty).toBe('easy');
+});
+
 test('the pause menu lists the keyboard shortcuts', async ({ page }) => {
   await openGame(page, 'en');
   await startMatch(page, 'autres', 1);

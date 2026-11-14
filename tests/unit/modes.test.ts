@@ -114,6 +114,15 @@ describe('saves', () => {
     expect(save.teams.centre).toEqual([]);
   });
 
+  it('keeps the difficulty, and reads an old hard-mode switch as "hard"', () => {
+    withStorage({ v: 4, difficulty: 'easy' });
+    expect(loadSave().difficulty).toBe('easy');
+    withStorage({ v: 4, hard: true });
+    expect(loadSave().difficulty).toBe('hard');
+    withStorage({ v: 4, difficulty: 'nightmare' });
+    expect(loadSave().difficulty).toBe('normal');
+  });
+
   it('keeps the daily scores', () => {
     withStorage({ v: 4, daily: { '2026-11-13': 1200, '2026-11-14': 900, junk: 5 } });
     expect(loadSave().daily).toEqual({ '2026-11-13': 1200, '2026-11-14': 900 });

@@ -12,6 +12,18 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [4.2.0] — 2026-11-14
+
+An easy mode, and the five newest reinforcements can finally be seen. Saves are kept: a hard mode chosen before stays chosen.
+
+### Added
+
+- **Easy mode**, next to Normal and Hard on the calendar: waves a quarter smaller, opponents with a fifth less credibility and 50 more votes at the start of each night, to find your feet. Like hard mode it applies to the campaign and Cohabitation, not to the daily challenge, duels or head to head; the start of the night and the gazette say which mode was played. On a narrow phone the three choices sit side by side under the word "Difficulty". The reference bot wins every night in easy mode without losing a single piece of the goal, and doing nothing still loses.
+
+### Fixed
+
+- **The five reinforcements added in 3.1.0 can be seen on the board.** The speed camera, the paramedics, the baker, the teachers and the Constitutional Council did their job but stayed invisible once placed (only their speech bubble showed): the game only prepared the pictures of the riot police and the firefighters. Every reinforcement now gets its picture, and a test checks that every card has one.
+
 ## [4.1.1] — 2026-11-14
 
 Saves are untouched.
