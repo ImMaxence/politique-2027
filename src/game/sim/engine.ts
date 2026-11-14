@@ -7,7 +7,7 @@
  */
 import { COLS, ROWS, levelDef } from '../data/levels';
 import { CAMPS, DECK_SIZE, MAX_TIER, TIER_PRICE, UNITS, canMerge, cardPool, defaultDeck, enemyDef, rivalsOf, tierDef } from '../data/units';
-import type { CampId, EnemyDef, LevelDef, Power, PowerKind, ProjectileKind, ThemeId, TwistId, UltimateId, UnitDef } from '../data/types';
+import type { CampId, Difficulty, EnemyDef, LevelDef, Power, PowerKind, ProjectileKind, RuleId, ThemeId, TwistId, UltimateId, UnitDef } from '../data/types';
 
 export const TICK = 1 / 60;
 export const PASSIVE_INTERVAL = 9;
@@ -221,10 +221,13 @@ export interface GameState {
   /** Cost multiplier applied to every card (1 unless tariffs are in force). */
   tariff: number;
   status: 'playing' | 'won' | 'lost';
-  /** Hard mode: bigger waves. */
+  difficulty: Difficulty;
+  /** Hard or extreme: bigger waves. */
   hard: boolean;
-  /** Easy mode: smaller waves, softer opponents. */
+  /** Easy or very easy: smaller waves, softer opponents. */
   easy: boolean;
+  /** The rule of the day, if any. */
+  rule: RuleId | null;
   stats: { placed: number; merged: number; maxed: number; kills: number; leaked: number; produced: number; wavesCleared: number; ripostes: number };
   events: GameEvent[];
   nextId: number;
@@ -264,10 +267,13 @@ export interface GameOptions {
   camp: CampId;
   level: number;
   seed?: number;
-  /** "Hard" mode: every wave is bigger. */
+  /** Campaign difficulty (see DIFFICULTY); "normal" by default. */
+  difficulty?: Difficulty;
+  /** Shorthands for difficulty "hard" and "easy" (`difficulty` wins if both are given). */
   hard?: boolean;
-  /** "Easy" mode: smaller waves, softer opponents, more votes to start with (ignored with `hard`). */
   easy?: boolean;
+  /** The daily challenge's rule of the day (and a duel's taken from it). */
+  rule?: RuleId;
   /** The player's line-up, when it differs from the camp's roster. */
   roster?: string[];
   /** The cards chosen for the night (at most DECK_SIZE); the default deck otherwise. */
@@ -280,6 +286,27 @@ export const HARD_BUDGET = 1.3;
 export const EASY_BUDGET = 0.75;
 export const EASY_HP = 0.8;
 export const EASY_START = 50;
+
+/**
+ * What each difficulty does to a night: the size of the waves, the opponents' credibility
+ * and walking speed, and the votes added at the start.
+ */
+export const DIFFICULTY: Record<Difficulty, { budget: number; hp: number; speed: number; start: number }> = {
+  veryEasy: { budget: 0.55, hp: 0.65, speed: 0.9, start: 100 },
+  easy: { budget: EASY_BUDGET, hp: EASY_HP, speed: 1, start: EASY_START },
+  normal: { budget: 1, hp: 1, speed: 1, start: 0 },
+  hard: { budget: HARD_BUDGET, hp: 1, speed: 1, start: 0 },
+  extreme: { budget: 1.6, hp: 1.25, speed: 1.12, start: 0 },
+};
+/** Rules of the day. Double votes: every vote counts twice, and opponents walk faster. */
+export const RULE_VOTES = 2;
+export const RULE_SPEED = 1.25;
+/** Sales: cards 30% cheaper, 50% slower to recharge. */
+export const RULE_SALE = 0.7;
+export const RULE_SALE_RECHARGE = 1.5;
+/** Hard heads: opponents with 30% more credibility, and 150 more votes at the start. */
+export const RULE_TOUGH_HP = 1.3;
+export const RULE_TOUGH_START = 150;
 
 /** The cards of a match: the chosen deck (unknown cards and rival headliners left out), or the default one. */
 function deckFor(options: GameOptions, level: LevelDef): string[] {
@@ -297,6 +324,7 @@ function deckFor(options: GameOptions, level: LevelDef): string[] {
 
 export function createGame(options: GameOptions): GameState {
   const level = levelDef(options.level);
+  const difficulty: Difficulty = options.difficulty ?? (options.hard ? 'hard' : options.easy ? 'easy' : 'normal');
   const camp = CAMPS[options.camp];
   const seed = options.seed ?? 2027;
   const grid: (Unit | null)[][] = [];
@@ -304,12 +332,14 @@ export function createGame(options: GameOptions): GameState {
 
   return {
     camp: camp.id,
-    hard: options.hard === true,
-    easy: options.easy === true && options.hard !== true,
+    difficulty,
+    hard: difficulty === 'hard' || difficulty === 'extreme',
+    easy: difficulty === 'easy' || difficulty === 'veryEasy',
+    rule: options.rule ?? null,
     level,
     seed,
     time: 0,
-    resources: level.startResources + (options.easy === true && options.hard !== true ? EASY_START : 0),
+    resources: level.startResources + DIFFICULTY[difficulty].start + (options.rule === 'tough' ? RULE_TOUGH_START : 0),
     polls: level.polls,
     grid,
     units: [],
@@ -338,14 +368,21 @@ export function createGame(options: GameOptions): GameState {
 
 // ───────────────────────────── player actions ─────────────────────────────
 
-/** What a card costs right now: tariffs round every price up to the next multiple of 5. */
+/** What a card costs right now: tariffs (and sales) round every price up to the next multiple of 5. */
 export function costOf(state: GameState, def: UnitDef): number {
-  return state.tariff > 1 ? Math.ceil((def.cost * state.tariff) / 5) * 5 : def.cost;
+  const factor = state.tariff * (state.rule === 'sale' ? RULE_SALE : 1);
+  return factor !== 1 ? Math.ceil((def.cost * factor) / 5) * 5 : def.cost;
+}
+
+/** How long a card takes to recharge once played. */
+function rechargeOf(state: GameState, def: UnitDef): number {
+  return def.recharge * (state.rule === 'sale' ? RULE_SALE_RECHARGE : 1);
 }
 
 /** What raising a figure to `tier` costs: a multiple of the card's price, rounded up to 25 votes. */
 export function mergeCost(state: GameState, def: UnitDef, tier: number): number {
-  return Math.ceil((costOf(state, def) * (TIER_PRICE[tier] ?? 1)) / 25) * 25;
+  const factor = state.rule === 'cheapMerge' ? 1 : (TIER_PRICE[tier] ?? 1);
+  return Math.ceil((costOf(state, def) * factor) / 25) * 25;
 }
 
 /**
@@ -389,7 +426,7 @@ export function placeUnit(state: GameState, unitId: string, lane: number, col: n
     occupant.hp = occupant.def.hp;
     occupant.spent += cost;
     state.resources -= cost;
-    card.cooldown = card.def.recharge;
+    card.cooldown = rechargeOf(state, card.def);
     state.stats.merged++;
     if (tier === MAX_TIER) state.stats.maxed++;
     state.events.push({ type: 'merge', lane, col, unitId, tier, cost });
@@ -412,7 +449,7 @@ export function placeUnit(state: GameState, unitId: string, lane: number, col: n
   state.grid[lane][col] = unit;
   state.units.push(unit);
   state.resources -= costOf(state, def);
-  card.cooldown = def.recharge;
+  card.cooldown = rechargeOf(state, def);
   state.stats.placed++;
   state.events.push({ type: 'place', lane, col, unitId });
   return null;
@@ -425,7 +462,7 @@ export function refundOf(unit: Unit): number {
 
 /** "Remaniement": dismiss a figure and recover part of its cost. */
 export function removeUnit(state: GameState, lane: number, col: number): boolean {
-  if (state.status !== 'playing') return false;
+  if (state.status !== 'playing' || state.rule === 'noRemove') return false;
   const unit = state.grid[lane]?.[col];
   if (!unit) return false;
   const refund = refundOf(unit);
@@ -478,7 +515,8 @@ export function useUltimate(state: GameState): boolean {
 export function spawnEnemy(state: GameState, enemyId: string, lane: number, camp: CampId, x = SPAWN_X): Enemy | null {
   if (state.enemies.length >= MAX_ENEMIES) return null;
   const base = enemyDef(enemyId);
-  const def = state.easy ? { ...base, hp: Math.round(base.hp * EASY_HP) } : base;
+  const toughness = DIFFICULTY[state.difficulty].hp * (state.rule === 'tough' ? RULE_TOUGH_HP : 1);
+  const def = toughness !== 1 ? { ...base, hp: Math.round(base.hp * toughness) } : base;
   const enemy: Enemy = {
     id: state.nextId++, def, camp: def.camp ?? camp, lane, x, hp: def.hp,
     slowT: 0, slowF: 1, auraSlow: 1, slowed: false, stunT: 0,
@@ -510,8 +548,7 @@ function launchWave(state: GameState): void {
 
   let budget = level.baseBudget + level.growth * index;
   if (big) budget = budget * 1.5 + 2;
-  if (state.hard) budget *= HARD_BUDGET;
-  if (state.easy) budget *= EASY_BUDGET;
+  budget *= DIFFICULTY[state.difficulty].budget;
 
   const ids: string[] = [];
 
@@ -719,10 +756,11 @@ function updateUnits(state: GameState, dt: number): void {
         unit.timer -= dt;
         if (unit.timer <= 0) {
           unit.timer += ability.interval;
-          state.resources += ability.amount;
-          state.stats.produced += ability.amount;
+          const amount = ability.amount * (state.rule === 'doubleVotes' ? RULE_VOTES : 1);
+          state.resources += amount;
+          state.stats.produced += amount;
           unit.lastAct = state.time;
-          state.events.push({ type: 'produce', lane: unit.lane, col: unit.col, amount: ability.amount });
+          state.events.push({ type: 'produce', lane: unit.lane, col: unit.col, amount });
         }
         break;
       }
@@ -1013,7 +1051,7 @@ function updateEnemies(state: GameState, dt: number): void {
       }
     } else {
       enemy.attacking = false;
-      let speed = def.speed;
+      let speed = def.speed * DIFFICULTY[state.difficulty].speed * (state.rule === 'doubleVotes' ? RULE_SPEED : 1);
       if (trait?.kind === 'fuel') {
         // Fast out of the gate, then the tank runs dry.
         if (!enemy.dry && SPAWN_X - enemy.x >= trait.range) {
@@ -1431,8 +1469,9 @@ export function step(state: GameState, dt: number = TICK): void {
   state.passiveTimer -= dt;
   if (state.passiveTimer <= 0) {
     state.passiveTimer += PASSIVE_INTERVAL;
-    state.resources += PASSIVE_AMOUNT;
-    state.events.push({ type: 'passive', amount: PASSIVE_AMOUNT });
+    const passive = PASSIVE_AMOUNT * (state.rule === 'doubleVotes' ? RULE_VOTES : 1);
+    state.resources += passive;
+    state.events.push({ type: 'passive', amount: passive });
   }
   state.cafTimer -= dt;
   if (state.cafTimer <= 0) {

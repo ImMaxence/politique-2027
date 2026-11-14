@@ -226,3 +226,11 @@ export interface LevelDef {
   /** Two players, one screen: no waves, an attacker with a budget, and a clock. */
   versus?: { duration: number };
 }
+
+/** The daily challenge's rule of the day (a duel taken from it carries it too). */
+export const RULES = ['doubleVotes', 'noRemove', 'sale', 'tough', 'cheapMerge'] as const;
+export type RuleId = (typeof RULES)[number];
+
+/** Campaign difficulty, from very easy to extreme (the daily challenge, duels and head to head are always "normal"). */
+export const DIFFICULTIES = ['veryEasy', 'easy', 'normal', 'hard', 'extreme'] as const;
+export type Difficulty = (typeof DIFFICULTIES)[number];

@@ -12,7 +12,7 @@ export interface PageRef {
 export const PAGES: PageRef[] = LANGS.flatMap((lang) => ROUTE_KEYS.map((route) => ({ lang, route, url: path(lang, route) })));
 
 interface Hook {
-  state(): { status: string; time: number; hard: boolean; easy: boolean; resources: number; polls: number; tariff: number; units: { def: { id: string }; lane: number; col: number }[] } | null;
+  state(): { status: string; time: number; difficulty: string; hard: boolean; easy: boolean; resources: number; polls: number; tariff: number; units: { def: { id: string }; lane: number; col: number }[] } | null;
   start(camp: string, level: number, seed?: number): Promise<void>;
   team(camp: string, level: number): Promise<void>;
   advance(seconds: number, bot?: boolean): Promise<void>;

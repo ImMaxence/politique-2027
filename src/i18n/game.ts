@@ -7,7 +7,8 @@
  * as such; the others are made up in character. See the legal notice.
  */
 import type { AchievementId } from '../game/achievements';
-import type { CampId, Category, GoalId, PowerKind, UltimateId } from '../game/data/types';
+import type { CosmeticId } from '../game/cosmetics';
+import type { CampId, Category, GoalId, PowerKind, UltimateId, RuleId } from '../game/data/types';
 
 export type Lang = 'fr' | 'en';
 export const LANGS: readonly Lang[] = ['fr', 'en'];
@@ -45,6 +46,10 @@ export interface GameStrings {
   /** Two figures of the same camp side by side answer each other: a line each. */
   duos: { a: string; b: string; lines: [string, string] }[];
   achievements: Record<AchievementId, { name: string; desc: string }>;
+  /** The daily challenge's rules of the day. */
+  rules: Record<RuleId, { name: string; desc: string }>;
+  /** The wardrobe's looks. */
+  cosmetics: Record<CosmeticId, { name: string; desc: string }>;
 }
 
 const fr: GameStrings = {
@@ -272,10 +277,18 @@ const fr: GameStrings = {
     tonight: 'Au programme',
     onlyAgainst: 'seulement face à {camp}',
     difficulty: 'Difficulté',
+    veryEasy: 'Très facile',
     easy: 'Facile',
     normal: 'Normale',
     hard: 'Difficile',
-    difficultyHint: 'Facile : des vagues plus petites, des adversaires moins coriaces et 50 bulletins de plus au départ, pour découvrir. Difficile : des vagues plus grosses, pour les habitués',
+    extreme: 'Extrême',
+    hintVeryEasy: 'Très facile : des vagues presque deux fois plus petites, des adversaires bien moins coriaces et plus lents, 100 bulletins de plus au départ. Pour découvrir le jeu, ou y jouer avec un enfant',
+    hintEasy: 'Facile : des vagues plus petites, des adversaires moins coriaces et 50 bulletins de plus au départ, pour se faire la main',
+    hintNormal: 'Normale : le jeu tel qu’il a été équilibré',
+    hintHard: 'Difficile : des vagues plus grosses, pour les habitués',
+    hintExtreme: 'Extrême : des vagues énormes d’adversaires plus coriaces et plus rapides. Pour celles et ceux qui ont déjà tout gagné',
+    veryEasyBadge: 'Mode très facile',
+    extremeBadge: 'Mode extrême',
     easyBadge: 'Mode facile',
     hardBadge: 'Mode difficile',
     share: 'Partager le résultat',
@@ -291,6 +304,21 @@ const fr: GameStrings = {
     dailyName: 'Défi du jour',
     dailyBlurb: '{level}, avec {camp} : les mêmes vagues pour tout le monde, aujourd’hui seulement',
     dailyBest: 'Ton record du jour : {n} points',
+    dailyRule: 'Règle du jour',
+    ruleBanner: 'Règle du jour : {name}',
+    streakOne: 'Série : 1 jour',
+    streakMany: 'Série : {n} jours de suite',
+    streakGoal: '{goal} jours de suite : {reward}',
+    streakNote: '{n} jours de suite',
+    challengeFriend: 'Défier un ami',
+    wardrobeTitle: 'Vestiaire ({n}/{total})',
+    wardrobeHint: 'Chaque succès débloque une tenue pour tes figures. Ça ne change rien au jeu : c’est pour le style',
+    wardrobeWear: 'Porter',
+    wardrobeWorn: 'Portée',
+    wardrobeLockedShort: 'Verrouillée',
+    wardrobeLocked: 'À débloquer avec le succès « {achievement} »',
+    unlocks: 'Débloque : {name}',
+    cosmeticNew: 'Nouvelle tenue au vestiaire : {name}',
     duelName: 'Duel chacun son tour',
     duelBlurb: 'La même partie pour deux : joue, puis passe la main ou envoie le lien. Le meilleur score l’emporte',
     versusName: 'Face-à-face, à deux',
@@ -383,6 +411,10 @@ const fr: GameStrings = {
     errCooldown: "{name} n'est pas encore prêt",
     errOccupied: 'Case déjà occupée : seule la même figure peut s’y poser, pour monter de niveau',
     errMaxed: '{name} est déjà au niveau maximum',
+    ruleStart: 'Règle du jour : {name}. {desc}',
+    noRemove: 'Pas de remaniement aujourd’hui : le bouton Retirer est désactivé',
+    cosmeticOn: '{name} : portée',
+    cosmeticOff: '{name} : rangée',
     merged: '{name} passe au niveau {n} ({cost} bulletins)',
     mergedMax: '{name} passe au niveau {n}, le maximum !',
     errLane: 'Ce couloir est fermé',
@@ -424,6 +456,8 @@ const fr: GameStrings = {
     theme_agri: 'Semaine agricole !',
     hardMode: 'Mode difficile : les vagues sont plus grosses',
     easyMode: 'Mode facile : des vagues plus petites et des adversaires moins coriaces',
+    veryEasyMode: 'Mode très facile : de petites vagues d’adversaires peu coriaces',
+    extremeMode: 'Mode extrême : des vagues énormes, des adversaires plus coriaces et plus rapides',
     shareSaved: 'Image du résultat enregistrée',
     shareCopied: 'Résultat copié dans le presse-papiers',
     offAir: "Fin de l'antenne !",
@@ -475,6 +509,7 @@ const fr: GameStrings = {
     cohabitation: { name: 'Cohabitation durable', desc: 'Tenir 20 vagues en mode sans fin' },
     hardRunoff: { name: 'Sans filet', desc: 'Gagner le second tour en mode difficile' },
     dailyDone: { name: 'Défi relevé', desc: 'Terminer un défi du jour' },
+    streak: { name: 'Assidu', desc: 'Relever le défi du jour 5 jours de suite' },
     versus: { name: 'Face-à-face', desc: 'Jouer une partie à deux sur le même écran' },
     debater: { name: 'Débatteur', desc: 'Renvoyer 10 petites phrases' },
   },
@@ -512,6 +547,21 @@ const fr: GameStrings = {
       'Cohabitation : {n} vagues tenues pour {camp}',
       '{n} vagues plus tard, le budget y passe',
     ],
+  },
+  rules: {
+    doubleVotes: { name: 'Bulletins doublés', desc: 'Les figures Votes et les bulletins qui tombent tout seuls rapportent le double, mais les adversaires marchent plus vite' },
+    noRemove: { name: 'Pas de remaniement', desc: 'Le bouton Retirer est désactivé : chaque figure posée reste jusqu’au bout' },
+    sale: { name: 'Soldes', desc: 'Toutes les cartes coûtent 30 % moins cher, mais mettent moitié plus de temps à se recharger' },
+    tough: { name: 'Têtes dures', desc: 'Les adversaires ont 30 % de crédibilité en plus, et tu commences avec 150 bulletins de plus' },
+    cheapMerge: { name: 'Fusions à prix coûtant', desc: 'Monter une figure de niveau coûte le prix de la carte, pas plus' },
+  },
+  cosmetics: {
+    sash: { name: 'Écharpe tricolore', desc: 'Tes figures portent l’écharpe de maire' },
+    shades: { name: 'Lunettes de soleil', desc: 'Tes figures gardent la classe en toutes circonstances' },
+    goldCards: { name: 'Cartes dorées', desc: 'Un liseré doré sur les cartes de ta colonne' },
+    flamesBlue: { name: 'Flammes bleues', desc: 'Les yeux et le feu des niveaux 2 et 3 deviennent bleus' },
+    flamesPurple: { name: 'Flammes violettes', desc: 'Les yeux et le feu des niveaux 2 et 3 deviennent violets' },
+    flamesTricolour: { name: 'Flammes tricolores', desc: 'Bleu, blanc, rouge pour les niveaux 2 et 3' },
   },
 };
 
@@ -740,10 +790,18 @@ const en: GameStrings = {
     tonight: 'On the bill',
     onlyAgainst: 'only against {camp}',
     difficulty: 'Difficulty',
+    veryEasy: 'Very easy',
     easy: 'Easy',
     normal: 'Normal',
     hard: 'Hard',
-    difficultyHint: 'Easy: smaller waves, softer opponents and 50 more votes to start with, to find your feet. Hard: bigger waves, for seasoned players',
+    extreme: 'Extreme',
+    hintVeryEasy: 'Very easy: waves almost half the size, much softer and slower opponents, 100 more votes to start with. To discover the game, or to play it with a child',
+    hintEasy: 'Easy: smaller waves, softer opponents and 50 more votes to start with, to find your feet',
+    hintNormal: 'Normal: the game as it was balanced',
+    hintHard: 'Hard: bigger waves, for seasoned players',
+    hintExtreme: 'Extreme: huge waves of tougher, faster opponents. For those who have already won everything',
+    veryEasyBadge: 'Very easy mode',
+    extremeBadge: 'Extreme mode',
     easyBadge: 'Easy mode',
     hardBadge: 'Hard mode',
     share: 'Share the result',
@@ -759,6 +817,21 @@ const en: GameStrings = {
     dailyName: 'Daily challenge',
     dailyBlurb: '{level}, with {camp}: the same waves for everybody, today only',
     dailyBest: 'Your best today: {n} points',
+    dailyRule: 'Rule of the day',
+    ruleBanner: 'Rule of the day: {name}',
+    streakOne: 'Streak: 1 day',
+    streakMany: 'Streak: {n} days in a row',
+    streakGoal: '{goal} days in a row: {reward}',
+    streakNote: '{n} days in a row',
+    challengeFriend: 'Challenge a friend',
+    wardrobeTitle: 'Wardrobe ({n}/{total})',
+    wardrobeHint: 'Every achievement unlocks a look for your figures. It changes nothing in the game: it is for style',
+    wardrobeWear: 'Wear',
+    wardrobeWorn: 'Worn',
+    wardrobeLockedShort: 'Locked',
+    wardrobeLocked: 'Unlocked by the "{achievement}" achievement',
+    unlocks: 'Unlocks: {name}',
+    cosmeticNew: 'New look in the wardrobe: {name}',
     duelName: 'Turn-based duel',
     duelBlurb: 'The same match for two: play, then hand over or send the link. The best score wins',
     versusName: 'Head to head, two players',
@@ -851,6 +924,10 @@ const en: GameStrings = {
     errCooldown: '{name} is not ready yet',
     errOccupied: 'That square is taken: only the same figure can go there, to level up',
     errMaxed: '{name} is already at the top level',
+    ruleStart: 'Rule of the day: {name}. {desc}',
+    noRemove: 'No reshuffle today: the Remove button is off',
+    cosmeticOn: '{name}: worn',
+    cosmeticOff: '{name}: put away',
     merged: '{name} reaches level {n} ({cost} votes)',
     mergedMax: '{name} reaches level {n}, the maximum!',
     errLane: 'This lane is closed',
@@ -892,6 +969,8 @@ const en: GameStrings = {
     theme_agri: 'Farming week!',
     hardMode: 'Hard mode: the waves are bigger',
     easyMode: 'Easy mode: smaller waves and softer opponents',
+    veryEasyMode: 'Very easy mode: small waves of soft opponents',
+    extremeMode: 'Extreme mode: huge waves, tougher and faster opponents',
     shareSaved: 'Result picture saved',
     shareCopied: 'Result copied to the clipboard',
     offAir: 'Off air!',
@@ -943,6 +1022,7 @@ const en: GameStrings = {
     cohabitation: { name: 'Lasting Cohabitation', desc: 'Hold 20 waves in endless mode' },
     hardRunoff: { name: 'No Safety Net', desc: 'Win the run-off in hard mode' },
     dailyDone: { name: 'Challenge Met', desc: 'Finish a daily challenge' },
+    streak: { name: 'Regular', desc: 'Take up the daily challenge 5 days in a row' },
     versus: { name: 'Head to Head', desc: 'Play a two-player match on one screen' },
     debater: { name: 'Debater', desc: 'Send back 10 soundbites' },
   },
@@ -980,6 +1060,21 @@ const en: GameStrings = {
       'Cohabitation: {n} waves held for {camp}',
       '{n} waves later, the budget finally goes',
     ],
+  },
+  rules: {
+    doubleVotes: { name: 'Double votes', desc: '"Votes" figures and the votes that trickle in bring twice as much, but opponents walk faster' },
+    noRemove: { name: 'No reshuffle', desc: 'The Remove button is off: every figure you field stays to the end' },
+    sale: { name: 'Sales', desc: 'Every card costs 30% less, but takes half as long again to recharge' },
+    tough: { name: 'Hard heads', desc: 'Opponents have 30% more credibility, and you start with 150 more votes' },
+    cheapMerge: { name: 'Merges at cost', desc: 'Levelling a figure up costs the price of the card, no more' },
+  },
+  cosmetics: {
+    sash: { name: 'Tricolour sash', desc: 'Your figures wear the mayor\'s sash' },
+    shades: { name: 'Sunglasses', desc: 'Your figures keep their cool, whatever happens' },
+    goldCards: { name: 'Gold cards', desc: 'A gold edge on the cards in your column' },
+    flamesBlue: { name: 'Blue flames', desc: 'Eyes and fire turn blue at levels 2 and 3' },
+    flamesPurple: { name: 'Purple flames', desc: 'Eyes and fire turn purple at levels 2 and 3' },
+    flamesTricolour: { name: 'Tricolour flames', desc: 'Blue, white and red at levels 2 and 3' },
   },
 };
 

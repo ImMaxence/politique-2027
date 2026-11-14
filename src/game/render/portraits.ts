@@ -12,7 +12,7 @@
  * card: yellow for votes, red for attack, purple for effect, blue for defence.
  * Guests, who are never played, come without a tie.
  */
-import { HEAD_FILES, PHOTOS, type Expression } from '../data/photos';
+import { EYES, HEAD_FILES, PHOTOS, type Expression } from '../data/photos';
 import type { Category } from '../data/types';
 import { EXTRAS, GUESTS, REINFORCEMENTS, UNITS, categoryOf } from '../data/units';
 
@@ -39,10 +39,12 @@ const FIGURES = new Set([...Object.values(UNITS).filter((u) => u.camp !== 'neutr
 export const HEAD_BOX = { x: 8, y: -16, w: 104, h: 127.1 };
 
 /** The suit: jacket, shirt and, for a playable figure, a tie in the colour of its card family. */
+const JACKET_PATH = 'M20 134c0-26 13-39 30-41h20c17 2 30 15 30 41z';
+
 function suit(id: string): string {
   const unit = UNITS[id];
   const tie = unit && unit.camp !== 'neutre' ? ROLE_TIE[categoryOf(unit)] : null;
-  return `<path d="M20 134c0-26 13-39 30-41h20c17 2 30 15 30 41z" fill="${JACKET}" ${s()}/>
+  return `<path d="${JACKET_PATH}" fill="${JACKET}" ${s()}/>
     <path d="M47 92l13 26 13-26z" fill="${WHITE}" ${s(2.2)}/>
     <path d="M47 92l13 26-10 6-9-22z" fill="${LAPEL}" ${s(2.2)}/>
     <path d="M73 92l-13 26 10 6 9-22z" fill="${LAPEL}" ${s(2.2)}/>
@@ -51,7 +53,50 @@ function suit(id: string): string {
       : `<path d="M52 93l8 10 8-10" fill="none" ${s(2)}/>`}`;
 }
 
-function figure(id: string, photo: string | null): string {
+/** The mayor's tricolour sash, from the right shoulder to the left hip, kept on the jacket. */
+function sash(clip: string): string {
+  return `<clipPath id="${clip}"><path d="${JACKET_PATH}"/></clipPath>
+    <g clip-path="url(#${clip})"><g transform="rotate(38 60 113)">
+      <rect x="-10" y="105" width="140" height="4.6" fill="#2f5bd3"/>
+      <rect x="-10" y="109.6" width="140" height="4.6" fill="${WHITE}"/>
+      <rect x="-10" y="114.2" width="140" height="4.6" fill="#e5383b"/>
+      <path d="M-10 105h140M-10 118.8h140" fill="none" ${s(1.6)}/>
+    </g></g>`;
+}
+
+/** Sunglasses over the photo's eyes, tilted like them. */
+function shades(id: string, expression: Expression): string {
+  const e = EYES[`${id}-${expression}`] ?? EYES[`${id}-neutral`];
+  if (!e) return '';
+  const b = HEAD_BOX;
+  const lx = b.x + e[0] * b.w;
+  const ly = b.y + e[1] * b.h;
+  const rx = b.x + e[2] * b.w;
+  const ry = b.y + e[3] * b.h;
+  const d = Math.hypot(rx - lx, ry - ly);
+  const n = (v: number) => v.toFixed(1);
+  const angle = (Math.atan2(ry - ly, rx - lx) * 180) / Math.PI;
+  const w = d * 0.8;
+  const h = d * 0.52;
+  const lens = (x: number) => `<rect x="${n(x - w / 2)}" y="${n(-h * 0.45)}" width="${n(w)}" height="${n(h)}" rx="${n(h * 0.42)}" fill="#15171f" ${s(1.4)}/>`;
+  const glint = (x: number) => `M${n(x - w * 0.28)} ${n(-h * 0.12)}l${n(w * 0.2)} ${n(-h * 0.18)}`;
+  return `<g transform="translate(${n((lx + rx) / 2)} ${n((ly + ry) / 2)}) rotate(${n(angle)})">
+      <path d="M${n(-d / 2 - w / 2)} ${n(-h * 0.2)}h${n(-d * 0.3)}M${n(d / 2 + w / 2)} ${n(-h * 0.2)}h${n(d * 0.3)}" fill="none" ${s(1.8)}/>
+      ${lens(-d / 2)}${lens(d / 2)}
+      <path d="M${n(-d / 2 + w / 2)} ${n(-h * 0.2)}q${n((d - w) / 2)} ${n(-h * 0.3)} ${n(d - w)} 0" fill="none" ${s(1.8)}/>
+      <path d="${glint(-d / 2)}${glint(d / 2)}" fill="none" stroke="${PAPER}" stroke-width="1.3" stroke-linecap="round" opacity=".75"/>
+    </g>`;
+}
+
+interface Dress {
+  sash?: boolean;
+  shades?: boolean;
+  expression: Expression;
+  /** Unique id for the sash's clip path. */
+  clip: string;
+}
+
+function figure(id: string, photo: string | null, dress?: Dress): string {
   const b = HEAD_BOX;
   const head = photo
     ? `<image href="${photo}" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" preserveAspectRatio="none"/>`
@@ -59,7 +104,9 @@ function figure(id: string, photo: string | null): string {
       `<ellipse cx="60" cy="50" rx="28" ry="33" fill="#d8c3ab" ${s()}/>`;
   return `<rect x="56" y="126" width="8" height="24" rx="2" fill="${WOOD}" ${s(2.2)}/>
     ${suit(id)}
-    ${head}`;
+    ${dress?.sash ? sash(dress.clip) : ''}
+    ${head}
+    ${dress?.shades && photo ? shades(id, dress.expression) : ''}`;
 }
 
 // ───────────────────────────── extras ─────────────────────────────
@@ -465,6 +512,9 @@ export interface PortraitOptions {
   expression?: Expression;
   /** Overrides the photo's address (the game passes a data: URI so the SVG can be rasterised). */
   headHref?: string;
+  /** The wardrobe (named figures only): the mayor's sash, sunglasses. */
+  sash?: boolean;
+  shades?: boolean;
 }
 
 function wrap(inner: string, viewBox: [number, number], key: string, options: PortraitOptions): string {
@@ -492,7 +542,10 @@ export function portraitSvg(id: string, options: PortraitOptions = {}): string {
   if (street) return wrap(street(), [120, 150], id, options);
   if (!FIGURES.has(id)) throw new Error(`No portrait for ${id}`);
   const photo = options.headHref ?? headUrl(id, options.expression) ?? headUrl(id);
-  return wrap(figure(id, photo), [120, 150], `${id}${options.expression && options.expression !== 'neutral' ? `-${options.expression}` : ''}`, options);
+  const look = `${options.sash ? '-sash' : ''}${options.shades ? '-shades' : ''}`;
+  const key = `${id}${options.expression && options.expression !== 'neutral' ? `-${options.expression}` : ''}${look}`;
+  const dress = look ? { sash: options.sash, shades: options.shades, expression: options.expression ?? 'neutral', clip: `sash-${key}${options.uid ? `-${options.uid}` : ''}` } : undefined;
+  return wrap(figure(id, photo, dress), [120, 150], key, options);
 }
 
 /** Extras: every kind has a single look. */

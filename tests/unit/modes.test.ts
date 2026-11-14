@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { unlockAchievements } from '../../src/game/achievements';
 import { LAST_LEVEL, VERSUS } from '../../src/game/data/levels';
-import { CAMP_IDS } from '../../src/game/data/types';
-import { dailySetup, duelCode, parseDuel } from '../../src/game/modes';
+import { CAMP_IDS, RULES } from '../../src/game/data/types';
+import { dailySetup, duelCode, parseDuel, advanceStreak, currentStreak, dayBefore, type Streak } from '../../src/game/modes';
 import {
   RIPOSTE_DAMAGE, RIPOSTE_REWARD, TICK, VERSUS_KINDS, catchPunchline, createGame, placeUnit, spawnEnemy, step, versusSend,
   type GameState,
@@ -31,7 +31,29 @@ describe('daily challenge and duel codes', () => {
     const played = duelCode(setup, 2340);
     expect(played.length).toBeLessThan(20);
     expect(parseDuel(played)).toEqual({ ...setup, rival: 2340 });
-    for (const junk of ['', 'abc', '0-1-zz', '5-7-zz', '5-1-zz-zz-zz', '<script>']) expect(parseDuel(junk)).toBeNull();
+    for (const junk of ['', 'abc', '0-1-zz', '5-7-zz', '5-1-zz-zz-zz', '5-1-zz-zz-9', '<script>']) expect(parseDuel(junk)).toBeNull();
+  });
+
+  it('gives each day a rule, and a duel taken from it carries the rule along', () => {
+    const daily = dailySetup('2026-11-14');
+    expect(RULES).toContain(daily.rule);
+    const days = Array.from({ length: 30 }, (_, i) => dailySetup(`2026-12-${String(i + 1).padStart(2, '0')}`).rule);
+    expect(new Set(days).size).toBeGreaterThan(2); // not always the same rule
+    const code = duelCode({ ...daily, mode: 'duel' }, 1800);
+    expect(parseDuel(code)).toMatchObject({ level: daily.level, camp: daily.camp, seed: daily.seed, rival: 1800, rule: daily.rule });
+  });
+
+  it('counts the days in a row', () => {
+    let streak: Streak = { days: 0, best: 0, last: null };
+    streak = advanceStreak(streak, '2026-11-30');
+    streak = advanceStreak(streak, '2026-11-30'); // twice the same day counts once
+    streak = advanceStreak(streak, '2026-12-01'); // across the month
+    expect(streak).toEqual({ days: 2, best: 2, last: '2026-12-01' });
+    expect(currentStreak(streak, '2026-12-02')).toBe(2); // still alive the next day
+    expect(currentStreak(streak, '2026-12-03')).toBe(0);
+    streak = advanceStreak(streak, '2026-12-05');
+    expect(streak).toEqual({ days: 1, best: 2, last: '2026-12-05' });
+    expect(dayBefore('2027-01-01')).toBe('2026-12-31');
   });
 });
 
@@ -119,8 +141,21 @@ describe('saves', () => {
     expect(loadSave().difficulty).toBe('easy');
     withStorage({ v: 4, hard: true });
     expect(loadSave().difficulty).toBe('hard');
+    withStorage({ v: 4, difficulty: 'extreme' });
+    expect(loadSave().difficulty).toBe('extreme');
+    withStorage({ v: 4, difficulty: 'veryEasy' });
+    expect(loadSave().difficulty).toBe('veryEasy');
     withStorage({ v: 4, difficulty: 'nightmare' });
     expect(loadSave().difficulty).toBe('normal');
+  });
+
+  it('keeps the wardrobe and the streak, and drops what makes no sense', () => {
+    withStorage({ v: 4, wardrobe: ['sash', 'flamesBlue', 'flamesPurple', 'sash', 'crown', 7], streak: { days: 3, best: 6, last: '2026-11-14' } });
+    const save = loadSave();
+    expect(save.wardrobe).toEqual(['sash', 'flamesPurple']); // one flame colour at a time
+    expect(save.streak).toEqual({ days: 3, best: 6, last: '2026-11-14' });
+    withStorage({ v: 4, streak: { days: 'x', last: 'yesterday' } });
+    expect(loadSave().streak).toEqual({ days: 0, best: 0, last: null });
   });
 
   it('keeps the daily scores', () => {

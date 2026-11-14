@@ -12,6 +12,23 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [4.3.0] — 2026-11-14
+
+Achievements now unlock looks, the daily challenge has a rule of the day and a streak, the campaign has five difficulties, and every shared result carries the link to the game. Saves are kept.
+
+### Added
+
+- **A wardrobe on the calendar**: six achievements each unlock a look your figures wear on the board. The mayor's tricolour sash (first win), sunglasses over their eyes (a night with three stars), gold cards (a daily challenge), blue flames (a figure at level 3), purple flames (a win with every camp) and tricolour flames (five daily challenges in a row). Looks change nothing to the game, and one flame colour is worn at a time. The achievements list says what each one unlocks, and the gazette announces a new look.
+- **A rule of the day for the daily challenge**, the same for everybody: double votes (but faster opponents), no reshuffle, sales (cards 30% cheaper, 50% slower to recharge), hard heads (opponents with 30% more credibility, 150 more votes to start with) or merges at cost. It is written on the daily card, announced at the start and hung on the wall all night. The reference bot was run on every possible night with each rule: hard heads is the tough day of the week, the others play about like a normal night.
+- **A streak**: daily challenges played to the end on consecutive days. The daily card shows it; five days in a row earn the new **Regular** achievement (18 in all) and the tricolour flames.
+- **Two more difficulties, very easy and extreme**, on either side of easy, normal and hard. Very easy: waves 45% smaller, opponents with 35% less credibility and 10% slower, 100 more votes at the start, to discover the game or play it with a child. Extreme: waves 60% bigger, opponents with 25% more credibility and 12% faster; its button carries a skull with glowing eyes. The line under the five choices describes the chosen one. Measured with the reference bot: it wins every night from very easy to normal, three nights in four in hard and a little more than one in three in extreme, and doing nothing still loses in very easy. Winning the run-off in extreme counts for the hard-mode achievement.
+- **Challenge a friend from the daily challenge**: the result's share button becomes "Challenge a friend" and sends a duel link with your score and the rule of the day, so that the friend plays the very same match.
+
+### Fixed
+
+- **A friend's challenge opens straight away for someone who has never played**: the calendar comes up with the challenge on top and the duel's camp, instead of the choice of camp first. The match is the very same night as the challenger's, not night 1.
+- **A shared result now carries the link to the game.** With a picture, only duels added it: a campaign or Cohabitation result went out with its headline alone.
+
 ## [4.2.0] — 2026-11-14
 
 An easy mode, and the five newest reinforcements can finally be seen. Saves are kept: a hard mode chosen before stays chosen.

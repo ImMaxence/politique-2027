@@ -6,19 +6,19 @@
  *   npm run balance -- 20      # 20 seeds per pairing
  *   npm run balance -- 8 hard  # hard mode (bigger waves)
  *   npm run balance -- 8 easy  # easy mode (smaller waves, softer opponents)
+ *   npm run balance -- 8 veryEasy / extreme
  */
 import { LEVELS } from '../src/game/data/levels';
-import { CAMP_IDS } from '../src/game/data/types';
+import { CAMP_IDS, DIFFICULTIES } from '../src/game/data/types';
 import { botAct } from '../src/game/sim/bot';
 import { TICK, createGame, step, type GameState } from '../src/game/sim/engine';
 
 const seeds = Number(process.argv[2] ?? 8);
-const hard = process.argv.includes('hard');
-const easy = process.argv.includes('easy');
+const difficulty = DIFFICULTIES.find((d) => process.argv.includes(d)) ?? 'normal';
 const MAX_TIME = 900;
 
 export function simulate(camp: (typeof CAMP_IDS)[number], level: number, seed: number, idle = false): GameState {
-  const state = createGame({ camp, level, seed, hard, easy });
+  const state = createGame({ camp, level, seed, difficulty });
   let tick = 0;
   while (state.status === 'playing' && state.time < MAX_TIME) {
     if (!idle && tick % 20 === 0) botAct(state);

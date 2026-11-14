@@ -1,3 +1,4 @@
+import type { Look } from '../cosmetics';
 import { PHOTOS, type Expression } from '../data/photos';
 import { EXTRAS, VEHICLES } from '../data/units';
 import { PORTRAIT_IDS, extraSvg, headUrl, portraitSvg } from './portraits';
@@ -72,6 +73,8 @@ async function inlineHead(url: string): Promise<string | undefined> {
 /** Rasterises every puppet once so the game loop only ever blits bitmaps. */
 export class SpriteStore {
   private sprites = new Map<string, Sprite>();
+  /** Each photo head as a data: URI, kept to dress the figures later without fetching it again. */
+  private heads = new Map<string, string | undefined>();
   private loading: Promise<void> | null = null;
 
   /**
@@ -87,6 +90,7 @@ export class SpriteStore {
       const url = headUrl(id, expression);
       const headHref = url ? await inlineHead(url) : undefined;
       if (url && !headHref && expression !== 'neutral') return;
+      this.heads.set(`${id}:${expression}`, headHref);
       await add(`star:${id}:${expression}`, portraitSvg(id, { size: FIGURE_WIDTH, expression, headHref }));
     };
     for (const id of PORTRAIT_IDS) {
@@ -106,9 +110,29 @@ export class SpriteStore {
     return this.loading;
   }
 
-  /** A figure's puppet, with the requested face when it is available. */
-  unit(id: string, expression: Expression = 'neutral'): Sprite | undefined {
-    return this.sprites.get(`star:${id}:${expression}`) ?? this.sprites.get(`star:${id}:neutral`);
+  /**
+   * Dresses your figures for a match: their pictures with the sash and/or the sunglasses,
+   * for every face already loaded (the others fall back on the dressed everyday face).
+   */
+  async dress(ids: string[], look: Look): Promise<void> {
+    if (!look.key) return;
+    const jobs: Promise<void>[] = [];
+    for (const id of new Set(ids)) {
+      for (const expression of PHOTOS[id] ?? []) {
+        const key = `star:${id}:${expression}:${look.key}`;
+        if (this.sprites.has(key) || !this.heads.has(`${id}:${expression}`)) continue;
+        const headHref = this.heads.get(`${id}:${expression}`);
+        const svg = portraitSvg(id, { size: FIGURE_WIDTH, expression, headHref, sash: look.sash, shades: look.shades });
+        jobs.push(rasterise(svg).then((sprite) => void this.sprites.set(key, sprite)).catch(() => undefined));
+      }
+    }
+    await Promise.all(jobs);
+  }
+
+  /** A figure's puppet, with the requested face (and look) when it is available. */
+  unit(id: string, expression: Expression = 'neutral', look = ''): Sprite | undefined {
+    const dressed = look ? (this.sprites.get(`star:${id}:${expression}:${look}`) ?? this.sprites.get(`star:${id}:neutral:${look}`)) : undefined;
+    return dressed ?? this.sprites.get(`star:${id}:${expression}`) ?? this.sprites.get(`star:${id}:neutral`);
   }
 
   enemy(enemyId: string, expression: Expression = 'neutral'): Sprite | undefined {

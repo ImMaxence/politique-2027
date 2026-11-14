@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { dailySetup } from '../../src/game/modes';
+import { GAME_STRINGS } from '../../src/i18n/game';
 import { openGame, startMatch } from './helpers';
 
 test('the daily challenge is the same night, camp and waves for everybody today', async ({ page }) => {
@@ -13,6 +14,36 @@ test('the daily challenge is the same night, camp and waves for everybody today'
     return { camp: (s as unknown as { camp: string }).camp, level: (s as unknown as { level: { id: number } }).level.id, seed: (s as unknown as { seed: number }).seed };
   });
   expect(state).toEqual({ camp: today.camp, level: today.level, seed: today.seed });
+});
+
+test('the daily challenge has a rule of the day, a streak, and a friend to challenge', async ({ page }) => {
+  await openGame(page, 'en');
+  await page.locator('[data-camp="gauche"]').click();
+  const today = dailySetup();
+  await expect(page.locator('[data-slot="daily-rule"]')).toContainText(GAME_STRINGS.en.rules[today.rule!].name);
+  await page.locator('[data-mode="daily"]').click();
+  await page.waitForSelector('[data-screen="match"]:not([hidden])');
+  expect(await page.evaluate(() => (window.__P2027__.state() as unknown as { rule: string }).rule)).toBe(today.rule);
+  await page.evaluate(() => window.__P2027__.advance(600, true));
+  const result = page.locator('[data-overlay="result"]');
+  await expect(result).toBeVisible();
+  await expect(result.locator('[data-slot="notes"]')).toContainText('Rule of the day');
+  await expect(result.locator('[data-action="share"]')).toContainText('Challenge a friend');
+  const streak = await page.evaluate(() => JSON.parse(localStorage.getItem('politique2027:save')!).streak);
+  expect(streak.days).toBe(1);
+});
+
+test('a friend who has never played opens the challenge straight away, on the same night', async ({ page }) => {
+  await page.goto('/en/play?e2e=1&duel=7-2-abc-1e0-2');
+  await page.waitForSelector('#game[data-ready="true"]');
+  const banner = page.locator('[data-slot="duel-banner"]');
+  await expect(banner).toBeVisible();
+  await expect(banner).toContainText('1800');
+  await banner.locator('[data-action="duel-accept"]').click();
+  await page.waitForSelector('[data-screen="match"]:not([hidden])');
+  const state = await page.evaluate(() => window.__P2027__.state() as unknown as { level: { id: number }; rule: string });
+  expect(state.level.id).toBe(7); // not night 1
+  expect(state.rule).toBe('noRemove');
 });
 
 test('a turn-based duel: play, hand over, and the second player sees the score to beat', async ({ page }) => {
@@ -37,7 +68,7 @@ test('a turn-based duel: play, hand over, and the second player sees the score t
 test('a duel link opens on the calendar and starts the same match', async ({ page }) => {
   await page.goto('/fr/jouer?e2e=1&duel=5-2-k3j9x-1sz');
   await page.waitForSelector('#game[data-ready="true"]');
-  await page.locator('[data-camp="autres"]').click();
+  // No camp to pick first: the challenge is on top of the calendar.
   const banner = page.locator('[data-slot="duel-banner"]');
   await expect(banner).toBeVisible();
   await expect(banner).toContainText('La Droite');

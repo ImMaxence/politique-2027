@@ -728,3 +728,136 @@
 .overlay.is-tier .intro__art svg {
   filter: drop-shadow(0 0 6px #ffd23f) drop-shadow(0 0 14px #ffb703);
 }
+
+/* ── The daily challenge's streak, the wardrobe, what achievements unlock ── */
+.level-card__streak {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.level-card__streak[hidden] {
+  display: none;
+}
+.achievements__reward {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ffd23f;
+}
+.wardrobe__hint {
+  margin: 0;
+  padding: 0 1rem 0.8rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.wardrobe__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0 1rem 1rem;
+  list-style: none;
+}
+.wardrobe__item {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+}
+.wardrobe__art {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+.wardrobe__art svg {
+  width: 3.2rem;
+  max-height: 3.6rem;
+  height: auto;
+}
+.wardrobe__item:has([aria-disabled='true']) .wardrobe__art {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.wardrobe__text {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.wardrobe__text small {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.wardrobe__toggle {
+  min-height: 2.75rem;
+  padding: 0.3rem 0.8rem;
+  border: var(--border);
+  border-radius: 8px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.wardrobe__toggle[aria-pressed='true'] {
+  border-color: #17203f;
+  background: #ffd23f;
+  color: #17203f;
+}
+.wardrobe__toggle[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+/* Gold cards (wardrobe), and a sale price (rule of the day) in green. */
+.game[data-cards='gold'] .card {
+  border-color: #d9a400;
+  box-shadow: inset 0 0 0 2px #ffd23f;
+}
+.card.is-sale .card__cost {
+  background: #58c26b;
+  color: #17203f;
+}
+/* No reshuffle today (rule of the day). */
+.tool[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Extreme: the skull with glowing eyes. */
+.difficulty__option[data-value='extreme'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+.difficulty__option .skull {
+  flex: none;
+  width: 2.3em;
+  height: 1.65em;
+  margin: -0.3em 0 -0.3em -0.3em;
+  overflow: visible;
+}
+.skull__beam {
+  opacity: 0.85;
+  animation: skull-glow 1.4s ease-in-out infinite alternate;
+}
+.skull__eye {
+  animation: skull-glow 1.4s ease-in-out infinite alternate;
+}
+@keyframes skull-glow {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skull__beam,
+  .skull__eye {
+    animation: none;
+  }
+}

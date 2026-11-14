@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version 4.2.0" src="https://img.shields.io/badge/version-4.2.0-d62b30">
+  <img alt="Version 4.3.0" src="https://img.shields.io/badge/version-4.3.0-d62b30">
   <img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-2f5fe0">
   <img alt="Astro 7" src="https://img.shields.io/badge/Astro-7-17203f">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-17203f">
@@ -56,7 +56,8 @@ Every camp gets the same affectionate treatment, and all four are playable.
 | 🎭 **24 public figures, 4 play styles** | Six figures per camp (the sixth, unlocked on night 6: Rousseau, Darmanin, Ciotti, Philippot), each card tagged **Votes**, **Attack**, **Effect** or **Defence**, plus a camp-wide trump card: **General Strike**, **Dissolution**, the **Trocadéro Rally** or a **No-Confidence Vote**. |
 | 🗓️ **Nine themed nights** | The hunt for endorsements, the Agricultural Show, the school blockade, the 17 October march against the cost of living, the TV debate, the international summit, the first round, the run-off debate (send the soundbites back) and the run-off. Then **Cohabitation**, the endless mode, with a themed week every ten waves. |
 | 🎲 **Play a friend** | **Head to head on one screen**: one defends with the mouse or a finger, the other sends opponents with the keyboard or a column of buttons. Or a **turn-based duel**: the same match for two, handed over or shared by link, best score wins. |
-| 📅 **Every day, a new challenge** | The **daily challenge** is the same night, camp and waves for everybody. 17 **achievements** to collect (including a 1v1 at the Lidl), an **easy mode** to find your feet and a **hard mode** for seasoned players. |
+| 📅 **Every day, a new challenge** | The **daily challenge** is the same night, camp and waves for everybody, with a **rule of the day** (double votes, sales, no reshuffle…), a **streak** to keep up and a link to **challenge a friend** with your score. Five difficulties, from **very easy** (to discover the game, or play it with a child) to **extreme**. |
+| 👔 **A wardrobe** | 18 **achievements** to collect (including a 1v1 at the Lidl), six of them unlocking a look for your figures: the mayor's tricolour sash, sunglasses, blue, purple or tricolour flames, gold cards. |
 | 🃏 **Build your deck** | From night 6, pick **eight cards** before each night among your figures, seven everyday **reinforcements** unlocked one by one (riot police, firefighters, the speed camera, paramedics, the baker, the teachers, the Constitutional Council) and up to **two turncoats** poached from the rival camps. |
 | 🔥 **Level up on the board** | Play a figure on the same figure: at level 2 its eyes catch fire, at level 3 the whole figure does. Tougher, stronger, quicker — and pricier each time. |
 | 🗞️ **French life, French memes** | Pupils on electric scooters, the star cow of the Agricultural Show, yellow vests, union marchers who put your figures on strike, minimum-wage workers worth winning over, petrol at €2 a litre, proxy votes refused for a missing document, the Zucman tax vote, a CNews van that never runs out of pundits. |
@@ -175,7 +176,7 @@ The heads are real photos published on Wikimedia Commons under free licences; [`
 | Offline | A service worker, versioned with the game | Opens and plays without a connection; it only ever handles this site's own files |
 | Serving | nginx (unprivileged) in Docker | Read-only container, no access log, hashed assets cached for a year |
 | Security | Per-page CSP with hashes | No inline script without a hash, no inline style attribute, `frame-ancestors 'none'`, strict headers |
-| Tests | Vitest + Playwright + axe-core | 106 simulation tests (bosses, newcomers, decks, levels, damage, saves and balance included), 175 browser tests |
+| Tests | Vitest + Playwright + axe-core | 111 simulation tests (bosses, newcomers, decks, levels, damage, saves and balance included), 179 browser tests |
 
 ```
 src/
@@ -213,7 +214,7 @@ npm test                      # simulation unit tests
 npm run test:e2e              # browser tests: accessibility, SEO, keyboard play, layout, modes
 npm run balance               # win rate of the reference bot, per night and camp
 npm run balance -- 8 hard     # the same in hard mode
-npm run balance -- 8 easy     # the same in easy mode
+npm run balance -- 8 easy     # the same in easy mode (also veryEasy, extreme)
 npm run heads                 # re-cut the photo heads from Wikimedia Commons (cached in .cache/heads)
 npm run heads -- lepen --review   # one figure, plus a review sheet
 ```

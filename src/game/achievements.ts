@@ -1,5 +1,6 @@
 import { LEVELS } from './data/levels';
 import { CAMP_IDS } from './data/types';
+import { STREAK_GOAL } from './modes';
 import type { Save } from './storage';
 
 /**
@@ -23,6 +24,7 @@ export const ACHIEVEMENTS = [
   'cohabitation',
   'hardRunoff',
   'dailyDone',
+  'streak',
   'versus',
   'debater',
 ] as const;
@@ -87,6 +89,8 @@ function earned(id: AchievementId, save: Save): boolean {
       return c.hardRunoff >= 1;
     case 'dailyDone':
       return c.dailies >= 1;
+    case 'streak':
+      return save.streak.best >= STREAK_GOAL;
     case 'versus':
       return c.versus >= 1;
     case 'debater':

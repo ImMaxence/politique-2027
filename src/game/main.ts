@@ -7,9 +7,10 @@
 import { GAME_STRINGS, fmt, isLang, type GameStrings, type Lang } from '../i18n/game';
 import { Audio } from './audio';
 import { unlockAchievements } from './achievements';
-import { dailySetup, duelCode, parseDuel, today, type Mode, type Setup } from './modes';
+import { STREAK_GOAL, advanceStreak, currentStreak, dailySetup, duelCode, parseDuel, today, type Mode, type Setup } from './modes';
+import { COSMETICS, flamesOf, isUnlocked, lookOf, rewardOf, toggleCosmetic, type CosmeticId } from './cosmetics';
 import { COLS, LAST_LEVEL, LEVELS, ROWS, VERSUS, levelDef } from './data/levels';
-import { CAMP_IDS, type CampId, type Category, type UnitDef } from './data/types';
+import { CAMP_IDS, type CampId, type Category, type UnitDef, DIFFICULTIES, type Difficulty } from './data/types';
 import {
   CAMPS, DECK_SIZE, EXTRAS, MAX_TIER, REINFORCEMENTS, TRANSFUGES, UNITS, canMerge, cardPool, categoryOf, headlinerOf, reinforcementsFor, rivalsOf, transfugesFor, tierDef,
 } from './data/units';
@@ -154,11 +155,12 @@ class GameApp {
     }
     void document.fonts?.load("26px 'Anton'");
 
-    if (this.save.camp) this.pickCamp(this.save.camp, false);
+    // A friend's challenge: a newcomer goes straight to the calendar, with the duel's camp and the challenge on top.
+    this.incomingDuel = parseDuel(new URLSearchParams(location.search).get('duel') ?? '');
+    const camp = this.save.camp ?? this.incomingDuel?.camp;
+    if (camp) this.pickCamp(camp, false);
     else this.show('camp', false);
     this.root.dataset.ready = 'true';
-
-    this.incomingDuel = parseDuel(new URLSearchParams(location.search).get('duel') ?? '');
     setupInstallTip($(this.root, '[data-slot="install-tip"]'), this.t, this.save.installTipDismissed, () => {
       this.save.installTipDismissed = true;
       storeSave(this.save);
@@ -221,7 +223,19 @@ class GameApp {
     $(this.root, '[data-slot="daily-date"]').textContent = `${day}/${month}`;
     $(this.root, '[data-slot="daily-blurb"]').textContent = fmt(this.t.ui.dailyBlurb, { level: this.t.levels[daily.level].name, camp: this.t.camps[daily.camp].name });
     const best = this.save.daily[today()];
-    $(this.root, '[data-slot="daily-state"]').textContent = best !== undefined ? fmt(this.t.ui.dailyBest, { n: best }) : this.t.ui.play;
+    const streak = currentStreak(this.save.streak, today());
+    $(this.root, '[data-slot="daily-state"]').textContent = [
+      best !== undefined ? fmt(this.t.ui.dailyBest, { n: best }) : this.t.ui.play,
+      streak ? (streak === 1 ? this.t.ui.streakOne : fmt(this.t.ui.streakMany, { n: streak })) : '',
+    ].filter(Boolean).join(' · ');
+    // The rule of the day, and the streak still to complete.
+    const ruleSlot = $(this.root, '[data-slot="daily-rule"]');
+    const label = document.createElement('small');
+    label.textContent = this.t.ui.dailyRule;
+    ruleSlot.replaceChildren(label, ` ${this.t.rules[daily.rule!].name} — ${this.t.rules[daily.rule!].desc}`);
+    const goal = $(this.root, '[data-slot="daily-streak"]');
+    goal.hidden = this.save.achievements.includes('streak');
+    goal.textContent = fmt(this.t.ui.streakGoal, { goal: STREAK_GOAL, reward: this.t.cosmetics.flamesTricolour.name });
 
     const banner = $(this.root, '[data-slot="duel-banner"]');
     const duel = this.incomingDuel;
@@ -229,7 +243,7 @@ class GameApp {
     if (duel) {
       $(banner, '[data-slot="duel-text"]').textContent = fmt(this.t.ui.duelReceived, {
         score: duel.rival ?? 0, camp: this.t.camps[duel.camp].name, level: this.t.levels[duel.level].name,
-      });
+      }) + (duel.rule ? ` · ${fmt(this.t.ui.ruleBanner, { name: this.t.rules[duel.rule].name })}` : '');
     }
 
     const earned = new Set(this.save.achievements);
@@ -239,6 +253,66 @@ class GameApp {
     $(this.root, '[data-slot="achievements-title"]').textContent = fmt(this.t.ui.achievementsTitle, {
       n: earned.size, total: this.root.querySelectorAll('[data-achievement]').length,
     });
+    this.renderWardrobe();
+  }
+
+  /** The looks you have unlocked and chose to wear. */
+  private worn(): CosmeticId[] {
+    return this.save.wardrobe.filter((id) => isUnlocked(id, this.save.achievements));
+  }
+
+  /** A small picture of a look: the headliner wearing it, a flame, or a card. */
+  private cosmeticArt(id: CosmeticId, model: string): string {
+    if (id === 'sash' || id === 'shades') return portraitSvg(model, { size: 64, sticker: false, uid: `wardrobe-${id}`, sash: id === 'sash', shades: id === 'shades' });
+    if (id === 'goldCards') {
+      return '<svg viewBox="0 0 48 34"><rect x="2" y="2" width="44" height="30" rx="5" fill="#fffdf6" stroke="#d9a400" stroke-width="4"/><rect x="8" y="9" width="12" height="16" rx="2" fill="#e9dfca"/><rect x="24" y="10" width="16" height="4" rx="2" fill="#17203f"/><rect x="24" y="18" width="11" height="5" rx="2.5" fill="#ffd23f"/></svg>';
+    }
+    const colours: Record<string, string[]> = {
+      flamesBlue: ['#2f7bff', '#bfe3ff'],
+      flamesPurple: ['#8b3dff', '#e6c4ff'],
+      flamesTricolour: ['#2f5bd3', '#fffdf6', '#e5383b'],
+    };
+    const [outer, middle, inner] = colours[id];
+    return `<svg viewBox="0 0 40 48"><path d="M20 2C26 14 37 19 35 32 33 42 27 46 20 46S7 42 5 32C3 19 14 14 20 2z" fill="${outer}" stroke="#17203f" stroke-width="2"/><path d="M20 16c5 8 10 11 9 19-1 6-5 8-9 8s-8-2-9-8c-1-8 4-11 9-19z" fill="${middle}"/>${inner ? `<path d="M20 28c3 4 5 6 4 10-1 3-2 4-4 4s-3-1-4-4c-1-4 1-6 4-10z" fill="${inner}"/>` : ''}</svg>`;
+  }
+
+  /** The wardrobe on the calendar: every look, worn, ready to wear, or still to unlock. */
+  private renderWardrobe(): void {
+    const model = headlinerOf(this.save.camp ?? 'centre');
+    const worn = this.worn();
+    const ui = this.t.ui;
+    let open = 0;
+    $(this.root, '[data-slot="wardrobe-list"]').innerHTML = COSMETICS.map((c) => {
+      const unlocked = isUnlocked(c.id, this.save.achievements);
+      if (unlocked) open++;
+      const on = worn.includes(c.id);
+      const text = this.t.cosmetics[c.id];
+      const label = !unlocked ? ui.wardrobeLockedShort : on ? `✓ ${ui.wardrobeWorn}` : ui.wardrobeWear;
+      const about = unlocked ? text.desc : fmt(ui.wardrobeLocked, { achievement: this.t.achievements[c.achievement].name });
+      return `<li class="wardrobe__item">
+        <span class="wardrobe__art" aria-hidden="true">${this.cosmeticArt(c.id, model)}</span>
+        <span class="wardrobe__text"><b>${text.name}</b><small>${about}</small></span>
+        <button type="button" class="wardrobe__toggle" data-cosmetic="${c.id}" aria-pressed="${on}" aria-disabled="${!unlocked}" aria-label="${text.name} — ${label}">${label}</button>
+      </li>`;
+    }).join('');
+    $(this.root, '[data-slot="wardrobe-title"]').textContent = fmt(ui.wardrobeTitle, { n: open, total: COSMETICS.length });
+  }
+
+  private wear(id: CosmeticId): void {
+    const text = this.t.cosmetics[id];
+    if (!isUnlocked(id, this.save.achievements)) {
+      this.audio.play('error');
+      const achievement = COSMETICS.find((c) => c.id === id)!.achievement;
+      this.say(fmt(this.t.ui.wardrobeLocked, { achievement: this.t.achievements[achievement].name }));
+      return;
+    }
+    const was = this.worn().includes(id);
+    this.save.wardrobe = toggleCosmetic(this.worn(), id);
+    storeSave(this.save);
+    this.audio.play('click');
+    this.say(fmt(was ? this.t.announce.cosmeticOff : this.t.announce.cosmeticOn, { name: text.name }));
+    this.renderWardrobe();
+    this.root.querySelector<HTMLElement>(`[data-cosmetic="${id}"]`)?.focus();
   }
 
   // ───────────────────────────── match setup ─────────────────────────────
@@ -443,9 +517,17 @@ class GameApp {
     // The daily challenge, duels and head to head are the same for everybody: default deck.
     const personal = setup.mode === 'campaign';
     const state = createGame({
-      camp, level: levelId, seed: setup.seed, hard: personal && this.save.difficulty === 'hard', easy: personal && this.save.difficulty === 'easy',
+      camp, level: levelId, seed: setup.seed, difficulty: personal ? this.save.difficulty : 'normal',
       deck: personal ? setup.deck : undefined,
+      rule: setup.mode === 'daily' || setup.mode === 'duel' ? setup.rule : undefined,
     });
+    // The wardrobe: your figures' pictures with what they wear, the colour of their flames, gold cards.
+    const worn = this.worn();
+    const look = lookOf(worn);
+    await this.sprites.dress(state.cards.map((c) => c.def.id), look);
+    this.renderer.setLook(look.key, flamesOf(worn));
+    this.root.dataset.cards = worn.includes('goldCards') ? 'gold' : 'plain';
+    $(this.root, '[data-action="remove"]').setAttribute('aria-disabled', String(state.rule === 'noRemove'));
     this.root.dataset.camp = camp;
     this.root.dataset.mode = setup.mode;
     $(this.root, '[data-slot="versus"]').hidden = setup.mode !== 'versus';
@@ -491,8 +573,12 @@ class GameApp {
     }
     this.updateHud();
     const name = setup.mode === 'versus' ? this.t.ui.versusName : this.t.levels[levelId].name;
-    const extra = setup.mode === 'versus' ? this.t.announce.versusStart : state.hard ? this.t.announce.hardMode : state.easy ? this.t.announce.easyMode : '';
-    this.say(`${fmt(this.t.announce.start, { level: name, camp: this.t.camps[camp].name, goal: this.t.goals[state.level.goal].banner })} ${extra}`.trim());
+    const modes: Record<Difficulty, string> = {
+      veryEasy: this.t.announce.veryEasyMode, easy: this.t.announce.easyMode, normal: '', hard: this.t.announce.hardMode, extreme: this.t.announce.extremeMode,
+    };
+    const extra = setup.mode === 'versus' ? this.t.announce.versusStart : modes[state.difficulty];
+    const rule = state.rule ? fmt(this.t.announce.ruleStart, { name: this.t.rules[state.rule].name, desc: this.t.rules[state.rule].desc }) : '';
+    this.say(`${fmt(this.t.announce.start, { level: name, camp: this.t.camps[camp].name, goal: this.t.goals[state.level.goal].banner })} ${extra} ${rule}`.trim());
     this.audio.music(this.save.music);
   }
 
@@ -656,6 +742,10 @@ class GameApp {
       el.focus();
     });
     on('[data-action="team-back"]', () => this.show('levels'));
+    $(this.root, '[data-slot="wardrobe-list"]').addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLElement>('[data-cosmetic]');
+      if (button) this.wear(button.dataset.cosmetic as CosmeticId);
+    });
 
     on('[data-action="remove"]', () => this.toggleRemove());
     on('[data-action="ultimate"]', () => this.fireUltimate());
@@ -694,8 +784,8 @@ class GameApp {
     });
     on('[data-action="mute"]', () => this.toggleMute());
     on('[data-action="difficulty"]', (el) => {
-      const value = el.dataset.value;
-      this.save.difficulty = value === 'easy' || value === 'hard' ? value : 'normal';
+      const value = el.dataset.value as Difficulty;
+      this.save.difficulty = DIFFICULTIES.includes(value) ? value : 'normal';
       storeSave(this.save);
       this.syncToggles();
     });
@@ -847,6 +937,11 @@ class GameApp {
 
   private toggleRemove(): void {
     if (!this.playing()) return;
+    if (this.state?.rule === 'noRemove') {
+      this.audio.play('error');
+      this.say(this.t.announce.noRemove, true);
+      return;
+    }
     this.view.removing = !this.view.removing;
     this.view.selected = null;
     this.syncSelection();
@@ -949,6 +1044,12 @@ class GameApp {
     for (const option of this.root.querySelectorAll<HTMLElement>('[data-action="difficulty"]')) {
       option.setAttribute('aria-pressed', String(option.dataset.value === this.save.difficulty));
     }
+    // The line under the choices says what the chosen difficulty does.
+    const hints: Record<Difficulty, string> = {
+      veryEasy: this.t.ui.hintVeryEasy, easy: this.t.ui.hintEasy, normal: this.t.ui.hintNormal, hard: this.t.ui.hintHard, extreme: this.t.ui.hintExtreme,
+    };
+    const hint = this.root.querySelector<HTMLElement>('[data-slot="difficulty-hint"]');
+    if (hint) hint.textContent = hints[this.save.difficulty];
   }
 
   // ───────────────────────────── pause / result ─────────────────────────────
@@ -1034,6 +1135,7 @@ class GameApp {
     }
     if (setup.mode === 'daily') {
       this.save.counters.dailies++;
+      this.save.streak = advanceStreak(this.save.streak, today());
       this.save.daily[today()] = Math.max(this.save.daily[today()] ?? 0, score);
     }
     if (setup.mode === 'versus') this.save.counters.versus++;
@@ -1079,11 +1181,21 @@ class GameApp {
 
     // The difficulty and a new endless record get a line of their own.
     const notes: string[] = [];
-    if (state.hard) notes.push(this.t.ui.hardBadge);
-    if (state.easy) notes.push(this.t.ui.easyBadge);
+    const badges: Record<Difficulty, string> = {
+      veryEasy: this.t.ui.veryEasyBadge, easy: this.t.ui.easyBadge, normal: '', hard: this.t.ui.hardBadge, extreme: this.t.ui.extremeBadge,
+    };
+    if (badges[state.difficulty]) notes.push(badges[state.difficulty]);
     if (level.endless && wavesHeld > previousBest) notes.push(this.t.ui.newRecord);
     let link: LastResult['link'];
-    if (setup.mode === 'daily') notes.push(this.t.ui.dailyName);
+    if (setup.mode === 'daily') {
+      // The rule, the streak, and a duel link so that a friend can play the same match and try to beat the score.
+      notes.push(this.t.ui.dailyName);
+      if (setup.rule) notes.push(fmt(this.t.ui.ruleBanner, { name: this.t.rules[setup.rule].name }));
+      const days = currentStreak(this.save.streak, today());
+      if (days > 1) notes.push(fmt(this.t.ui.streakNote, { n: days }));
+      const code = duelCode({ ...setup, mode: 'duel' }, score);
+      link = { text: fmt(this.t.ui.duelShareText, { headline, score }), url: `${location.origin}${location.pathname}?duel=${code}` };
+    }
     if (setup.mode === 'duel') {
       notes.push(fmt(this.t.ui.duelYou, { score }));
       if (setup.rival !== undefined) {
@@ -1093,7 +1205,11 @@ class GameApp {
       notes.push(fmt(this.t.ui.duelCode, { code }));
       link = { text: fmt(this.t.ui.duelShareText, { headline, score }), url: `${location.origin}${location.pathname}?duel=${code}` };
     }
-    for (const id of fresh) notes.push(fmt(this.t.ui.achievementNew, { name: this.t.achievements[id].name }));
+    for (const id of fresh) {
+      notes.push(fmt(this.t.ui.achievementNew, { name: this.t.achievements[id].name }));
+      const reward = rewardOf(id);
+      if (reward) notes.push(fmt(this.t.ui.cosmeticNew, { name: this.t.cosmetics[reward].name }));
+    }
     const noteSlot = $(el, '[data-slot="notes"]');
     noteSlot.hidden = !notes.length;
     noteSlot.textContent = notes.join(' · ');
@@ -1110,6 +1226,8 @@ class GameApp {
       unlock.innerHTML = `${portraitSvg(unlockedReinforcements[unlockedReinforcements.length - 1], { size: 72, uid: 'unlock' })}<span><b>${title}</b><br>${names}</span>`;
     }
 
+    // With a score to beat, sharing is a challenge.
+    $(el, '[data-action="share"] span').textContent = link ? this.t.ui.challengeFriend : this.t.ui.share;
     const next = $(el, '[data-action="next"]');
     next.hidden = !(campaign && won && !level.endless && level.id < LAST_LEVEL);
     $(el, '[data-action="duel-pass"]').hidden = !(setup.mode === 'duel' && setup.rival === undefined);
@@ -1260,9 +1378,11 @@ class GameApp {
     const file = new File([blob], 'politique-2027.png', { type: 'image/png' });
     const text = result.link?.text ?? fmt(this.t.ui.shareText, { headline: result.headline });
     const url = result.link?.url ?? `${location.origin}${location.pathname}`;
+    // Many apps drop `url` when a picture goes along: the link goes in the text itself.
+    const message = `${text} ${url}`;
     try {
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Politique 2027', text: result.link ? `${text} ${url}` : text });
+        await navigator.share({ files: [file], title: 'Politique 2027', text: message });
         return;
       }
     } catch (error) {
@@ -1275,7 +1395,7 @@ class GameApp {
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(link.href), 4000);
     try {
-      await navigator.clipboard.writeText(`${text} ${url}`);
+      await navigator.clipboard.writeText(message);
       this.say(`${this.t.announce.shareSaved} ${this.t.announce.shareCopied}`);
     } catch {
       this.say(this.t.announce.shareSaved);
@@ -1506,6 +1626,7 @@ class GameApp {
       this.put(`cost:${card.def.id}`, cost, () => {
         button.querySelector<HTMLElement>('.card__cost')!.dataset.label = String(cost);
         button.classList.toggle('is-taxed', cost > card.def.cost);
+        button.classList.toggle('is-sale', cost < card.def.cost);
         const description = document.getElementById(`card-desc-${card.def.id}`);
         if (description) description.textContent = this.describeCard(card.def.id, cost);
       });

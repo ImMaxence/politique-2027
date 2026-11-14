@@ -1,7 +1,9 @@
 import { LAST_LEVEL } from './data/levels';
 import { ACHIEVEMENTS, blankCounters, type AchievementId, type Counters } from './achievements';
-import { CAMP_IDS, type CampId } from './data/types';
+import { CAMP_IDS, DIFFICULTIES, type CampId, type Difficulty } from './data/types';
 import { UNITS } from './data/units';
+import { cleanWardrobe, type CosmeticId } from './cosmetics';
+import type { Streak } from './modes';
 
 /**
  * Progress lives in localStorage only: nothing is sent to a server.
@@ -9,8 +11,6 @@ import { UNITS } from './data/units';
  * blocked site data) and the game must still run.
  */
 const KEY = 'politique2027:save';
-
-export type Difficulty = 'easy' | 'normal' | 'hard';
 
 export interface CampProgress {
   /** Highest campaign level available. */
@@ -35,6 +35,10 @@ export interface Save {
   /** Hard mode: bigger waves (default off). */
   /** Campaign difficulty (the daily challenge, duels and head to head ignore it). */
   difficulty: Difficulty;
+  /** The looks your figures wear (won with achievements). */
+  wardrobe: CosmeticId[];
+  /** Daily challenges played to the end on consecutive days. */
+  streak: Streak;
   /** Opponents whose "New!" card has already been shown. */
   seen: string[];
   /** True once the "add to home screen" tip has been dismissed. */
@@ -70,6 +74,8 @@ export function blankSave(): Save {
     speed: 1,
     forceLandscape: true,
     difficulty: 'normal',
+    wardrobe: [],
+    streak: { days: 0, best: 0, last: null },
     seen: [],
     installTipDismissed: false,
     daily: {},
@@ -87,7 +93,7 @@ export function loadSave(): Save {
     if (!raw) return save;
     const data = JSON.parse(raw) as {
       v?: number; camp?: unknown; muted?: unknown; speed?: unknown; forceLandscape?: unknown;
-      hard?: unknown; difficulty?: unknown; seen?: unknown; installTipDismissed?: unknown;
+      hard?: unknown; difficulty?: unknown; wardrobe?: unknown; streak?: { days?: unknown; best?: unknown; last?: unknown }; seen?: unknown; installTipDismissed?: unknown;
       daily?: unknown; achievements?: unknown; counters?: Record<string, unknown>; music?: unknown;
       teams?: Record<string, unknown>;
       progress?: Record<string, Partial<CampProgress>>;
@@ -100,7 +106,13 @@ export function loadSave(): Save {
     save.muted = data.muted === true;
     save.speed = data.speed === 2 ? 2 : data.speed === 0.5 ? 0.5 : 1;
     save.forceLandscape = data.forceLandscape !== false;
-    save.difficulty = data.difficulty === 'easy' || data.difficulty === 'hard' ? data.difficulty : data.hard === true ? 'hard' : 'normal';
+    save.difficulty = DIFFICULTIES.includes(data.difficulty as Difficulty) ? (data.difficulty as Difficulty) : data.hard === true ? 'hard' : 'normal';
+    if (Array.isArray(data.wardrobe)) save.wardrobe = cleanWardrobe(data.wardrobe);
+    const streak = data.streak;
+    if (streak && typeof streak === 'object' && typeof streak.last === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(streak.last)) {
+      const days = Math.max(1, Math.min(9999, Math.floor(Number(streak.days) || 1)));
+      save.streak = { days, best: Math.max(days, Math.min(9999, Math.floor(Number(streak.best) || 0))), last: streak.last };
+    }
     save.seen = Array.isArray(data.seen) ? data.seen.filter((id): id is string => typeof id === 'string').slice(0, 100) : [];
     save.installTipDismissed = data.installTipDismissed === true;
     save.music = data.music !== false;

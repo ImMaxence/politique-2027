@@ -85,6 +85,21 @@ test('easy mode is a choice on the calendar too: smaller waves, more votes to st
   expect(save.difficulty).toBe('easy');
 });
 
+test('five difficulties, from very easy to extreme, each described under the choices', async ({ page }) => {
+  await openGame(page, 'en');
+  await page.locator('[data-camp="droite"]').click();
+  await expect(page.locator('[data-action="difficulty"]')).toHaveCount(5);
+  const hint = page.locator('[data-slot="difficulty-hint"]');
+  await expect(hint).toHaveText(/^Normal:/);
+  await page.locator('[data-action="difficulty"][data-value="veryEasy"]').click();
+  await expect(hint).toHaveText(/^Very easy:/);
+  await page.locator('[data-action="difficulty"][data-value="extreme"]').click();
+  await expect(hint).toHaveText(/^Extreme:/);
+  await page.locator('[data-level="1"]').click();
+  await page.waitForSelector('[data-screen="match"]:not([hidden])');
+  expect(await page.evaluate(() => window.__P2027__.state()!.difficulty)).toBe('extreme');
+});
+
 test('the pause menu lists the keyboard shortcuts', async ({ page }) => {
   await openGame(page, 'en');
   await startMatch(page, 'autres', 1);
@@ -118,6 +133,27 @@ test('the result can be shared as a picture', async ({ page }) => {
   expect(shot.type).toBe('image/png');
   expect(shot.size).toBeGreaterThan(20_000);
   expect(shot.text).toContain('Politique 2027');
+  expect(shot.text).toContain('/en/play'); // the link to the game goes along
+});
+
+test('achievements unlock looks in the wardrobe, worn by your figures', async ({ page }) => {
+  await openGame(page, 'en');
+  await page.evaluate(() =>
+    localStorage.setItem('politique2027:save', JSON.stringify({ v: 4, camp: 'centre', achievements: ['firstWin'], progress: { centre: { unlocked: 2, stars: { 1: 2 }, endlessBest: 0, finished: false } } })),
+  );
+  await page.reload();
+  await page.waitForSelector('#game[data-ready="true"]');
+  const panel = page.locator('details.wardrobe');
+  await panel.locator('summary').click();
+  await expect(panel.locator('summary')).toHaveText('Wardrobe (1/6)');
+  await expect(panel.locator('[data-cosmetic="shades"]')).toHaveAttribute('aria-disabled', 'true');
+  const sash = panel.locator('[data-cosmetic="sash"]');
+  await sash.click();
+  await expect(sash).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('politique2027:save')!).wardrobe)).toEqual(['sash']);
+  await expect(page.locator('[data-achievement="cleanSheet"] .achievements__reward')).toHaveText('Unlocks: Sunglasses');
+  await startMatch(page, 'centre', 1);
+  await expect(page.locator('[data-screen="match"]')).toBeVisible();
 });
 
 test('the site can be installed and played offline', async ({ page, request }) => {

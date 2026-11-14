@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ENDLESS, LAST_LEVEL, LEVELS, VERSUS } from '../../src/game/data/levels';
-import { CAMP_IDS, type CampId } from '../../src/game/data/types';
+import { CAMP_IDS, DIFFICULTIES, type CampId, type Difficulty } from '../../src/game/data/types';
 import {
   CAMPS, DECK_SIZE, EXTRAS, GUESTS, REINFORCEMENTS, TIER_BOOST, UNITS, canMerge, cardPool, categoryOf, headlinerOf, reinforcementsFor, tierDef, transfugesFor,
 } from '../../src/game/data/units';
 import { botAct } from '../../src/game/sim/bot';
 import {
-  EASY_HP, EASY_START, PASSIVE_AMOUNT, PASSIVE_INTERVAL, REFUND_RATIO, SPAWN_X, TICK, ULT_CHARGE_TIME,
+  EASY_HP, EASY_START, PASSIVE_AMOUNT, PASSIVE_INTERVAL, REFUND_RATIO, RULE_VOTES, SPAWN_X, TICK, ULT_CHARGE_TIME,
   canPlace, costOf, createGame, mergeCost, placeUnit, playOn, removeUnit, spawnEnemy, starsFor, step, useUltimate, type GameState,
 } from '../../src/game/sim/engine';
 import { PORTRAIT_IDS } from '../../src/game/render/portraits';
@@ -511,6 +511,56 @@ describe('money, taxes and guests', () => {
     expect(spawnEnemy(soft, 'militant', 2, 'gauche')!.hp).toBe(Math.round(EXTRAS.militant.hp * EASY_HP));
     // Hard wins over easy if both are asked for.
     expect(createGame({ camp: 'centre', level: 6, easy: true, hard: true }).easy).toBe(false);
+  });
+
+  it('five difficulties, from very easy to extreme, in order', () => {
+    const night = (difficulty: Difficulty) => {
+      const state = createGame({ camp: 'centre', level: 6, seed: 3, difficulty });
+      const start = state.resources;
+      let count = 0;
+      while (state.time < 150) {
+        step(state);
+        count += state.events.filter((e) => e.type === 'spawn').length;
+        state.events.length = 0;
+        state.polls = 99;
+      }
+      const militant = spawnEnemy(createGame({ camp: 'centre', level: 6, difficulty }), 'militant', 2, 'gauche')!.hp;
+      return { count, start, militant };
+    };
+    const nights = DIFFICULTIES.map(night);
+    for (let i = 1; i < nights.length; i++) {
+      expect(nights[i].count).toBeGreaterThanOrEqual(nights[i - 1].count);
+      expect(nights[i].start).toBeLessThanOrEqual(nights[i - 1].start);
+      expect(nights[i].militant).toBeGreaterThanOrEqual(nights[i - 1].militant);
+    }
+    expect(nights[4].count).toBeGreaterThan(nights[0].count * 2);
+    expect(createGame({ camp: 'centre', level: 6, difficulty: 'extreme' }).hard).toBe(true); // counts as hard for the achievement
+    expect(createGame({ camp: 'centre', level: 6, hard: true }).difficulty).toBe('hard'); // the old shorthand still works
+  });
+
+  it('the rules of the day do what they say', () => {
+    // Double votes: the trickle and the "Votes" figures bring in twice as much.
+    const votes = createGame({ camp: 'centre', level: 2, rule: 'doubleVotes' });
+    const before = votes.resources;
+    run(votes, PASSIVE_INTERVAL + 0.05);
+    expect(votes.resources - before).toBe(PASSIVE_AMOUNT * RULE_VOTES);
+    // No reshuffle: a figure cannot be taken off.
+    const stay = createGame({ camp: 'centre', level: 2, rule: 'noRemove' });
+    placeUnit(stay, 'attal', 2, 2);
+    expect(removeUnit(stay, 2, 2)).toBe(false);
+    expect(stay.grid[2][2]).not.toBeNull();
+    // Sales: 30% off, longer recharge.
+    const sale = createGame({ camp: 'centre', level: 2, rule: 'sale' });
+    expect(costOf(sale, UNITS.attal)).toBe(Math.ceil((UNITS.attal.cost * 0.7) / 5) * 5);
+    placeUnit(sale, 'attal', 2, 2);
+    expect(sale.cards.find((c) => c.def.id === 'attal')!.cooldown).toBeCloseTo(UNITS.attal.recharge * 1.5);
+    // Hard heads: tougher opponents, more votes to start with.
+    const tough = createGame({ camp: 'centre', level: 2, rule: 'tough' });
+    expect(tough.resources).toBe(LEVELS[1].startResources + 150);
+    expect(spawnEnemy(tough, 'militant', 2, 'gauche')!.hp).toBe(Math.round(EXTRAS.militant.hp * 1.3));
+    // Merges at cost: a level costs the card's price.
+    const merge = createGame({ camp: 'droite', level: 2, rule: 'cheapMerge' });
+    expect(mergeCost(merge, UNITS.bardella, 3)).toBe(UNITS.bardella.cost);
   });
 
   it('the benefits office looks at the file from time to time', () => {

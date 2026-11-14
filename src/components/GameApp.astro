@@ -7,9 +7,10 @@ import '../styles/game.css';
 import '../styles/game-side.css';
 import '../styles/game-extras.css';
 import { COLS, LEVELS, ROWS, levelDef } from '../game/data/levels';
-import { CAMP_IDS } from '../game/data/types';
+import { CAMP_IDS, DIFFICULTIES } from '../game/data/types';
 import { CAMPS, EXTRAS } from '../game/data/units';
 import { ACHIEVEMENTS } from '../game/achievements';
+import { COSMETICS, rewardOf } from '../game/cosmetics';
 import { VERSUS_KINDS, type VersusKind } from '../game/sim/engine';
 import { GAME_STRINGS, fmt, type Lang } from '../i18n/game';
 import Icon from './Icon.astro';
@@ -40,6 +41,17 @@ function castOf(id: number) {
     ...(level.guests ?? []).map((g) => ({ id: g, name: t.figures[g].name, only: EXTRAS[g].onlyAgainst as string | undefined })),
   ];
 }
+/** Extreme: a skull whose eyes glow red, with beams of light coming out of them. */
+const SKULL = `<svg class="skull" viewBox="-6 -2 36 26" aria-hidden="true" focusable="false">
+  <path class="skull__beam" d="M8.8 10.8 -6 1.5v8z" fill="#ffae00"/>
+  <path class="skull__beam" d="M15.2 10.8 30 1.5v8z" fill="#ffae00"/>
+  <path d="M12 2.5c-4.7 0-8 3.3-8 7.6 0 2.6 1.2 4.4 2.8 5.4v2.8c0 .7.5 1.2 1.2 1.2h1v-2h1.6v2h2.8v-2H15v2h1c.7 0 1.2-.5 1.2-1.2v-2.8c1.6-1 2.8-2.8 2.8-5.4 0-4.3-3.3-7.6-8-7.6z" fill="#f4efe3" stroke="#17203f" stroke-width="1.4" stroke-linejoin="round"/>
+  <circle cx="8.8" cy="10.8" r="2.3" fill="#e5383b"/>
+  <circle cx="15.2" cy="10.8" r="2.3" fill="#e5383b"/>
+  <circle class="skull__eye" cx="8.8" cy="10.8" r="1" fill="#fff3b0"/>
+  <circle class="skull__eye" cx="15.2" cy="10.8" r="1" fill="#fff3b0"/>
+  <path d="M12 13.2l-1.1 1.9h2.2z" fill="#17203f"/>
+</svg>`;
 ---
 
 <div class="game" id="game" data-lang={lang}>
@@ -104,10 +116,15 @@ function castOf(id: number) {
       <div class="screen__tools">
         <div class="difficulty" role="group" aria-labelledby="difficulty-label">
           <span id="difficulty-label" class="difficulty__label">{t.ui.difficulty}</span>
-          <button type="button" class="difficulty__option" data-action="difficulty" data-value="easy" aria-pressed="false" aria-describedby="difficulty-hint">{t.ui.easy}</button>
-          <button type="button" class="difficulty__option" data-action="difficulty" data-value="normal" aria-pressed="true">{t.ui.normal}</button>
-          <button type="button" class="difficulty__option" data-action="difficulty" data-value="hard" aria-pressed="false" aria-describedby="difficulty-hint">{t.ui.hard}</button>
-          <span id="difficulty-hint" class="difficulty__hint">{t.ui.difficultyHint}</span>
+          {
+            DIFFICULTIES.map((d) => (
+              <button type="button" class="difficulty__option" data-action="difficulty" data-value={d} aria-pressed={d === 'normal' ? 'true' : 'false'} aria-describedby="difficulty-hint">
+                {d === 'extreme' && <Fragment set:html={SKULL} />}
+                {t.ui[d]}
+              </button>
+            ))
+          }
+          <span id="difficulty-hint" class="difficulty__hint" data-slot="difficulty-hint" aria-live="polite">{t.ui.hintNormal}</span>
         </div>
         <button type="button" class="btn" data-action="change-camp">{t.ui.changeCamp}</button>
       </div>
@@ -153,7 +170,9 @@ function castOf(id: number) {
           <span class="level-card__date" data-slot="daily-date">★</span>
           <span class="level-card__name" id="mode-daily-name">{t.ui.dailyName}</span>
           <span class="level-card__blurb" id="mode-daily-blurb" data-slot="daily-blurb"></span>
+          <span class="level-card__goal" id="mode-daily-rule" data-slot="daily-rule"></span>
           <span class="level-card__state" id="mode-daily-state" data-slot="daily-state">{t.ui.play}</span>
+          <span class="level-card__streak" id="mode-daily-streak" data-slot="daily-streak"></span>
         </button>
       </li>
       <li>
@@ -182,10 +201,17 @@ function castOf(id: number) {
             <li data-achievement={id}>
               <b>{t.achievements[id].name}</b>
               <span>{t.achievements[id].desc}</span>
+              {rewardOf(id) && <small class="achievements__reward">{t.ui.unlocks.replace('{name}', t.cosmetics[rewardOf(id)!].name)}</small>}
             </li>
           ))
         }
       </ul>
+    </details>
+
+    <details class="achievements wardrobe">
+      <summary data-slot="wardrobe-title">{t.ui.wardrobeTitle.replace('{n}', '0').replace('{total}', String(COSMETICS.length))}</summary>
+      <p class="wardrobe__hint">{t.ui.wardrobeHint}</p>
+      <ul class="wardrobe__list" data-slot="wardrobe-list" role="list"></ul>
     </details>
   </section>
 

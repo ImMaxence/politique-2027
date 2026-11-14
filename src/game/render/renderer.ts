@@ -4,6 +4,7 @@
  */
 import { fmt, type GameStrings } from '../../i18n/game';
 import { COLS, ROWS } from '../data/levels';
+import type { FlameColour } from '../cosmetics';
 import { EYES, PHOTOS, type Expression } from '../data/photos';
 import type { ProjectileKind } from '../data/types';
 import { CAMPS, UNITS, categoryOf, figureOf } from '../data/units';
@@ -24,6 +25,14 @@ const PAPER = '#fffdf6';
 const GOLD = '#ffd23f';
 /** Level 3 figures are on fire. */
 const FIRE = '#ff8a00';
+/** Level-up flames, by colour (the wardrobe can change them): fire layers from outside in, the rim, the eyes' flame, the embers. */
+const FLAMES: Record<FlameColour, { layers: string[]; rim: string; eye: [string, string]; embers: [string, string] }> = {
+  classic: { layers: ['rgba(255,120,0,.8)', 'rgba(255,214,70,.9)'], rim: 'rgba(170,50,0,.6)', eye: ['rgba(255,110,0,.92)', 'rgba(255,226,80,.95)'], embers: ['#ff8a00', '#ffd23f'] },
+  blue: { layers: ['rgba(40,110,255,.8)', 'rgba(160,220,255,.92)'], rim: 'rgba(10,40,140,.6)', eye: ['rgba(40,120,255,.92)', 'rgba(180,230,255,.95)'], embers: ['#3d8bff', '#bfe3ff'] },
+  purple: { layers: ['rgba(140,60,255,.8)', 'rgba(228,190,255,.92)'], rim: 'rgba(70,20,140,.6)', eye: ['rgba(150,70,255,.92)', 'rgba(235,200,255,.95)'], embers: ['#9b5cff', '#e6c4ff'] },
+  tricolour: { layers: ['rgba(47,91,211,.88)', 'rgba(255,253,246,.92)', 'rgba(229,56,59,.9)'], rim: 'rgba(20,30,90,.6)', eye: ['rgba(47,91,211,.95)', 'rgba(229,56,59,.95)'], embers: ['#2f5bd3', '#e5383b'] },
+};
+
 /** The puppets' SVG viewBox: 120 × 150 plus an 8-unit margin all round (see wrap() in portraits.ts). */
 const PUPPET_VIEW = { pad: 8, w: 136, h: 166 };
 const RED = '#e5383b';
@@ -102,6 +111,9 @@ export class Renderer {
   private texts: FloatText[] = [];
   private rings: Ring[] = [];
   private hints: (() => void)[] = [];
+  /** What your figures wear (a key of SpriteStore's dressed pictures) and the colour of their flames. */
+  private look = '';
+  private flameColour: FlameColour = 'classic';
   private flashes: LaneFlash[] = [];
   private bubbles: Bubble[] = [];
   /** Answers to a duo's first line, said a moment later by the partner. */
@@ -163,6 +175,12 @@ export class Renderer {
   /** A banner across the scene (the night's goal at the start of a match). */
   announce(text: string): void {
     this.showBanner(text, INK, 3.4);
+  }
+
+  /** What your figures wear this match: the key of their dressed pictures, and the colour of their flames. */
+  setLook(look: string, flames: FlameColour): void {
+    this.look = look;
+    this.flameColour = flames;
   }
 
   setCompact(compact: boolean): void {
@@ -650,11 +668,9 @@ export class Renderer {
   private aura(x: number, y: number, w: number, h: number, now: number, seed: number): void {
     const g = this.ctx;
     const t = this.reducedMotion ? seed : now;
-    // A simple fire: orange outside, yellow inside.
-    const layers = [
-      { color: 'rgba(255,120,0,.8)', scale: 1 },
-      { color: 'rgba(255,214,70,.9)', scale: 0.62 },
-    ];
+    // A simple fire: two colours (three for the tricolour one), from outside in.
+    const palette = FLAMES[this.flameColour];
+    const layers = palette.layers.map((color, i, all) => ({ color, scale: 1 - (i * 0.4) / Math.max(1, all.length - 1) }));
     const tongues = 7;
     const width = w * 0.8;
     g.save();
@@ -679,7 +695,7 @@ export class Renderer {
       g.ellipse(x, y - h * 0.36, width * 0.45 * layer.scale, h * 0.36 * layer.scale, 0, 0, Math.PI * 2);
       g.fill();
       if (layer === layers[0]) {
-        g.strokeStyle = 'rgba(170,50,0,.6)';
+        g.strokeStyle = palette.rim;
         g.lineWidth = 3;
         g.stroke();
       }
@@ -709,7 +725,8 @@ export class Renderer {
       // The flame: outer orange, inner yellow, leaning and flickering.
       const flicker = 0.8 + 0.2 * Math.sin(t * 14 + i * 2.1 + seed);
       const lean = Math.sin(t * 6 + i + seed) * 1.6;
-      for (const [color, w, hgt] of [['rgba(255,110,0,.92)', 3.6, 13], ['rgba(255,226,80,.95)', 2.2, 8.5]] as const) {
+      const [outer, inner] = FLAMES[this.flameColour].eye;
+      for (const [color, w, hgt] of [[outer, 3.6, 13], [inner, 2.2, 8.5]] as const) {
         const fw = w * big;
         const fh = hgt * big * flicker;
         g.fillStyle = color;
@@ -724,7 +741,7 @@ export class Renderer {
       const r = 2.9 * big * (this.reducedMotion ? 1 : 0.9 + 0.1 * Math.sin(t * 9 + i));
       const halo = g.createRadialGradient(ex, ey, 0, ex, ey, r * 2.2);
       halo.addColorStop(0, 'rgba(255,255,240,1)');
-      halo.addColorStop(0.4, 'rgba(255,220,60,.95)');
+      halo.addColorStop(0.4, inner);
       halo.addColorStop(1, 'rgba(255,140,0,0)');
       g.fillStyle = halo;
       g.beginPath();
@@ -745,7 +762,7 @@ export class Renderer {
       const px = x + Math.sin(i * 2.4 + seed + phase * 3) * w * 0.38;
       const py = y - 10 - phase * h * 0.95;
       g.globalAlpha = 1 - phase;
-      g.fillStyle = i % 2 ? '#ff8a00' : '#ffd23f';
+      g.fillStyle = FLAMES[this.flameColour].embers[i % 2];
       g.beginPath();
       g.arc(px, py, 4 * (1 - phase * 0.6), 0, Math.PI * 2);
       g.fill();
@@ -944,7 +961,7 @@ export class Renderer {
     const acting = state.time - unit.lastAct < 0.45;
     const struggling = unit.hp < unit.def.hp * 0.4;
     const mood = this.mood(unit.def.id, acting, struggling);
-    const sprite = this.sprites.unit(unit.def.id, mood);
+    const sprite = this.sprites.unit(unit.def.id, mood, this.look);
     if (!sprite) return;
     const g = this.ctx;
     const x = xToPx(unit.col + 0.5);
@@ -1394,7 +1411,7 @@ export class Renderer {
           around();
         }
         g.globalAlpha = 1;
-        const sprite = this.sprites.unit(def.id);
+        const sprite = this.sprites.unit(def.id, 'neutral', this.look);
         if (sprite) this.blit(sprite, cellX + CELL_W / 2, feetY(hover.lane), FIGURE_SCALE, FIGURE_SCALE, 0, 0, 0.6);
       } else {
         g.fillStyle = 'rgba(229,56,59,.22)';
@@ -1581,13 +1598,36 @@ export class Renderer {
   }
 
   /** A price tag stays pinned to the wall for as long as tariffs apply. */
-  private drawTariff(): void {
+  /** The daily challenge's rule, on the wall for the whole night. */
+  private drawRule(state: GameState): void {
+    const g = this.ctx;
+    const text = fmt(this.strings.ui.ruleBanner, { name: this.strings.rules[state.rule!].name }).toUpperCase();
+    g.save();
+    g.font = `400 20px ${DISPLAY}`;
+    const width = g.measureText(text).width + 30;
+    g.translate(Math.min(VIEW_W - width / 2 - 12, this.view.right - width / 2 - 12), 100);
+    g.rotate(-0.03);
+    g.fillStyle = GOLD;
+    g.strokeStyle = INK;
+    g.lineWidth = 3;
+    g.beginPath();
+    g.roundRect(-width / 2, -17, width, 34, 6);
+    g.fill();
+    g.stroke();
+    g.fillStyle = INK;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(text, 0, 2);
+    g.restore();
+  }
+
+  private drawTariff(shift = 0): void {
     const g = this.ctx;
     const text = this.strings.announce.tariffBanner.toUpperCase();
     g.save();
     g.font = `400 20px ${DISPLAY}`;
     const width = g.measureText(text).width + 30;
-    g.translate(Math.min(VIEW_W - 150, this.view.right - width / 2 - 12), 100);
+    g.translate(Math.min(VIEW_W - 150, this.view.right - width / 2 - 12), 100 + shift);
     g.rotate(0.04);
     g.fillStyle = RED;
     g.strokeStyle = INK;
@@ -1769,7 +1809,8 @@ export class Renderer {
     if (!view.removing) this.drawBubbles(state, dt);
     // The debate's soundbites are targets: nothing may hide them.
     this.drawPunchlines(state, now);
-    if (state.tariff > 1) this.drawTariff();
+    if (state.rule) this.drawRule(state);
+    if (state.tariff > 1) this.drawTariff(state.rule ? 44 : 0);
     if (view.removing) this.drawRemoveRibbon(state, now);
     else {
       this.drawBossBar(state);
