@@ -574,7 +574,7 @@ class GameApp {
     this.updateHud();
     const name = setup.mode === 'versus' ? this.t.ui.versusName : this.t.levels[levelId].name;
     const modes: Record<Difficulty, string> = {
-      veryEasy: this.t.announce.veryEasyMode, easy: this.t.announce.easyMode, normal: '', hard: this.t.announce.hardMode, extreme: this.t.announce.extremeMode,
+      noob: this.t.announce.noobMode, veryEasy: this.t.announce.veryEasyMode, easy: this.t.announce.easyMode, normal: '', hard: this.t.announce.hardMode, extreme: this.t.announce.extremeMode,
     };
     const extra = setup.mode === 'versus' ? this.t.announce.versusStart : modes[state.difficulty];
     const rule = state.rule ? fmt(this.t.announce.ruleStart, { name: this.t.rules[state.rule].name, desc: this.t.rules[state.rule].desc }) : '';
@@ -786,6 +786,10 @@ class GameApp {
     on('[data-action="difficulty"]', (el) => {
       const value = el.dataset.value as Difficulty;
       this.save.difficulty = DIFFICULTIES.includes(value) ? value : 'normal';
+      if (value === 'extreme' || value === 'noob') {
+        this.audio.unlock();
+        this.audio.play(value === 'extreme' ? 'inferno' : 'squeak');
+      }
       storeSave(this.save);
       this.syncToggles();
     });
@@ -1046,7 +1050,7 @@ class GameApp {
     }
     // The line under the choices says what the chosen difficulty does.
     const hints: Record<Difficulty, string> = {
-      veryEasy: this.t.ui.hintVeryEasy, easy: this.t.ui.hintEasy, normal: this.t.ui.hintNormal, hard: this.t.ui.hintHard, extreme: this.t.ui.hintExtreme,
+      noob: this.t.ui.hintNoob, veryEasy: this.t.ui.hintVeryEasy, easy: this.t.ui.hintEasy, normal: this.t.ui.hintNormal, hard: this.t.ui.hintHard, extreme: this.t.ui.hintExtreme,
     };
     const hint = this.root.querySelector<HTMLElement>('[data-slot="difficulty-hint"]');
     if (hint) hint.textContent = hints[this.save.difficulty];
@@ -1182,7 +1186,7 @@ class GameApp {
     // The difficulty and a new endless record get a line of their own.
     const notes: string[] = [];
     const badges: Record<Difficulty, string> = {
-      veryEasy: this.t.ui.veryEasyBadge, easy: this.t.ui.easyBadge, normal: '', hard: this.t.ui.hardBadge, extreme: this.t.ui.extremeBadge,
+      noob: this.t.ui.noobBadge, veryEasy: this.t.ui.veryEasyBadge, easy: this.t.ui.easyBadge, normal: '', hard: this.t.ui.hardBadge, extreme: this.t.ui.extremeBadge,
     };
     if (badges[state.difficulty]) notes.push(badges[state.difficulty]);
     if (level.endless && wavesHeld > previousBest) notes.push(this.t.ui.newRecord);

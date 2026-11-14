@@ -145,6 +145,8 @@ describe('saves', () => {
     expect(loadSave().difficulty).toBe('extreme');
     withStorage({ v: 4, difficulty: 'veryEasy' });
     expect(loadSave().difficulty).toBe('veryEasy');
+    withStorage({ v: 4, difficulty: 'noob' });
+    expect(loadSave().difficulty).toBe('noob');
     withStorage({ v: 4, difficulty: 'nightmare' });
     expect(loadSave().difficulty).toBe('normal');
   });

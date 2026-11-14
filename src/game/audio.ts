@@ -4,7 +4,7 @@
  */
 export type Sfx =
   | 'click' | 'place' | 'error' | 'shoot' | 'hit' | 'coin' | 'down' | 'leak'
-  | 'wave' | 'boom' | 'splash' | 'whistle' | 'ult' | 'win' | 'lose' | 'levelUp';
+  | 'wave' | 'boom' | 'splash' | 'whistle' | 'ult' | 'win' | 'lose' | 'levelUp' | 'inferno' | 'squeak';
 
 export class Audio {
   muted = false;
@@ -152,6 +152,10 @@ export class Audio {
       case 'win': [523, 659, 784, 1047].forEach((f, i) => this.tone(f, i * 0.13, 0.3, 'triangle', 0.22)); break;
       case 'lose': [392, 370, 349, 262].forEach((f, i) => this.tone(f, i * 0.22, 0.34, 'sawtooth', 0.12)); break;
       // Power-up: a quick rising run, then a shimmer.
+      // Extreme picked: a blast of fire and a low growl.
+      case 'inferno': this.noise(0, 0.7, 0.35); this.tone(150, 0, 0.7, 'sawtooth', 0.2, 50); this.tone(75, 0.05, 0.8, 'square', 0.1, 38); break;
+      // Noob picked: a squeaky toy.
+      case 'squeak': this.tone(900, 0, 0.09, 'sine', 0.2, 1500); this.tone(1300, 0.1, 0.14, 'sine', 0.18, 1900); break;
       case 'levelUp': [392, 523, 659, 784, 1047].forEach((f, i) => this.tone(f, i * 0.06, 0.16, 'square', 0.1)); this.tone(1568, 0.3, 0.35, 'triangle', 0.12, 2093); break;
     }
   }

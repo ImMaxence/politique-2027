@@ -15,7 +15,7 @@ To remember your progress and settings, the site uses your browser's local stora
 
 | Key | Content | Duration |
 | --- | --- | --- |
-| `politique2027:save` | Chosen camp, unlocked levels, stars, endless-mode record, sound muted or not, game speed, forced landscape on phones or not, chosen difficulty (from very easy to extreme), looks worn (wardrobe), daily-challenge streak, opponents already introduced ("New!" cards), "home screen" tip dismissed or not, best daily-challenge scores (last two weeks), achievements and the totals they count, music on or off | Until you delete it |
+| `politique2027:save` | Chosen camp, unlocked levels, stars, endless-mode record, sound muted or not, game speed, forced landscape on phones or not, chosen difficulty (from noob to extreme), looks worn (wardrobe), daily-challenge streak, opponents already introduced ("New!" cards), "home screen" tip dismissed or not, best daily-challenge scores (last two weeks), achievements and the totals they count, music on or off | Until you delete it |
 
 So that the game opens and plays **offline** (in particular once added to the home screen), the browser also keeps a copy of the site's files — pages, scripts, styles, fonts and pictures — in its cache (`Cache Storage`, managed by a *service worker*). This cache only holds the site's public files, no data about you; it is replaced with every new version of the game.
 

@@ -224,7 +224,7 @@ export interface GameState {
   difficulty: Difficulty;
   /** Hard or extreme: bigger waves. */
   hard: boolean;
-  /** Easy or very easy: smaller waves, softer opponents. */
+  /** Easy, very easy or noob: smaller waves, softer opponents. */
   easy: boolean;
   /** The rule of the day, if any. */
   rule: RuleId | null;
@@ -292,6 +292,7 @@ export const EASY_START = 50;
  * and walking speed, and the votes added at the start.
  */
 export const DIFFICULTY: Record<Difficulty, { budget: number; hp: number; speed: number; start: number }> = {
+  noob: { budget: 0.4, hp: 0.5, speed: 0.8, start: 150 },
   veryEasy: { budget: 0.55, hp: 0.65, speed: 0.9, start: 100 },
   easy: { budget: EASY_BUDGET, hp: EASY_HP, speed: 1, start: EASY_START },
   normal: { budget: 1, hp: 1, speed: 1, start: 0 },
@@ -334,7 +335,7 @@ export function createGame(options: GameOptions): GameState {
     camp: camp.id,
     difficulty,
     hard: difficulty === 'hard' || difficulty === 'extreme',
-    easy: difficulty === 'easy' || difficulty === 'veryEasy',
+    easy: difficulty === 'easy' || difficulty === 'veryEasy' || difficulty === 'noob',
     rule: options.rule ?? null,
     level,
     seed,

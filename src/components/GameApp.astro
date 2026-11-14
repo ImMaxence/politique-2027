@@ -41,17 +41,45 @@ function castOf(id: number) {
     ...(level.guests ?? []).map((g) => ({ id: g, name: t.figures[g].name, only: EXTRAS[g].onlyAgainst as string | undefined })),
   ];
 }
-/** Extreme: a skull whose eyes glow red, with beams of light coming out of them. */
-const SKULL = `<svg class="skull" viewBox="-6 -2 36 26" aria-hidden="true" focusable="false">
-  <path class="skull__beam" d="M8.8 10.8 -6 1.5v8z" fill="#ffae00"/>
-  <path class="skull__beam" d="M15.2 10.8 30 1.5v8z" fill="#ffae00"/>
-  <path d="M12 2.5c-4.7 0-8 3.3-8 7.6 0 2.6 1.2 4.4 2.8 5.4v2.8c0 .7.5 1.2 1.2 1.2h1v-2h1.6v2h2.8v-2H15v2h1c.7 0 1.2-.5 1.2-1.2v-2.8c1.6-1 2.8-2.8 2.8-5.4 0-4.3-3.3-7.6-8-7.6z" fill="#f4efe3" stroke="#17203f" stroke-width="1.4" stroke-linejoin="round"/>
-  <circle cx="8.8" cy="10.8" r="2.3" fill="#e5383b"/>
-  <circle cx="15.2" cy="10.8" r="2.3" fill="#e5383b"/>
-  <circle class="skull__eye" cx="8.8" cy="10.8" r="1" fill="#fff3b0"/>
-  <circle class="skull__eye" cx="15.2" cy="10.8" r="1" fill="#fff3b0"/>
-  <path d="M12 13.2l-1.1 1.9h2.2z" fill="#17203f"/>
+/**
+ * Extreme: a horned skull with fluorescent red eyes. The button around it burns
+ * (flames along its top edge, embers rising), all drawn and animated in game-extras.css.
+ */
+const SKULL = `<svg class="extreme__skull" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="xs-horn" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#6e0510"/><stop offset=".6" stop-color="#e01a1a"/><stop offset="1" stop-color="#ff8a3d"/>
+    </linearGradient>
+    <radialGradient id="xs-eye">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".22" stop-color="#ffd6d6"/><stop offset=".45" stop-color="#ff1a1a"/><stop offset="1" stop-color="#ff0000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M19 22C11 19 6 11 8 2c3 7 8 11 16 13z" fill="url(#xs-horn)" stroke="#17203f" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M45 22c8-3 13-11 11-20-3 7-8 11-16 13z" fill="url(#xs-horn)" stroke="#17203f" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M32 11C18.500 11 10 20.500 10 31.500c0 7.500 4 12.500 9 15.500v6c0 1.700 1.300 3 3 3h20c1.700 0 3-1.300 3-3v-6c5-3 9-8 9-15.500C54 20.500 45.500 11 32 11z" fill="#f2ead8" stroke="#17203f" stroke-width="2.200" stroke-linejoin="round"/>
+  <path d="M39 14l-2 5 3 3-2 4" fill="none" stroke="#17203f" stroke-width="1.300" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M14.500 28.500c5-3.500 11-3 16 2.500-1.500 6.500-6 9-10.500 8-4.500-1-6.500-5-5.500-10.500z" fill="#17203f"/>
+  <path d="M49.500 28.500c-5-3.500-11-3-16 2.500 1.500 6.500 6 9 10.500 8 4.500-1 6.500-5 5.500-10.500z" fill="#17203f"/>
+  <circle class="extreme__glow" cx="22.500" cy="33" r="9.500" fill="url(#xs-eye)"/>
+  <circle class="extreme__glow" cx="41.500" cy="33" r="9.500" fill="url(#xs-eye)"/>
+  <circle cx="22.500" cy="33" r="2.400" fill="#ffffff"/>
+  <circle cx="41.500" cy="33" r="2.400" fill="#ffffff"/>
+  <path d="M32 40.500l-3 5c1.800 1.200 4.200 1.200 6 0z" fill="#17203f"/>
+  <path d="M22 50.500h20M26 48v8M30 48v8M34 48v8M38 48v8" fill="none" stroke="#17203f" stroke-width="1.600" stroke-linecap="round"/>
 </svg>`;
+/** Noob: a pacifier, for the button made for babies (hearts, stars and bubbles float off it). */
+const PACIFIER = `<svg class="noob__pacifier" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+  <ellipse cx="32" cy="13" rx="7" ry="10" fill="#ffe2b8" stroke="#4a1d6b" stroke-width="2"/>
+  <circle cx="32" cy="50" r="10.500" fill="none" stroke="#4a1d6b" stroke-width="8"/>
+  <circle cx="32" cy="50" r="10.500" fill="none" stroke="#ff8fd8" stroke-width="4.500"/>
+  <path d="M8 31c0-12 13-15 24-8 11-7 24-4 24 8 0 11-13 13-24 9-11 4-24 2-24-9z" fill="#7cc8ff" stroke="#4a1d6b" stroke-width="2.200" stroke-linejoin="round"/>
+  <path d="M15 26c3-4 8-4 11-2" fill="none" stroke="#ffffff" stroke-width="2.200" stroke-linecap="round" opacity=".8"/>
+  <circle cx="32" cy="31" r="6.500" fill="#ffd23f" stroke="#4a1d6b" stroke-width="2"/>
+  <circle cx="30" cy="29" r="1.800" fill="#ffffff"/>
+</svg>`;
+const NOOB_FLOATS = ['♥', '✦', '●', '♥', '✧', '●', '♥', '✦'];
+const FLAMES = Array.from({ length: 11 }, (_, i) => i);
+const EMBERS = Array.from({ length: 8 }, (_, i) => i);
 ---
 
 <div class="game" id="game" data-lang={lang}>
@@ -118,9 +146,32 @@ const SKULL = `<svg class="skull" viewBox="-6 -2 36 26" aria-hidden="true" focus
           <span id="difficulty-label" class="difficulty__label">{t.ui.difficulty}</span>
           {
             DIFFICULTIES.map((d) => (
-              <button type="button" class="difficulty__option" data-action="difficulty" data-value={d} aria-pressed={d === 'normal' ? 'true' : 'false'} aria-describedby="difficulty-hint">
-                {d === 'extreme' && <Fragment set:html={SKULL} />}
-                {t.ui[d]}
+              <button
+                type="button"
+                class={`difficulty__option${d === 'extreme' || d === 'noob' ? ` difficulty__option--${d}` : ''}`}
+                data-action="difficulty"
+                data-value={d}
+                aria-pressed={d === 'normal' ? 'true' : 'false'}
+                aria-describedby="difficulty-hint"
+              >
+                {
+                  d === 'noob' && (
+                    <>
+                      <span class="noob__floats" aria-hidden="true">{NOOB_FLOATS.map((glyph) => <b>{glyph}</b>)}</span>
+                      <Fragment set:html={PACIFIER} />
+                    </>
+                  )
+                }
+                {
+                  d === 'extreme' && (
+                    <>
+                      <span class="extreme__fire" aria-hidden="true">{FLAMES.map(() => <i />)}</span>
+                      <span class="extreme__embers" aria-hidden="true">{EMBERS.map(() => <b />)}</span>
+                      <Fragment set:html={SKULL} />
+                    </>
+                  )
+                }
+                <span class="difficulty__name">{t.ui[d]}</span>
               </button>
             ))
           }

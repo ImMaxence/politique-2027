@@ -231,6 +231,6 @@ export interface LevelDef {
 export const RULES = ['doubleVotes', 'noRemove', 'sale', 'tough', 'cheapMerge'] as const;
 export type RuleId = (typeof RULES)[number];
 
-/** Campaign difficulty, from very easy to extreme (the daily challenge, duels and head to head are always "normal"). */
-export const DIFFICULTIES = ['veryEasy', 'easy', 'normal', 'hard', 'extreme'] as const;
+/** Campaign difficulty, from noob to extreme (the daily challenge, duels and head to head are always "normal"). */
+export const DIFFICULTIES = ['noob', 'veryEasy', 'easy', 'normal', 'hard', 'extreme'] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];

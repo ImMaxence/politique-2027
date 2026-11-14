@@ -12,6 +12,18 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [4.4.0] — 2026-11-14
+
+A Noob mode, and two buttons to match the two ends of the scale. Saves are kept.
+
+### Added
+
+- **Noob mode**, below very easy: tiny waves (60% smaller), opponents with half their credibility and 20% slower, 150 more votes at the start. Its button is made for babies: a pastel pill with a rainbow ring that turns, a pacifier that rocks, hearts, stars and bubbles floating off, a jelly wobble when hovered, a pop and a squeaky toy when picked. The reference bot wins every night in noob without losing a piece of the goal; doing nothing still loses.
+
+### Changed
+
+- **The Extreme button is on fire.** The small skull (whose beams of light looked like odd horns) gives way to a big skull with real devil's horns and fluorescent red eyes that pulse. Tongues of fire flicker along the top of the button, embers rise from it, its glow breathes and it shakes when hovered; picked, it blazes up in a flash, its flames grow and a growl of fire sounds. Everything stays still for people who ask their device for less motion.
+
 ## [4.3.0] — 2026-11-14
 
 Achievements now unlock looks, the daily challenge has a rule of the day and a streak, the campaign has five difficulties, and every shared result carries the link to the game. Saves are kept.

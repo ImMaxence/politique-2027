@@ -85,12 +85,14 @@ test('easy mode is a choice on the calendar too: smaller waves, more votes to st
   expect(save.difficulty).toBe('easy');
 });
 
-test('five difficulties, from very easy to extreme, each described under the choices', async ({ page }) => {
+test('six difficulties, from noob to extreme, each described under the choices', async ({ page }) => {
   await openGame(page, 'en');
   await page.locator('[data-camp="droite"]').click();
-  await expect(page.locator('[data-action="difficulty"]')).toHaveCount(5);
+  await expect(page.locator('[data-action="difficulty"]')).toHaveCount(6);
   const hint = page.locator('[data-slot="difficulty-hint"]');
   await expect(hint).toHaveText(/^Normal:/);
+  await page.locator('[data-action="difficulty"][data-value="noob"]').click();
+  await expect(hint).toHaveText(/^Noob:/);
   await page.locator('[data-action="difficulty"][data-value="veryEasy"]').click();
   await expect(hint).toHaveText(/^Very easy:/);
   await page.locator('[data-action="difficulty"][data-value="extreme"]').click();

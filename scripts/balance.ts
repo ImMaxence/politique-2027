@@ -6,7 +6,7 @@
  *   npm run balance -- 20      # 20 seeds per pairing
  *   npm run balance -- 8 hard  # hard mode (bigger waves)
  *   npm run balance -- 8 easy  # easy mode (smaller waves, softer opponents)
- *   npm run balance -- 8 veryEasy / extreme
+ *   npm run balance -- 8 noob / veryEasy / extreme
  */
 import { LEVELS } from '../src/game/data/levels';
 import { CAMP_IDS, DIFFICULTIES } from '../src/game/data/types';

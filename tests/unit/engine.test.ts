@@ -513,7 +513,7 @@ describe('money, taxes and guests', () => {
     expect(createGame({ camp: 'centre', level: 6, easy: true, hard: true }).easy).toBe(false);
   });
 
-  it('five difficulties, from very easy to extreme, in order', () => {
+  it('six difficulties, from noob to extreme, in order', () => {
     const night = (difficulty: Difficulty) => {
       const state = createGame({ camp: 'centre', level: 6, seed: 3, difficulty });
       const start = state.resources;
@@ -533,7 +533,7 @@ describe('money, taxes and guests', () => {
       expect(nights[i].start).toBeLessThanOrEqual(nights[i - 1].start);
       expect(nights[i].militant).toBeGreaterThanOrEqual(nights[i - 1].militant);
     }
-    expect(nights[4].count).toBeGreaterThan(nights[0].count * 2);
+    expect(nights[nights.length - 1].count).toBeGreaterThan(nights[0].count * 2.5);
     expect(createGame({ camp: 'centre', level: 6, difficulty: 'extreme' }).hard).toBe(true); // counts as hard for the achievement
     expect(createGame({ camp: 'centre', level: 6, hard: true }).difficulty).toBe('hard'); // the old shorthand still works
   });
