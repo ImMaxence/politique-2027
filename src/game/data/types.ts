@@ -4,9 +4,15 @@ export type CampId = 'gauche' | 'centre' | 'droite' | 'autres';
 
 export const CAMP_IDS: readonly CampId[] = ['gauche', 'centre', 'droite', 'autres'];
 
-export type ProjectileKind = 'bubble' | 'tract' | 'heart' | 'ice' | 'cat' | 'order' | 'word';
+export type ProjectileKind = 'bubble' | 'tract' | 'heart' | 'cat';
 
-export type SceneId = 'mairie' | 'salon' | 'rue' | 'plateau' | 'sommet' | 'elysee' | 'elysee-nuit';
+export type SceneId = 'mairie' | 'salon' | 'lycee' | 'rue' | 'plateau' | 'sommet' | 'elysee' | 'elysee-nuit';
+
+/**
+ * What the crowd is after on a given night: one pile of it at the end of every row.
+ * Each opponent who gets through carries a piece away (the five pieces are the lives).
+ */
+export type GoalId = 'parrainages' | 'pac' | 'portables' | 'caddie' | 'micros' | 'terroir' | 'urnes' | 'fiches' | 'fauteuil' | 'budget';
 
 /** What a figure does once placed on the board. */
 export type Ability =
@@ -37,12 +43,11 @@ export type Ability =
       regen?: number;
       /** Identity check: periodically freezes whoever is in contact. */
       checkpoint?: { interval: number; stun: number };
-      /** Insurance: the eight neighbours take this share less damage (0-1). */
-      shield?: number;
+      /** Zero tolerance: whoever walks within `range` cells in front of it slows down to `slow`. */
+      zone?: { slow: number; range: number };
     }
   | { kind: 'bomb'; fuse: number; damage: number; area: 'lane' | 'square'; friendlyFire?: number; stun?: number }
   | { kind: 'shout'; interval: number; damage: number; knockback: number; range: number }
-  | { kind: 'aura'; slow: number; range: number; dps: number }
   /** Fire hose: puts out every fire in the lane and soaks everyone else. */
   | { kind: 'hose'; fuse: number; damage: number; knockback: number; slow: { factor: number; duration: number } };
 
@@ -58,17 +63,44 @@ export type Trait =
   | { kind: 'fuel'; range: number; slowSpeed: number }
   /** Tariffs: every card costs more while this opponent is on the board. */
   | { kind: 'tariff'; factor: number }
-  /** Tax inspector: withholds endorsements at source for as long as he is on the board. */
+  /** Tax inspector: withholds ballots at source for as long as he is on the board. */
   | { kind: 'tax'; interval: number; amount: number }
   /** Investigative reporter: follows the money. Walks past every figure except the money-makers,
    *  and a money-maker being questioned produces nothing until the interview is over. */
   | { kind: 'investigate' }
   /** Trade unionist: the figure he is debating with goes on strike and does nothing. */
   | { kind: 'picket' }
-  /** Undecided voter: walks past everyone to go and vote; convinced on the way, he brings endorsements. */
+  /** Undecided voter: walks past everyone to go and vote; convinced on the way, he brings ballots. */
   | { kind: 'undecided'; reward: number }
-  /** Red carpet: every opponent walking behind him in his lane moves this much faster. */
-  | { kind: 'carpet'; factor: number };
+  ;
+
+/**
+ * A headliner's special moves when they march against the player. Timed powers are
+ * announced first (`warn` seconds with an angry face and a marker), then they land.
+ */
+export type Power =
+  /** "La République, c'est moi !": every figure up to `range` cells ahead, in three lanes, loses its voice. */
+  | { kind: 'roar'; interval: number; warn: number; range: number; duration: number }
+  /** A hologram of the speaker holds a meeting in another lane. */
+  | { kind: 'hologram'; interval: number; warn: number }
+  /** "Je traverse la rue": steps into the next lane. */
+  | { kind: 'cross'; interval: number; warn: number }
+  /** Dissolution: every figure on the 3 × 3 squares ahead goes back to the voters (off the board, `refund` of its cost back, card ready). */
+  | { kind: 'dissolve'; interval: number; warn: number; refund: number }
+  /** Ippon: the figure in contact is thrown (a share of its credibility at once). */
+  | { kind: 'ippon'; interval: number; warn: number; share: number }
+  /** Network outage: every figure in three lanes freezes. */
+  | { kind: 'lag'; interval: number; warn: number; duration: number }
+  /** Appeal: back on her feet once, with this share of her credibility. */
+  | { kind: 'appeal'; share: number }
+  /** Electronic tag: beeps when she walks past `limit` and pulls her back `back` cells (once per life). */
+  | { kind: 'tag'; limit: number; back: number }
+  /** Last stand: below `below` of her credibility, faster and harder. */
+  | { kind: 'enrage'; below: number; speed: number }
+  /** Below `below` of his credibility, tariffs go up to `factor`. */
+  | { kind: 'hike'; below: number; factor: number };
+
+export type PowerKind = Power['kind'];
 
 /** The four families shown on every card. */
 export type Category = 'money' | 'attack' | 'effect' | 'defence';
@@ -86,13 +118,15 @@ export interface AttackerProfile {
   trait?: Trait;
   /** 0 = fully pushed back / stunned, 1 = immune. */
   resist?: number;
+  /** Headliners only: special moves. */
+  powers?: Power[];
 }
 
 export interface UnitDef {
   id: string;
   /** 'neutre' = public-service reinforcements any camp can call. */
   camp: CampId | 'neutre';
-  /** Unlock order inside the camp roster, 0-5. */
+  /** Unlock order inside the camp roster, 0-4. */
   slot: number;
   cost: number;
   hp: number;
@@ -117,6 +151,8 @@ export interface EnemyDef extends AttackerProfile {
   fire?: boolean;
   /** A guest who only turns up against one camp (a real-life public stance, not a game bias). */
   onlyAgainst?: CampId;
+  /** A hologram: drawn see-through, and gone at the first real argument. */
+  ghost?: boolean;
 }
 
 export type UltimateId = 'greve' | 'dissolution' | 'trocadero' | 'censure';
@@ -125,7 +161,7 @@ export type UltimateId = 'greve' | 'dissolution' | 'trocadero' | 'censure';
 export type TwistId = 'manif' | 'force';
 
 /** Endless mode: every ten waves, a themed week changes who turns up. */
-export type ThemeId = 'cnews' | 'zucman' | 'greve' | 'smic' | 'agri';
+export type ThemeId = 'cnews' | 'zucman' | 'greve' | 'smic' | 'agri' | 'blocus';
 
 export interface CampDef {
   id: CampId;
@@ -133,8 +169,6 @@ export interface CampDef {
   /** Darker shade used for text on light backgrounds. */
   ink: string;
   ultimate: UltimateId;
-  /** A substitute the player may field instead of the roster figure in the same slot. */
-  bench: string;
   /** Roster in unlock order. */
   roster: string[];
 }
@@ -161,7 +195,9 @@ export interface LevelDef {
   guests?: string[];
   firstWaveAt: number;
   waveGap: number;
-  /** Number of roster slots available (3-6). */
+  /** What the crowd is after tonight (drawn at the end of every row). */
+  goal: GoalId;
+  /** Number of roster slots available (3-5). */
   slots: number;
   /** Whether the public-service reinforcements can be called. */
   reinforcements: boolean;

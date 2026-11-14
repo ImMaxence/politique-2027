@@ -1,5 +1,5 @@
 /*
- * Game UI, part 3: the calendar's extras (difficulty, substitutes, who turns up,
+ * Game UI, part 3: the calendar's extras (difficulty, who turns up,
  * other ways to play, achievements), the "New!" card, the gazette's additions and
  * the two-player attacker panel. Loaded after game.css and game-side.css.
  */
@@ -491,18 +491,6 @@
   display: none;
 }
 
-/* The substitute switch: "Cazeneuve instead of Hollande". */
-.bench-toggle {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  align-items: baseline;
-}
-.bench-toggle__label {
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
 /* With a keyboard, each attacker button shows its key in the corner: keep the name clear of it. */
 @media (pointer: fine) {
   .versus__kind,

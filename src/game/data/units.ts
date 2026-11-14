@@ -4,50 +4,53 @@
  * The cast. Every roster figure has a defender sheet (when the player fields
  * them) and an attacker profile (when they march against the player). Names,
  * titles, jokes and catchphrases live in src/i18n/game.ts; this file is numbers only.
+ *
+ * Five figures per camp, always in the same order: votes, attack, defence,
+ * a one-shot "bomb", and the headliner, who marches as a boss with powers.
  */
 export const UNITS: Record<string, UnitDef> = {
   // ---------------------------------------------------------------- Gauche
   glucksmann: {
     id: 'glucksmann', camp: 'gauche', slot: 0, cost: 50, hp: 90, recharge: 5,
-    // Support gathers on the public square: slowly, then all at once.
+    // Supporters gather on the public square: slowly, then all at once.
     ability: { kind: 'generator', amount: 50, interval: 15, firstDelay: 9 },
     attacker: { hp: 520, speed: 0.2, dps: 24, threat: 5, leak: 1, trait: { kind: 'summon', what: 'militant', interval: 9 } },
   },
   hollande: {
     id: 'hollande', camp: 'gauche', slot: 1, cost: 100, hp: 100, recharge: 5,
-    // "Moi president...": anaphora fired three at a time.
+    // "Moi président...": anaphora fired three at a time.
     ability: { kind: 'shooter', damage: 8, interval: 1.55, burst: 3, projectile: 'bubble', speed: 7 },
     attacker: { hp: 560, speed: 0.19, dps: 26, threat: 5, leak: 1, trait: { kind: 'ranged', range: 2.4 } },
   },
-  roussel: {
-    id: 'roussel', camp: 'gauche', slot: 2, cost: 75, hp: 620, recharge: 14,
-    // The banquet: neighbours get their strength back.
+  royal: {
+    id: 'royal', camp: 'gauche', slot: 2, cost: 75, hp: 620, recharge: 14,
+    // "Fraternité !": the neighbours get their strength back.
     ability: { kind: 'wall', healAura: 7 },
     attacker: { hp: 1150, speed: 0.15, dps: 30, threat: 6, leak: 1, resist: 0.4 },
   },
-  royal: {
-    id: 'royal', camp: 'gauche', slot: 3, cost: 125, hp: 110, recharge: 10,
-    // "Bravitude": a brand-new word leaves the first opponent speechless.
-    ability: { kind: 'shooter', damage: 12, interval: 4.2, projectile: 'word', speed: 8, stun: 2.3 },
-    attacker: { hp: 600, speed: 0.2, dps: 24, threat: 6, leak: 1, trait: { kind: 'silence', interval: 8, duration: 2, range: 2.6 } },
-  },
   ruffin: {
-    id: 'ruffin', camp: 'gauche', slot: 4, cost: 150, hp: 120, recharge: 30,
+    id: 'ruffin', camp: 'gauche', slot: 3, cost: 150, hp: 120, recharge: 30,
     // Camera in hand: the report goes off like a bomb.
     ability: { kind: 'bomb', fuse: 1.1, damage: 650, area: 'square' },
     attacker: { hp: 500, speed: 0.27, dps: 24, threat: 6, leak: 1, trait: { kind: 'blast', damage: 260 } },
   },
   melenchon: {
-    id: 'melenchon', camp: 'gauche', slot: 5, cost: 225, hp: 170, recharge: 18, boss: true,
+    id: 'melenchon', camp: 'gauche', slot: 4, cost: 225, hp: 170, recharge: 18, boss: true,
     // A roar that pushes the whole lane back.
     ability: { kind: 'shout', interval: 7, damage: 70, knockback: 1, range: 6 },
-    attacker: { hp: 2300, speed: 0.15, dps: 42, threat: 16, leak: 2, resist: 0.6, trait: { kind: 'silence', interval: 7, duration: 2.4, range: 3.4 } },
+    attacker: {
+      hp: 2300, speed: 0.15, dps: 42, threat: 16, leak: 2, resist: 0.6,
+      powers: [
+        { kind: 'roar', interval: 11, warn: 1, range: 3.2, duration: 2.5 },
+        { kind: 'hologram', interval: 16, warn: 1.2 },
+      ],
+    },
   },
 
   // ---------------------------------------------------------------- Centre
   bayrou: {
     id: 'bayrou', camp: 'centre', slot: 0, cost: 50, hp: 110, recharge: 5,
-    // The "sponsorship bank": steady as a metronome.
+    // Steady as a metronome: a candidate since 2002.
     ability: { kind: 'generator', amount: 25, interval: 7.5, firstDelay: 5 },
     attacker: { hp: 540, speed: 0.19, dps: 24, threat: 5, leak: 1, trait: { kind: 'summon', what: 'militant', interval: 9 } },
   },
@@ -63,23 +66,23 @@ export const UNITS: Record<string, UnitDef> = {
     ability: { kind: 'wall', thorns: 20 },
     attacker: { hp: 1200, speed: 0.15, dps: 34, threat: 6, leak: 1, resist: 0.4 },
   },
-  lemaire: {
-    id: 'lemaire', camp: 'centre', slot: 3, cost: 150, hp: 100, recharge: 10,
-    // Budget freeze, literally.
-    ability: { kind: 'shooter', damage: 14, interval: 1.5, projectile: 'ice', speed: 6.5, slow: { factor: 0.5, duration: 3.2 } },
-    attacker: { hp: 580, speed: 0.2, dps: 24, threat: 6, leak: 1, trait: { kind: 'silence', interval: 8, duration: 2, range: 2.6 } },
-  },
   borne: {
-    id: 'borne', camp: 'centre', slot: 4, cost: 150, hp: 120, recharge: 34,
+    id: 'borne', camp: 'centre', slot: 3, cost: 150, hp: 120, recharge: 34,
     // 49.3: the whole lane is adopted without a vote.
     ability: { kind: 'bomb', fuse: 1.1, damage: 900, area: 'lane' },
     attacker: { hp: 520, speed: 0.25, dps: 24, threat: 6, leak: 1, trait: { kind: 'blast', damage: 260 } },
   },
   macron: {
-    id: 'macron', camp: 'centre', slot: 5, cost: 275, hp: 140, recharge: 18, boss: true,
+    id: 'macron', camp: 'centre', slot: 4, cost: 275, hp: 140, recharge: 18, boss: true,
     // "At the same time": the lane above, the lane below and his own, simultaneously.
     ability: { kind: 'shooter', damage: 19, interval: 1.4, projectile: 'bubble', speed: 7.5, lanes: [-1, 0, 1] },
-    attacker: { hp: 2200, speed: 0.16, dps: 44, threat: 16, leak: 2, resist: 0.6, trait: { kind: 'ranged', range: 3 } },
+    attacker: {
+      hp: 2200, speed: 0.16, dps: 44, threat: 16, leak: 2, resist: 0.6, trait: { kind: 'ranged', range: 2 },
+      powers: [
+        { kind: 'cross', interval: 10, warn: 0.9 },
+        { kind: 'dissolve', interval: 16, warn: 1.6, refund: 0.5 },
+      ],
+    },
   },
 
   // ---------------------------------------------------------------- Droite
@@ -95,29 +98,29 @@ export const UNITS: Record<string, UnitDef> = {
     ability: { kind: 'shooter', damage: 20, interval: 1.35, projectile: 'heart', speed: 7.5 },
     attacker: { hp: 520, speed: 0.24, dps: 24, threat: 5, leak: 1, trait: { kind: 'ranged', range: 2.4 } },
   },
-  ciotti: {
-    id: 'ciotti', camp: 'droite', slot: 2, cost: 75, hp: 880, recharge: 16,
-    // Locks himself inside HQ. Good luck getting through.
-    ability: { kind: 'wall' },
+  retailleau: {
+    id: 'retailleau', camp: 'droite', slot: 2, cost: 100, hp: 760, recharge: 16,
+    // "L'ordre, l'ordre, l'ordre": whoever comes near slows right down.
+    ability: { kind: 'wall', zone: { slow: 0.6, range: 1.6 } },
     attacker: { hp: 1300, speed: 0.14, dps: 28, threat: 6, leak: 1, resist: 0.4 },
   },
-  retailleau: {
-    id: 'retailleau', camp: 'droite', slot: 3, cost: 125, hp: 110, recharge: 10,
-    // "Order, order, order": freezes whoever comes first.
-    ability: { kind: 'shooter', damage: 12, interval: 4.2, projectile: 'order', speed: 8, stun: 2.3 },
-    attacker: { hp: 600, speed: 0.2, dps: 24, threat: 6, leak: 1, trait: { kind: 'silence', interval: 8, duration: 2, range: 2.6 } },
-  },
   zemmour: {
-    id: 'zemmour', camp: 'droite', slot: 4, cost: 150, hp: 120, recharge: 30,
+    id: 'zemmour', camp: 'droite', slot: 3, cost: 150, hp: 120, recharge: 30,
     // The controversy also singes his own side.
     ability: { kind: 'bomb', fuse: 1.1, damage: 760, area: 'square', friendlyFire: 40 },
     attacker: { hp: 500, speed: 0.27, dps: 24, threat: 6, leak: 1, trait: { kind: 'blast', damage: 260 } },
   },
   lepen: {
-    id: 'lepen', camp: 'droite', slot: 5, cost: 225, hp: 150, recharge: 18, boss: true,
+    id: 'lepen', camp: 'droite', slot: 4, cost: 225, hp: 150, recharge: 18, boss: true,
     // Certified cat breeder: each cat runs through three opponents.
     ability: { kind: 'shooter', damage: 30, interval: 1.9, projectile: 'cat', speed: 5.5, pierce: 2 },
-    attacker: { hp: 2250, speed: 0.15, dps: 42, threat: 16, leak: 2, resist: 0.6, trait: { kind: 'summon', what: 'cat', interval: 5.5 } },
+    attacker: {
+      hp: 2250, speed: 0.15, dps: 42, threat: 16, leak: 2, resist: 0.6, trait: { kind: 'summon', what: 'cat', interval: 5.5 },
+      powers: [
+        { kind: 'tag', limit: 3.2, back: 2.5 },
+        { kind: 'appeal', share: 0.4 },
+      ],
+    },
   },
 
   // ---------------------------------------------------------------- Les Autres
@@ -139,49 +142,23 @@ export const UNITS: Record<string, UnitDef> = {
     ability: { kind: 'wall', regen: 12 },
     attacker: { hp: 1250, speed: 0.15, dps: 30, threat: 6, leak: 1, resist: 0.4 },
   },
-  tondelier: {
-    id: 'tondelier', camp: 'autres', slot: 3, cost: 100, hp: 130, recharge: 10,
-    // Zone 30: everything in her lane slows down.
-    ability: { kind: 'aura', slow: 0.6, range: 4.5, dps: 5 },
-    attacker: { hp: 600, speed: 0.2, dps: 24, threat: 6, leak: 1, trait: { kind: 'silence', interval: 8, duration: 2, range: 2.6 } },
-  },
   poutou: {
-    id: 'poutou', camp: 'autres', slot: 4, cost: 150, hp: 120, recharge: 30,
+    id: 'poutou', camp: 'autres', slot: 3, cost: 150, hp: 120, recharge: 30,
     // The debate punchline that everybody remembers.
     ability: { kind: 'bomb', fuse: 1.1, damage: 650, area: 'square' },
     attacker: { hp: 500, speed: 0.27, dps: 24, threat: 6, leak: 1, trait: { kind: 'blast', damage: 260 } },
   },
   riner: {
-    id: 'riner', camp: 'autres', slot: 5, cost: 250, hp: 560, recharge: 20, boss: true,
+    id: 'riner', camp: 'autres', slot: 4, cost: 250, hp: 560, recharge: 20, boss: true,
     // Ippon: whoever comes within reach flies back across the mat.
     ability: { kind: 'shout', interval: 3.2, damage: 110, knockback: 2.6, range: 1.15 },
-    attacker: { hp: 2500, speed: 0.15, dps: 50, threat: 16, leak: 2, resist: 0.7 },
-  },
-
-  // ---------------------------------------------------------------- Substitutes (one per camp)
-  cazeneuve: {
-    id: 'cazeneuve', camp: 'gauche', slot: 1, cost: 100, hp: 100, recharge: 5,
-    // Method over volume: one measured sentence that goes through two opponents.
-    ability: { kind: 'shooter', damage: 24, interval: 1.8, projectile: 'word', speed: 8, pierce: 1 },
-    attacker: { hp: 540, speed: 0.19, dps: 24, threat: 5, leak: 1, trait: { kind: 'ranged', range: 2.4 } },
-  },
-  lecornu: {
-    id: 'lecornu', camp: 'centre', slot: 4, cost: 150, hp: 120, recharge: 32,
-    // No 49.3: the whole lane stops to negotiate, and comes out of it dazed.
-    ability: { kind: 'bomb', fuse: 1.1, damage: 520, area: 'lane', stun: 3 },
-    attacker: { hp: 520, speed: 0.25, dps: 24, threat: 6, leak: 1, trait: { kind: 'blast', damage: 240 } },
-  },
-  bertrand: {
-    id: 'bertrand', camp: 'droite', slot: 2, cost: 100, hp: 700, recharge: 16,
-    // Fully comprehensive cover: the neighbours take less damage.
-    ability: { kind: 'wall', shield: 0.3 },
-    attacker: { hp: 1250, speed: 0.14, dps: 28, threat: 6, leak: 1, resist: 0.4 },
-  },
-  arthaud: {
-    id: 'arthaud', camp: 'autres', slot: 4, cost: 150, hp: 110, recharge: 30,
-    // "Travailleuses, travailleurs !": a call heard to the end of the lane.
-    ability: { kind: 'bomb', fuse: 1.1, damage: 620, area: 'lane' },
-    attacker: { hp: 500, speed: 0.27, dps: 24, threat: 6, leak: 1, trait: { kind: 'blast', damage: 250 } },
+    attacker: {
+      hp: 2500, speed: 0.15, dps: 46, threat: 16, leak: 2, resist: 0.7,
+      powers: [
+        { kind: 'ippon', interval: 5, warn: 0.7, share: 0.55 },
+        { kind: 'enrage', below: 0.5, speed: 1.5 },
+      ],
+    },
   },
 
   // ---------------------------------------------------------------- Reinforcements (any camp)
@@ -202,26 +179,26 @@ export const REINFORCEMENTS = ['crs', 'pompiers'];
 
 export const CAMPS: Record<CampId, CampDef> = {
   gauche: {
-    id: 'gauche', color: '#e5383b', ink: '#b0191f', ultimate: 'greve', bench: 'cazeneuve',
-    roster: ['glucksmann', 'hollande', 'roussel', 'royal', 'ruffin', 'melenchon'],
+    id: 'gauche', color: '#e5383b', ink: '#b0191f', ultimate: 'greve',
+    roster: ['glucksmann', 'hollande', 'royal', 'ruffin', 'melenchon'],
   },
   centre: {
-    id: 'centre', color: '#f6aa1c', ink: '#8a5300', ultimate: 'dissolution', bench: 'lecornu',
-    roster: ['bayrou', 'attal', 'philippe', 'lemaire', 'borne', 'macron'],
+    id: 'centre', color: '#f6aa1c', ink: '#8a5300', ultimate: 'dissolution',
+    roster: ['bayrou', 'attal', 'philippe', 'borne', 'macron'],
   },
   droite: {
-    id: 'droite', color: '#2f5fe0', ink: '#1c3fa8', ultimate: 'trocadero', bench: 'bertrand',
-    roster: ['sarkozy', 'bardella', 'ciotti', 'retailleau', 'zemmour', 'lepen'],
+    id: 'droite', color: '#2f5fe0', ink: '#1c3fa8', ultimate: 'trocadero',
+    roster: ['sarkozy', 'bardella', 'retailleau', 'zemmour', 'lepen'],
   },
   autres: {
-    id: 'autres', color: '#2e9e5b', ink: '#17653a', ultimate: 'censure', bench: 'arthaud',
-    roster: ['bmacron', 'villepin', 'lassalle', 'tondelier', 'poutou', 'riner'],
+    id: 'autres', color: '#2e9e5b', ink: '#17653a', ultimate: 'censure',
+    roster: ['bmacron', 'villepin', 'lassalle', 'poutou', 'riner'],
   },
 };
 
 /**
- * Extras: anonymous opponents tinted with the colour of the camp that sends
- * them, street events that belong to nobody, and one very special guest.
+ * Extras: anonymous opponents (every kind has one look, whoever sends it), street
+ * events that belong to nobody, and named guests.
  */
 export const EXTRAS: Record<string, EnemyDef> = {
   militant: { id: 'militant', hp: 190, speed: 0.21, dps: 22, threat: 1, leak: 1 },
@@ -231,6 +208,8 @@ export const EXTRAS: Record<string, EnemyDef> = {
   cat: { id: 'cat', hp: 55, speed: 0.6, dps: 14, threat: 1, leak: 1 },
   // The street
   lyceen: { id: 'lyceen', hp: 110, speed: 0.5, dps: 14, threat: 1, leak: 1 },
+  // An electric scooter: weaves through traffic at full speed, and folds at the first push.
+  trottinette: { id: 'trottinette', hp: 120, speed: 0.78, dps: 14, threat: 2, leak: 1 },
   poubelle: { id: 'poubelle', hp: 300, speed: 0.17, dps: 0, threat: 3, leak: 1, fire: true, resist: 0.5, trait: { kind: 'burn', dps: 16, radius: 1.15 } },
   auto: { id: 'auto', hp: 460, speed: 0.6, dps: 40, threat: 4, leak: 1, resist: 0.5, trait: { kind: 'fuel', range: 4.6, slowSpeed: 0.09 } },
   // Yellow vests: tougher than an activist, and they do not leave the roundabout easily.
@@ -238,10 +217,12 @@ export const EXTRAS: Record<string, EnemyDef> = {
   // The farmers: pitchforks on foot, and tractors whose engines drown out every speech.
   agriculteur: { id: 'agriculteur', hp: 330, speed: 0.2, dps: 30, threat: 2, leak: 1 },
   tracteur: { id: 'tracteur', hp: 1100, speed: 0.14, dps: 60, threat: 6, leak: 2, resist: 1, trait: { kind: 'silence', interval: 6, duration: 1.6, range: 2.4 } },
+  // The star of the Agricultural Show: slow, enormous, and not one for being pushed about.
+  vache: { id: 'vache', hp: 950, speed: 0.12, dps: 22, threat: 5, leak: 1, resist: 0.8 },
   // A union marcher (no union in particular): whoever he debates with downs tools.
   syndicat: { id: 'syndicat', hp: 320, speed: 0.2, dps: 20, threat: 2, leak: 1, resist: 0.3, trait: { kind: 'picket' } },
   // A minimum-wage worker everybody courts: he crosses the courtyard to vote, debates with no one,
-  // and is worth endorsements to whoever convinces him on the way.
+  // and is worth ballots to whoever convinces him on the way.
   smicard: { id: 'smicard', hp: 240, speed: 0.24, dps: 0, threat: 2, leak: 1, trait: { kind: 'undecided', reward: 15 } },
   // The tax office: withholding at source.
   impots: { id: 'impots', hp: 380, speed: 0.17, dps: 20, threat: 3, leak: 1, trait: { kind: 'tax', interval: 4, amount: 10 } },
@@ -249,33 +230,36 @@ export const EXTRAS: Record<string, EnemyDef> = {
   patron: { id: 'patron', hp: 700, speed: 0.16, dps: 26, threat: 5, leak: 1, resist: 0.3, trait: { kind: 'summon', what: 'pundit', interval: 9 } },
   // A rolling news channel's broadcast van: slow, unmoved by roaring, and a fresh pundit for every debate.
   cnews: { id: 'cnews', hp: 1000, speed: 0.13, dps: 30, threat: 7, leak: 2, resist: 1, trait: { kind: 'summon', what: 'pundit', interval: 4.5 } },
+  // A hologram of a certain tribune (he held meetings that way in 2017): see-through, and it never stops talking.
+  hologram: { id: 'hologram', portrait: 'melenchon', ghost: true, hp: 320, speed: 0.17, dps: 12, threat: 3, leak: 1, resist: 0.6 },
   // The guests
-  trump: { id: 'trump', portrait: 'trump', boss: true, hp: 2600, speed: 0.14, dps: 40, threat: 16, leak: 2, resist: 0.6, trait: { kind: 'tariff', factor: 1.25 } },
+  trump: {
+    id: 'trump', portrait: 'trump', boss: true, hp: 2600, speed: 0.14, dps: 40, threat: 16, leak: 2, resist: 0.6, trait: { kind: 'tariff', factor: 1.25 },
+    powers: [{ kind: 'hike', below: 0.5, factor: 1.5 }],
+  },
+  // The founder of an internet provider, who once turned up at a supermarket car park for a "1v1"
+  // with a gamer who blamed him for his lag: when he is around, the network goes down.
+  niel: {
+    id: 'niel', portrait: 'niel', boss: true, hp: 1150, speed: 0.19, dps: 22, threat: 9, leak: 1, resist: 0.4,
+    powers: [{ kind: 'lag', interval: 9, warn: 1.2, duration: 2.2 }],
+  },
   // The video maker publicly called to vote against the far right in 2024: he only shows up
   // against the Right, and his story brings his followers along.
   squeezie: { id: 'squeezie', portrait: 'squeezie', onlyAgainst: 'droite', hp: 900, speed: 0.18, dps: 20, threat: 8, leak: 1, resist: 0.3, trait: { kind: 'summon', what: 'lyceen', interval: 5 } },
   // The news explainer interviews everybody: one question and the nearest figures are lost for words.
   hugo: { id: 'hugo', portrait: 'hugo', hp: 850, speed: 0.19, dps: 18, threat: 8, leak: 1, resist: 0.3, trait: { kind: 'silence', interval: 5, duration: 2, range: 3 } },
-  // A declared candidate also hunting for his 500 signatures: when he plays the pan flute, people stop to listen.
-  durif: { id: 'durif', portrait: 'durif', hp: 600, speed: 0.2, dps: 16, threat: 6, leak: 1, resist: 0.3, trait: { kind: 'silence', interval: 6, duration: 1.6, range: 2.4 } },
   // The investigative reporter questions every camp the same way: she follows the money, walks past
   // everyone else and keeps the money-makers busy until she gets an answer.
   lucet: { id: 'lucet', portrait: 'lucet', hp: 800, speed: 0.21, dps: 20, threat: 8, leak: 1, resist: 0.3, trait: { kind: 'investigate' } },
-  // A declared candidate running outside the big parties, against every camp: the mayor of Cannes
-  // rolls out the red carpet, and whoever walks behind him on it moves faster.
-  lisnard: { id: 'lisnard', portrait: 'lisnard', hp: 800, speed: 0.19, dps: 22, threat: 8, leak: 1, resist: 0.3, trait: { kind: 'carpet', factor: 1.5 } },
 };
 
 /** Named guests, in the order the characters page lists them. */
-export const GUESTS = ['trump', 'hugo', 'lucet', 'squeezie', 'durif', 'lisnard'];
+export const GUESTS = ['trump', 'niel', 'hugo', 'lucet', 'squeezie'];
 
-/** Extras that belong to no camp (drawn in their own colours). */
-export const NEUTRAL_EXTRAS = [
-  'lyceen', 'gilet', 'syndicat', 'smicard', 'poubelle', 'auto', 'agriculteur', 'tracteur', 'impots', 'patron', 'cnews',
-  'trump', 'squeezie', 'hugo', 'lucet', 'durif', 'lisnard', 'cat',
-];
+/** Extras drawn wider than a puppet. */
+export const VEHICLES = ['bus', 'auto', 'tracteur', 'cnews', 'vache'];
 
-/** Which of the four families a card belongs to: money, attack, effect or defence. */
+/** Which of the four families a card belongs to: votes, attack, effect or defence. */
 export function categoryOf(def: UnitDef): Category {
   const ability = def.ability;
   switch (ability.kind) {
@@ -283,7 +267,6 @@ export function categoryOf(def: UnitDef): Category {
       return 'money';
     case 'wall':
       return 'defence';
-    case 'aura':
     case 'hose':
       return 'effect';
     case 'shooter':
@@ -298,14 +281,6 @@ export function categoryOf(def: UnitDef): Category {
 
 export function unitsOf(camp: CampId): UnitDef[] {
   return CAMPS[camp].roster.map((id) => UNITS[id]);
-}
-
-/** A camp's line-up, with its substitute in place of the figure in the same slot when asked. */
-export function lineupOf(camp: CampId, withBench = false): string[] {
-  const { roster, bench } = CAMPS[camp];
-  if (!withBench) return roster;
-  const slot = UNITS[bench].slot;
-  return roster.map((id) => (UNITS[id].slot === slot ? bench : id));
 }
 
 export function rivalsOf(camp: CampId): CampId[] {
@@ -328,4 +303,9 @@ export function enemyDef(id: string): EnemyDef {
   const def = EXTRAS[id];
   if (!def) throw new Error(`Unknown enemy: ${id}`);
   return def;
+}
+
+/** The figure whose photo an enemy wears, if any (a roster politician or a named guest). */
+export function figureOf(def: EnemyDef): string | undefined {
+  return def.unitId ?? def.portrait;
 }

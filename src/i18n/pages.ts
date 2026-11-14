@@ -6,7 +6,9 @@ export interface PageStrings {
     metaTitle: string;
     metaDescription: string;
     guest: string;
-    substitute: string;
+    boss: string;
+    photo: string;
+    photoNote: string;
     unlocked: string;
     guestOf: string;
     onlyAgainst: string;
@@ -44,7 +46,9 @@ const fr: PageStrings = {
     metaTitle: '{name}, « {title} » — Politique 2027',
     metaDescription: '{name} dans Politique 2027, le jeu satirique de la présidentielle : {power}. {desc}',
     guest: 'Invité',
-    substitute: 'Remplaçant',
+    boss: 'Boss de fin de soirée',
+    photo: 'Photo :',
+    photoNote: '(Wikimedia Commons, recadrée et détourée).',
     unlocked: 'Jouable dès la soirée « {night} »',
     guestOf: 'Apparaît lors de : {nights}',
     onlyAgainst: 'seulement face à {camp}',
@@ -73,7 +77,7 @@ const fr: PageStrings = {
     all: 'Toutes les soirées',
     sceneAlt: 'La soirée « {name} » en cours de partie',
     listTitle: 'Les soirées de la campagne',
-    listLead: 'Huit soirées, de la chasse aux parrainages au second tour, puis la Cohabitation sans fin.',
+    listLead: 'Neuf soirées à thème, de la chasse aux parrainages au second tour en passant par le 17 octobre, puis la Cohabitation sans fin.',
   },
 };
 
@@ -82,7 +86,9 @@ const en: PageStrings = {
     metaTitle: '{name}, "{title}" — Politique 2027',
     metaDescription: '{name} in Politique 2027, the satirical French election game: {power}. {desc}',
     guest: 'Guest',
-    substitute: 'Substitute',
+    boss: 'End-of-night boss',
+    photo: 'Photo:',
+    photoNote: '(Wikimedia Commons, cropped and cut out).',
     unlocked: 'Playable from the night "{night}"',
     guestOf: 'Turns up on: {nights}',
     onlyAgainst: 'only against {camp}',
@@ -111,7 +117,7 @@ const en: PageStrings = {
     all: 'Every night',
     sceneAlt: 'The night "{name}" during a match',
     listTitle: 'The campaign nights',
-    listLead: 'Eight nights, from the hunt for endorsements to the run-off, then the endless Cohabitation.',
+    listLead: 'Nine themed nights, from the hunt for endorsements to the run-off by way of 17 October, then the endless Cohabitation.',
   },
 };
 

@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { unlockAchievements } from '../../src/game/achievements';
 import { LAST_LEVEL, VERSUS } from '../../src/game/data/levels';
-import { CAMPS, UNITS, lineupOf } from '../../src/game/data/units';
 import { CAMP_IDS } from '../../src/game/data/types';
 import { dailySetup, duelCode, parseDuel } from '../../src/game/modes';
 import {
@@ -32,13 +31,13 @@ describe('daily challenge and duel codes', () => {
     const played = duelCode(setup, 2340);
     expect(played.length).toBeLessThan(20);
     expect(parseDuel(played)).toEqual({ ...setup, rival: 2340 });
-    for (const junk of ['', 'abc', '9-1-zz', '5-7-zz', '5-1-zz-zz-zz', '<script>']) expect(parseDuel(junk)).toBeNull();
+    for (const junk of ['', 'abc', '0-1-zz', '5-7-zz', '5-1-zz-zz-zz', '<script>']) expect(parseDuel(junk)).toBeNull();
   });
 });
 
 describe('the debate', () => {
   it('a soundbite sent back pays and hits the frontmost opponent; one left alone silences its square', () => {
-    const state = createGame({ camp: 'gauche', level: 7 });
+    const state = createGame({ camp: 'gauche', level: 8 });
     state.wave.next = 1; // the soundbites start with the first wave
     state.resources = 1000;
     expect(placeUnit(state, 'hollande', 2, 1)).toBeNull();
@@ -76,40 +75,6 @@ describe('two players on one screen', () => {
   });
 });
 
-describe('substitutes', () => {
-  it('each camp has one, who takes the slot of a starter', () => {
-    for (const camp of CAMP_IDS) {
-      const bench = CAMPS[camp].bench;
-      const lineup = lineupOf(camp, true);
-      expect(lineup).toContain(bench);
-      expect(lineup).toHaveLength(6);
-      expect(lineup.filter((id) => UNITS[id].slot === UNITS[bench].slot)).toEqual([bench]);
-      expect(lineupOf(camp)).toEqual(CAMPS[camp].roster);
-    }
-  });
-
-  it('the negotiator stops the whole lane; the insurer covers his neighbours', () => {
-    const talks = createGame({ camp: 'centre', level: 6, roster: lineupOf('centre', true) });
-    talks.resources = 1000;
-    const far = spawnEnemy(talks, 'militant', 2, 'droite', 7.5)!;
-    expect(placeUnit(talks, 'lecornu', 2, 0)).toBeNull();
-    run(talks, 1.3);
-    expect(far.stunT).toBeGreaterThan(1.5);
-
-    const covered = (insured: boolean) => {
-      const state = createGame({ camp: 'droite', level: 6, roster: lineupOf('droite', true) });
-      state.resources = 1000;
-      expect(placeUnit(state, 'bardella', 2, 3)).toBeNull();
-      if (insured) expect(placeUnit(state, 'bertrand', 2, 2)).toBeNull();
-      const bardella = state.grid[2][3]!;
-      spawnEnemy(state, 'gilet', 2, 'gauche', 4.05);
-      run(state, 2);
-      return bardella.def.hp - bardella.hp;
-    };
-    expect(covered(true)).toBeCloseTo(covered(false) * 0.7, 0);
-  });
-});
-
 describe('saves', () => {
   afterEach(() => {
     delete (globalThis as { localStorage?: unknown }).localStorage;
@@ -123,14 +88,28 @@ describe('saves', () => {
     };
   }
 
-  it('moves a 1.x run-off night to night 8, so that nobody loses access to it', () => {
+  it('moves a 1.x run-off night to night 9, so that nobody loses access to it', () => {
     withStorage({ v: 2, camp: 'droite', progress: { droite: { unlocked: 7, stars: { 6: 3, 7: 2 }, endlessBest: 4, finished: true } } });
     const save = loadSave();
-    expect(save.progress.droite.unlocked).toBe(8);
-    expect(save.progress.droite.stars).toEqual({ 6: 3, 8: 2 });
+    expect(save.progress.droite.unlocked).toBe(9);
+    expect(save.progress.droite.stars).toEqual({ 7: 3, 9: 2 });
     expect(save.progress.droite.finished).toBe(true);
     expect(save.speed).toBe(1);
     expect(save.music).toBe(true);
+  });
+
+  it('makes room for the school blockade: 2.x nights from the street onwards move up one', () => {
+    withStorage({ v: 3, camp: 'gauche', progress: { gauche: { unlocked: 4, stars: { 2: 1, 3: 2, 4: 3 }, endlessBest: 0, finished: false } }, bench: { gauche: true } });
+    const save = loadSave();
+    expect(save.progress.gauche.unlocked).toBe(5);
+    expect(save.progress.gauche.stars).toEqual({ 2: 1, 4: 2, 5: 3 });
+    expect(save.v).toBe(4);
+    expect('bench' in save).toBe(false);
+  });
+
+  it('keeps the daily scores', () => {
+    withStorage({ v: 4, daily: { '2026-11-13': 1200, '2026-11-14': 900, junk: 5 } });
+    expect(loadSave().daily).toEqual({ '2026-11-13': 1200, '2026-11-14': 900 });
   });
 
   it('earns achievements from progress and running totals', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LAST_LEVEL, LEVELS } from '../../src/game/data/levels';
+import { ENDLESS, LAST_LEVEL, LEVELS, VERSUS } from '../../src/game/data/levels';
 import { CAMP_IDS, type CampId } from '../../src/game/data/types';
 import { CAMPS, EXTRAS, GUESTS, REINFORCEMENTS, UNITS, categoryOf } from '../../src/game/data/units';
 import { botAct } from '../../src/game/sim/bot';
@@ -26,16 +26,36 @@ function play(camp: CampId, level: number, seed: number, idle = false): GameStat
 }
 
 describe('data', () => {
-  it('has four camps of six figures in unlock order', () => {
+  it('has four camps of five figures in unlock order, each ending with a headliner who has powers', () => {
     expect(CAMP_IDS).toHaveLength(4);
     for (const camp of CAMP_IDS) {
       const roster = CAMPS[camp].roster.map((id) => UNITS[id]);
-      expect(roster).toHaveLength(6);
-      expect(roster.map((u) => u.slot)).toEqual([0, 1, 2, 3, 4, 5]);
+      expect(roster).toHaveLength(5);
+      expect(roster.map((u) => u.slot)).toEqual([0, 1, 2, 3, 4]);
       expect(roster.every((u) => u.camp === camp && u.attacker)).toBe(true);
       expect(roster[0].ability.kind).toBe('generator');
       expect(roster[2].ability.kind).toBe('wall');
-      expect(roster[5].boss).toBe(true);
+      expect(roster[3].ability.kind).toBe('bomb');
+      expect(roster[4].boss).toBe(true);
+      expect(roster[4].attacker!.powers!.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('has a photo head for every named figure, and a credit for every photo', async () => {
+    const { PHOTOS, CREDITS } = await import('../../src/game/data/photos');
+    for (const id of [...CAMP_IDS.flatMap((c) => CAMPS[c].roster), ...GUESTS]) expect(PHOTOS[id], id).toContain('neutral');
+    for (const [id, faces] of Object.entries(PHOTOS)) {
+      for (const face of faces) {
+        const credit = CREDITS.find((c) => c.id === id && c.expression === face);
+        expect(credit, `${id}-${face}`).toBeDefined();
+        expect(credit!.author && credit!.license && credit!.source.startsWith('https://commons.wikimedia.org/')).toBeTruthy();
+      }
+    }
+  });
+
+  it('gives every night a goal and both languages a name for it', () => {
+    for (const level of [...LEVELS, ENDLESS, VERSUS]) {
+      for (const lang of LANGS) expect(GAME_STRINGS[lang].goals[level.goal], `${lang}:${level.id}`).toBeDefined();
     }
   });
 
@@ -56,12 +76,12 @@ describe('placing figures', () => {
   it('starts with the level budget and only the unlocked cards', () => {
     const state = createGame({ camp: 'gauche', level: 1 });
     expect(state.resources).toBe(LEVELS[0].startResources);
-    expect(state.cards.map((c) => c.def.id)).toEqual(['glucksmann', 'hollande', 'roussel']);
+    expect(state.cards.map((c) => c.def.id)).toEqual(['glucksmann', 'hollande', 'royal']);
   });
 
-  it('adds the public-service reinforcements once the street level opens them', () => {
+  it('adds the public-service reinforcements once the school blockade opens them', () => {
     const state = createGame({ camp: 'autres', level: 3 });
-    expect(state.cards.map((c) => c.def.id)).toEqual(['bmacron', 'villepin', 'lassalle', 'tondelier', ...REINFORCEMENTS]);
+    expect(state.cards.map((c) => c.def.id)).toEqual(['bmacron', 'villepin', 'lassalle', 'poutou', ...REINFORCEMENTS]);
   });
 
   it('charges the cost and starts the card cooldown', () => {
@@ -77,9 +97,9 @@ describe('placing figures', () => {
     expect(placeUnit(state, 'lepen', 2, 0)).toBe('locked');
     expect(placeUnit(state, 'bardella', 0, 0)).toBe('lane'); // level 1 only opens lanes 1-3
     expect(placeUnit(state, 'bardella', 2, 0)).toBeNull();
-    expect(placeUnit(state, 'ciotti', 2, 0)).toBe('occupied');
+    expect(placeUnit(state, 'retailleau', 2, 0)).toBe('occupied');
     state.resources = 0;
-    expect(placeUnit(state, 'ciotti', 2, 1)).toBe('cost');
+    expect(placeUnit(state, 'retailleau', 2, 1)).toBe('cost');
   });
 
   it('refunds part of the cost on a reshuffle', () => {
@@ -152,7 +172,7 @@ describe('combat', () => {
 
   it('walls hold the line', () => {
     const state = createGame({ camp: 'droite', level: 1 });
-    placeUnit(state, 'ciotti', 2, 4);
+    placeUnit(state, 'retailleau', 2, 4);
     spawnEnemy(state, 'militant', 2, 'centre', 6);
     run(state, 25);
     expect(state.polls).toBe(5);
@@ -249,8 +269,8 @@ describe('money, taxes and guests', () => {
     const family = (id: string) => categoryOf(UNITS[id]);
     expect(['bayrou', 'sarkozy', 'bmacron'].map(family)).toEqual(['money', 'money', 'money']);
     expect(['attal', 'melenchon', 'borne', 'lepen'].map(family)).toEqual(['attack', 'attack', 'attack', 'attack']);
-    expect(['lemaire', 'royal', 'tondelier', 'pompiers'].map(family)).toEqual(['effect', 'effect', 'effect', 'effect']);
-    expect(['ciotti', 'roussel', 'riner', 'crs'].map(family)).toEqual(['defence', 'defence', 'defence', 'defence']);
+    expect(['pompiers'].map(family)).toEqual(['effect']);
+    expect(['retailleau', 'royal', 'riner', 'crs'].map(family)).toEqual(['defence', 'defence', 'defence', 'defence']);
   });
 
   it('the tax inspector withholds at source for as long as he is on the board', () => {
@@ -322,19 +342,19 @@ describe('money, taxes and guests', () => {
     expect(state.resources - before).toBeGreaterThanOrEqual(15);
   });
 
-  it('the red carpet speeds up whoever walks behind its owner', () => {
-    const state = createGame({ camp: 'gauche', level: 2 });
-    spawnEnemy(state, 'lisnard', 2, 'droite', 6);
-    const behind = spawnEnemy(state, 'militant', 2, 'droite', 8)!;
-    const elsewhere = spawnEnemy(state, 'militant', 3, 'droite', 8)!;
-    run(state, 2);
-    expect(8 - behind.x).toBeCloseTo((8 - elsewhere.x) * 1.5, 1);
+  it('zero tolerance: whoever comes near Retailleau slows right down', () => {
+    const state = createGame({ camp: 'droite', level: 1 });
+    expect(placeUnit(state, 'retailleau', 2, 2)).toBeNull();
+    const near = spawnEnemy(state, 'militant', 2, 'gauche', 3.8)!;
+    const free = spawnEnemy(state, 'militant', 3, 'gauche', 3.8)!;
+    run(state, 1);
+    expect(3.8 - near.x).toBeCloseTo((3.8 - free.x) * 0.6, 2);
   });
 
   it('the Zucman tax, when it passes, sends the CAC 40 bosses on the board away for their share', () => {
     const outcomes = new Set<boolean>();
     for (let seed = 1; seed <= 12 && outcomes.size < 2; seed++) {
-      const state = createGame({ camp: 'gauche', level: 4, seed });
+      const state = createGame({ camp: 'gauche', level: 6, seed });
       spawnEnemy(state, 'patron', 1, 'droite', 8.6);
       spawnEnemy(state, 'patron', 3, 'droite', 8.6);
       const before = state.resources;
@@ -390,7 +410,7 @@ describe('money, taxes and guests', () => {
 
   it('a guest who took a public stand against one camp only turns up against that camp', () => {
     const invited = (camp: CampId) => {
-      const state = createGame({ camp, level: 3, seed: 11 });
+      const state = createGame({ camp, level: 7, seed: 11 });
       const seen = new Set<string>();
       let tick = 0;
       while (state.status === 'playing' && state.time < 600) {
@@ -404,6 +424,106 @@ describe('money, taxes and guests', () => {
     expect(invited('droite')).toBe(true);
     expect(invited('gauche')).toBe(false);
     expect(invited('centre')).toBe(false);
+  });
+});
+
+describe("headliners' powers", () => {
+  /** A board with a figure in front of the boss, the boss on stage and its powers ready. */
+  function stage(boss: string, camp: CampId = 'autres'): { state: GameState; enemy: ReturnType<typeof spawnEnemy> } {
+    const state = createGame({ camp, level: 7, seed: 5 });
+    state.resources = 5000;
+    const enemy = spawnEnemy(state, boss, 2, 'droite', 6.2)!;
+    enemy.powerTimers = enemy.powerTimers.map(() => 0.05);
+    return { state, enemy };
+  }
+
+  it('announces a power before it lands, and stands still meanwhile', () => {
+    const { state, enemy } = stage('star:melenchon');
+    placeUnit(state, 'villepin', 2, 4);
+    run(state, 0.2);
+    expect(enemy!.cast?.kind).toBe('roar');
+    expect(state.events.some((e) => e.type === 'cast' && e.power === 'roar')).toBe(true);
+    const x = enemy!.x;
+    run(state, 0.5);
+    expect(enemy!.x).toBe(x);
+    run(state, 0.6);
+    expect(state.grid[2][4]!.silenced).toBeGreaterThan(1.5); // "La République, c'est moi !"
+  });
+
+  it('Mélenchon sends a hologram to another lane', () => {
+    const { state } = stage('star:melenchon');
+    run(state, 3);
+    const holo = state.enemies.find((e) => e.def.id === 'hologram');
+    expect(holo).toBeDefined();
+    expect(holo!.lane).not.toBe(2);
+    expect(holo!.def.ghost).toBe(true);
+  });
+
+  it('Macron crosses the street when a figure stands in his way, and dissolves the squares ahead', () => {
+    const { state, enemy } = stage('star:macron');
+    placeUnit(state, 'villepin', 2, 4);
+    placeUnit(state, 'lassalle', 3, 4);
+    run(state, 1.2);
+    expect(enemy!.lane).not.toBe(2);
+    const later = stage('star:macron');
+    placeUnit(later.state, 'lassalle', 2, 4);
+    placeUnit(later.state, 'villepin', 3, 5);
+    later.enemy!.powerTimers = [99, 0.05];
+    run(later.state, 0.2);
+    expect(later.enemy!.cast?.zone).toEqual({ lane: 2, col: 4 });
+    const before = later.state.resources;
+    run(later.state, 1.8);
+    expect(later.state.grid[2][4]).toBeNull();
+    expect(later.state.grid[3][5]).toBeNull();
+    expect(later.state.resources - before).toBeGreaterThanOrEqual((UNITS.lassalle.cost + UNITS.villepin.cost) / 2);
+    expect(later.state.cards.find((c) => c.def.id === 'lassalle')!.cooldown).toBe(0);
+  });
+
+  it('Le Pen: the tag beeps once and pulls her back, then she appeals once', () => {
+    const { state, enemy } = stage('star:lepen');
+    enemy!.x = 3.1;
+    run(state, 0.1);
+    expect(state.events.some((e) => e.type === 'tag')).toBe(true);
+    expect(enemy!.x).toBeGreaterThan(5);
+    enemy!.hp = 0;
+    run(state, TICK);
+    expect(state.enemies).toContain(enemy);
+    expect(enemy!.revived).toBe(true);
+    expect(enemy!.hp).toBeCloseTo(UNITS.lepen.attacker!.hp * 0.4, 0);
+    enemy!.hp = 0;
+    run(state, TICK);
+    expect(state.enemies).not.toContain(enemy);
+    expect(state.events.some((e) => e.type === 'enemyDown' && e.enemyId === 'star:lepen' && e.revived)).toBe(true);
+  });
+
+  it('Riner throws the figure he faces, and fights harder below half', () => {
+    const { state, enemy } = stage('star:riner', 'centre');
+    expect(placeUnit(state, 'philippe', 2, 5)).toBeNull();
+    enemy!.x = 6.0;
+    run(state, 1.2);
+    expect(state.events.some((e) => e.type === 'power' && e.power === 'ippon')).toBe(true);
+    expect(state.grid[2][5]!.hp).toBeLessThan(UNITS.philippe.hp * 0.5);
+    enemy!.hp = enemy!.def.hp * 0.4;
+    run(state, TICK * 2);
+    expect(enemy!.enraged).toBe(true);
+  });
+
+  it('Xavier Niel takes the network down in three lanes', () => {
+    const { state } = stage('niel');
+    placeUnit(state, 'villepin', 1, 1);
+    placeUnit(state, 'lassalle', 4, 1);
+    run(state, 1.5);
+    expect(state.grid[1][1]!.silenced).toBeGreaterThan(0);
+    expect(state.grid[4][1]!.silenced).toBe(0);
+  });
+
+  it('Trump doubles his tariffs once he is in trouble', () => {
+    const { state, enemy } = stage('trump');
+    run(state, 0.1);
+    expect(state.tariff).toBe(1.25);
+    enemy!.hp = enemy!.def.hp * 0.4;
+    run(state, 0.1);
+    expect(state.tariff).toBe(1.5);
   });
 });
 
@@ -461,7 +581,7 @@ describe('camp ultimates', () => {
 
 describe('campaign balance', () => {
   it('ends on the run-off, after the debate', () => {
-    expect(LAST_LEVEL).toBe(8);
+    expect(LAST_LEVEL).toBe(9);
   });
 
   it('is deterministic for a given seed', () => {

@@ -10,7 +10,7 @@ import { unlockAchievements } from './achievements';
 import { dailySetup, duelCode, parseDuel, today, type Mode, type Setup } from './modes';
 import { COLS, LAST_LEVEL, LEVELS, ROWS, VERSUS } from './data/levels';
 import { CAMP_IDS, type CampId } from './data/types';
-import { CAMPS, EXTRAS, UNITS, categoryOf, lineupOf } from './data/units';
+import { CAMPS, EXTRAS, UNITS, categoryOf } from './data/units';
 import { enemySvg, portraitSvg } from './render/portraits';
 import { Renderer, type ViewState } from './render/renderer';
 import { SpriteStore } from './render/sprites';
@@ -31,7 +31,11 @@ function $(root: ParentNode, selector: string): HTMLElement {
 }
 
 /** Opponents that get a "New!" card the first time they turn up: every special extra and guest. */
-const INTRODUCED = new Set(Object.keys(EXTRAS).filter((id) => id !== 'militant' && id !== 'cat'));
+/** Opponents who get a "New!" card the first time: the special extras, the guests and the rival headliners (as bosses). */
+const INTRODUCED = new Set([
+  ...Object.keys(EXTRAS).filter((id) => id !== 'militant' && id !== 'cat'),
+  ...CAMP_IDS.map((camp) => `star:${CAMPS[camp].roster[CAMPS[camp].roster.length - 1]}`),
+]);
 
 interface LastResult {
   headline: string;
@@ -205,13 +209,6 @@ class GameApp {
 
   /** Daily challenge, duel banner and achievements, on the calendar. */
   private renderModes(): void {
-    const camp = this.save.camp;
-    if (camp) {
-      const bench = CAMPS[camp].bench;
-      const starter = CAMPS[camp].roster.find((id) => UNITS[id].slot === UNITS[bench].slot)!;
-      $(this.root, '[data-slot="bench-text"]').textContent = fmt(this.t.ui.benchSwap, { bench: this.t.figures[bench].short, starter: this.t.figures[starter].short });
-      this.root.querySelector('[data-action="bench"]')?.setAttribute('aria-pressed', String(this.save.bench[camp]));
-    }
     const daily = dailySetup();
     const [, month, day] = today().split('-');
     $(this.root, '[data-slot="daily-date"]').textContent = `${day}/${month}`;
@@ -261,12 +258,7 @@ class GameApp {
     await document.fonts?.ready;
     this.root.classList.remove('is-loading');
 
-    // Daily challenges and duels keep the camp's own line-up, so that everybody plays the same match.
-    const personal = setup.mode === 'campaign' || setup.mode === 'versus';
-    const state = createGame({
-      camp, level: levelId, seed: setup.seed, hard: setup.mode === 'campaign' && this.save.hard,
-      roster: personal ? lineupOf(camp, this.save.bench[camp]) : undefined,
-    });
+    const state = createGame({ camp, level: levelId, seed: setup.seed, hard: setup.mode === 'campaign' && this.save.hard });
     this.root.dataset.camp = camp;
     this.root.dataset.mode = setup.mode;
     $(this.root, '[data-slot="versus"]').hidden = setup.mode !== 'versus';
@@ -282,6 +274,8 @@ class GameApp {
     this.lastTaxNotice = -99;
     this.shown = {};
     this.renderer.reset();
+    // What the crowd is after tonight, in big letters.
+    this.renderer.announce(this.t.goals[state.level.goal].banner);
     this.overlay('pause', false);
     this.overlay('result', false);
 
@@ -311,7 +305,7 @@ class GameApp {
     this.updateHud();
     const name = setup.mode === 'versus' ? this.t.ui.versusName : this.t.levels[levelId].name;
     const extra = setup.mode === 'versus' ? this.t.announce.versusStart : state.hard ? this.t.announce.hardMode : '';
-    this.say(`${fmt(this.t.announce.start, { level: name, camp: this.t.camps[camp].name })} ${extra}`.trim());
+    this.say(`${fmt(this.t.announce.start, { level: name, camp: this.t.camps[camp].name, goal: this.t.goals[state.level.goal].banner })} ${extra}`.trim());
     this.audio.music(this.save.music);
   }
 
@@ -480,13 +474,6 @@ class GameApp {
     on('[data-action="duel-accept"]', () => this.incomingDuel && void this.startMatch(this.incomingDuel));
     on('[data-action="duel-pass"]', () => {
       if (this.setup?.mode === 'duel') void this.startMatch({ ...this.setup, rival: this.lastScore });
-    });
-    on('[data-action="bench"]', () => {
-      const camp = this.save.camp;
-      if (!camp) return;
-      this.save.bench[camp] = !this.save.bench[camp];
-      storeSave(this.save);
-      this.renderModes();
     });
     on('[data-kind]', (el) => this.selectKind(el.dataset.kind as VersusKind));
     on('[data-lane]', (el) => this.sendTo(Number(el.dataset.lane)));
@@ -836,7 +823,7 @@ class GameApp {
       const next = LEVELS.find((l) => l.id === level.id + 1);
       if (next && progress.unlocked < next.id) {
         progress.unlocked = next.id;
-        if (next.slots > level.slots) unlockedUnit = lineupOf(camp, this.save.bench[camp])[next.slots - 1];
+        if (next.slots > level.slots) unlockedUnit = CAMPS[camp].roster[next.slots - 1];
         unlockedReinforcements = next.reinforcements && !level.reinforcements;
       }
     }
@@ -869,7 +856,7 @@ class GameApp {
       scored ? [this.t.ui.statScore, String(score)] : [this.t.ui.statTime, clockText(state.time)],
       [this.t.ui.statKills, String(state.stats.kills)],
       [this.t.ui.statPlaced, String(state.stats.placed)],
-      level.endless ? [this.t.ui.statWaves, String(wavesHeld)] : [this.t.ui.statPolls, `${state.polls}/${level.polls}`],
+      level.endless ? [this.t.ui.statWaves, String(wavesHeld)] : [this.t.goals[level.goal].name, `${state.polls}/${level.polls}`],
     ];
     const list = $(el, '[data-slot="stats"]');
     list.replaceChildren(
@@ -961,15 +948,16 @@ class GameApp {
     const next = this.introQueue.shift();
     const state = this.state;
     if (!next || !state || state.status !== 'playing') return;
-    const guest = this.t.figures[next.id];
+    const guest = this.t.figures[next.id.startsWith('star:') ? next.id.slice(5) : next.id];
     const el = this.overlay('intro', true);
     $(el, '[data-slot="intro-tag"]').textContent = this.t.ui.newOpponent;
-    $(el, '[data-slot="intro-art"]').innerHTML = enemySvg(next.id, next.camp, { size: 150, uid: 'intro' });
+    $(el, '[data-slot="intro-art"]').innerHTML = enemySvg(next.id, { size: 150, uid: 'intro' });
     $(el, '[data-slot="intro-name"]').textContent = guest ? guest.name : this.t.extras[next.id];
     const power = $(el, '[data-slot="intro-power"]');
     power.hidden = !guest;
     power.textContent = guest ? `${guest.title} · ${guest.power}` : '';
-    $(el, '[data-slot="intro-desc"]').textContent = guest ? guest.desc : (this.t.about[next.id] ?? '');
+    // A headliner or a guest boss: what they do against you, powers included.
+    $(el, '[data-slot="intro-desc"]').textContent = guest ? (guest.boss ?? guest.desc) : (this.t.about[next.id] ?? '');
     if (!this.introOpen) this.introFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.introOpen = true;
     this.save.seen.push(next.id);
@@ -1133,7 +1121,7 @@ class GameApp {
           break;
         case 'leak':
           this.audio.play('leak');
-          this.say(fmt(a.leak, { name: this.enemyName(e.enemyId), loss: e.loss, polls: state.polls }), true);
+          this.say(fmt(a.leak, { name: this.enemyName(e.enemyId), goal: this.t.goals[state.level.goal].one, polls: state.polls }), true);
           break;
         case 'wave':
           this.audio.play('wave');
@@ -1171,6 +1159,31 @@ class GameApp {
             this.say(fmt(a.taxed, { n: e.amount }));
           }
           break;
+        case 'cast': {
+          // Screen readers hear the warning in time to react.
+          const power = this.t.powers[e.power];
+          this.audio.play('whistle');
+          this.say(fmt(a.castSay, { name: this.enemyName(e.enemyId), power: power.name }), true);
+          break;
+        }
+        case 'power':
+          this.audio.play(e.power === 'lag' || e.power === 'roar' ? 'leak' : 'boom');
+          break;
+        case 'appeal':
+          this.audio.play('wave');
+          this.say(a.appealBanner, true);
+          break;
+        case 'tag':
+          this.audio.play('whistle');
+          this.say(a.tag);
+          break;
+        case 'enrage':
+          this.say(a.enrage);
+          break;
+        case 'hike':
+          this.audio.play('leak');
+          this.say(a.hikeBanner, true);
+          break;
         case 'caf':
           if (e.amount > 0) this.audio.play('coin');
           this.say(e.amount > 0 ? fmt(a.cafPaid, { n: e.amount }) : a.cafLate);
@@ -1187,7 +1200,8 @@ class GameApp {
         case 'enemyDown':
           if (e.enemyId === 'syndicat') this.save.counters.unionists++;
           if (e.enemyId === 'lucet') this.save.counters.lucet++;
-          if (e.enemyId === 'lisnard') this.save.counters.lisnard++;
+          if (e.enemyId === 'niel') this.save.counters.niel++;
+          if (e.enemyId === 'star:lepen' && e.revived) this.save.counters.appeal++;
           break;
         case 'punchline':
           this.audio.play('whistle');
@@ -1273,7 +1287,7 @@ class GameApp {
 
     this.put('polls', state.polls, () => {
       const holder = $(this.root, '[data-slot="polls"]');
-      holder.setAttribute('aria-label', `${this.t.ui.polls} : ${state.polls}/${state.level.polls}`);
+      holder.setAttribute('aria-label', `${this.t.goals[state.level.goal].name} : ${state.polls}/${state.level.polls}`);
       [...holder.children].forEach((pip, i) => pip.classList.toggle('is-lost', i >= state.polls));
     });
 

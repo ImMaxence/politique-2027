@@ -1,6 +1,6 @@
 {
   "name": "politique-2027",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Politique 2027 — a satirical lane-defense browser game about the French presidential race. Pick the Left, the Centre, the Right or the Others and hold the Élysée steps.",
   "type": "module",
   "private": true,
@@ -23,7 +23,8 @@
     "test:e2e": "playwright test",
     "balance": "tsx scripts/balance.ts",
     "assets": "tsx scripts/generate-assets.ts",
-    "screenshots": "tsx scripts/screenshots.ts"
+    "screenshots": "tsx scripts/screenshots.ts",
+    "heads": "tsx scripts/build-heads.ts"
   },
   "dependencies": {
     "@fontsource-variable/public-sans": "^5.3.0",

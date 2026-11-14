@@ -4,78 +4,95 @@ export const ROWS = 5;
 export const COLS = 9;
 
 /**
- * Campaign levels 1-7. Budgets are tuned with `npm run balance`: the reference
- * bot must win every level with every camp, and an idle player must lose.
+ * Campaign nights 1-9. Each one has a theme: a crowd, the thing it is after (the
+ * `goal`, piled at the end of every row) and sometimes a guest. Budgets are tuned
+ * with `npm run balance`: the reference bot must win every night with every camp,
+ * and an idle player must lose.
  */
 export const LEVELS: LevelDef[] = [
   {
-    // A village square: mayors hold the endorsements.
-    id: 1, scene: 'mairie', lanes: [1, 2, 3], startResources: 150, polls: 5,
+    // A village square: rival campaigners are after the mayors' signatures.
+    id: 1, scene: 'mairie', goal: 'parrainages', lanes: [1, 2, 3], startResources: 150, polls: 5,
     waves: 6, baseBudget: 2, growth: 1.1, bigWaves: [5],
     pool: [
       { id: 'militant', weight: 5, from: 0 },
       { id: 'placard', weight: 2, from: 3 },
     ],
-    starsFrom: 99, bosses: 0, guests: ['durif'], firstWaveAt: 22, waveGap: 24, slots: 3, reinforcements: false,
+    starsFrom: 99, bosses: 0, firstWaveAt: 22, waveGap: 24, slots: 3, reinforcements: false,
   },
   {
-    id: 2, scene: 'salon', lanes: [0, 1, 2, 3, 4], startResources: 175, polls: 5,
+    // The Agricultural Show: farmers, tractors and the star cow want the farm subsidies.
+    id: 2, scene: 'salon', goal: 'pac', lanes: [0, 1, 2, 3, 4], startResources: 175, polls: 5,
     waves: 8, baseBudget: 3, growth: 1.5, bigWaves: [4, 7],
     pool: [
-      { id: 'militant', weight: 4, from: 0 },
-      { id: 'agriculteur', weight: 3, from: 1 },
+      { id: 'agriculteur', weight: 5, from: 0 },
+      { id: 'militant', weight: 2, from: 0 },
       { id: 'placard', weight: 2, from: 2 },
-      { id: 'pundit', weight: 2, from: 3 },
+      { id: 'vache', weight: 1, from: 3 },
       { id: 'tracteur', weight: 1, from: 4 },
     ],
-    starsFrom: 6, bosses: 0, guests: ['lisnard'], firstWaveAt: 24, waveGap: 25, slots: 4, reinforcements: false,
+    starsFrom: 6, bosses: 0, firstWaveAt: 24, waveGap: 25, slots: 4, reinforcements: false,
   },
   {
-    // The street: school blockades, burning bins and motorists who have seen the price of petrol.
-    id: 3, scene: 'rue', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
+    // A school blockade: the pupils want their confiscated phones back, and the network goes down.
+    id: 3, scene: 'lycee', goal: 'portables', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
+    waves: 8, baseBudget: 4, growth: 2.3, bigWaves: [4, 7],
+    pool: [
+      { id: 'lyceen', weight: 6, from: 0 },
+      { id: 'trottinette', weight: 2, from: 1 },
+      { id: 'poubelle', weight: 1.5, from: 2 },
+      { id: 'placard', weight: 1, from: 3 },
+      { id: 'militant', weight: 1, from: 0 },
+    ],
+    starsFrom: 99, bosses: 0, guests: ['niel'], firstWaveAt: 24, waveGap: 25, slots: 4, reinforcements: true,
+  },
+  {
+    // 17 October 2026: the street against the cost of living. Yellow vests, pupils, unions,
+    // burning bins and motorists who have seen the price of petrol all want a full trolley.
+    id: 4, scene: 'rue', goal: 'caddie', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
     waves: 8, baseBudget: 5, growth: 2.9, bigWaves: [4, 7],
     pool: [
-      { id: 'lyceen', weight: 5, from: 0 },
-      { id: 'militant', weight: 1, from: 0 },
-      { id: 'gilet', weight: 3, from: 1 },
+      { id: 'gilet', weight: 4, from: 0 },
+      { id: 'lyceen', weight: 3, from: 0 },
+      { id: 'syndicat', weight: 2, from: 1 },
       { id: 'poubelle', weight: 2, from: 1 },
-      { id: 'syndicat', weight: 2, from: 2 },
-      { id: 'smicard', weight: 1, from: 3 },
+      { id: 'trottinette', weight: 1.5, from: 2 },
       { id: 'auto', weight: 2, from: 2 },
-      { id: 'impots', weight: 1.5, from: 3 },
-      { id: 'placard', weight: 1, from: 3 },
+      { id: 'smicard', weight: 1.5, from: 3 },
     ],
-    starsFrom: 99, bosses: 0, guests: ['squeezie'], firstWaveAt: 24, waveGap: 25, slots: 4, reinforcements: true,
+    starsFrom: 99, bosses: 0, guests: ['hugo'], twists: ['manif'], firstWaveAt: 24, waveGap: 25, slots: 5, reinforcements: true,
   },
   {
-    id: 4, scene: 'plateau', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
+    // The TV debate: pundits after the speaking time, and the rival headliners on set.
+    id: 5, scene: 'plateau', goal: 'micros', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
     waves: 9, baseBudget: 6, growth: 3.4, bigWaves: [4, 8],
     pool: [
-      { id: 'militant', weight: 5, from: 0 },
+      { id: 'pundit', weight: 5, from: 0 },
+      { id: 'militant', weight: 3, from: 0 },
       { id: 'placard', weight: 3, from: 1 },
-      { id: 'pundit', weight: 4, from: 0 },
       { id: 'patron', weight: 1, from: 3 },
       { id: 'cnews', weight: 1, from: 4 },
     ],
-    starsFrom: 2, bosses: 0, guests: ['hugo'], twists: ['force'], firstWaveAt: 24, waveGap: 26, slots: 5, reinforcements: true,
+    starsFrom: 2, bosses: 0, guests: ['lucet'], twists: ['force'], firstWaveAt: 24, waveGap: 26, slots: 5, reinforcements: true,
   },
   {
-    // International summit: a guest arrives with his tariffs.
-    id: 5, scene: 'sommet', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
+    // International summit: a guest arrives with his tariffs on French cheese and wine.
+    id: 6, scene: 'sommet', goal: 'terroir', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
     waves: 9, baseBudget: 7, growth: 3.3, bigWaves: [4, 8],
     pool: [
-      { id: 'militant', weight: 5, from: 0 },
+      { id: 'militant', weight: 4, from: 0 },
       { id: 'placard', weight: 3, from: 0 },
       { id: 'pundit', weight: 3, from: 1 },
       { id: 'auto', weight: 1.5, from: 2 },
       { id: 'impots', weight: 1.2, from: 1 },
-      { id: 'patron', weight: 1.2, from: 2 },
+      { id: 'patron', weight: 1.5, from: 2 },
       { id: 'bus', weight: 1, from: 5 },
     ],
-    starsFrom: 3, bosses: 0, guests: ['trump'], twists: ['manif'], firstWaveAt: 24, waveGap: 26, slots: 6, reinforcements: true,
+    starsFrom: 3, bosses: 0, guests: ['trump'], twists: ['manif'], firstWaveAt: 24, waveGap: 26, slots: 5, reinforcements: true,
   },
   {
-    id: 6, scene: 'elysee', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
+    // The first round: everybody wants the ballot boxes.
+    id: 7, scene: 'elysee', goal: 'urnes', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
     waves: 10, baseBudget: 8, growth: 4.3, bigWaves: [4, 9],
     pool: [
       { id: 'militant', weight: 5, from: 0 },
@@ -88,13 +105,13 @@ export const LEVELS: LevelDef[] = [
       { id: 'syndicat', weight: 1, from: 3 },
       { id: 'bus', weight: 1, from: 5 },
     ],
-    starsFrom: 2, bosses: 1, guests: ['lucet'], twists: ['manif', 'force'], firstWaveAt: 24, waveGap: 27, slots: 6, reinforcements: true,
+    starsFrom: 2, bosses: 1, guests: ['squeezie'], twists: ['manif', 'force'], firstWaveAt: 24, waveGap: 27, slots: 5, reinforcements: true,
   },
   {
-    // The debate between the two rounds: one heavyweight on the other side of the desk, and
-    // their "petites phrases" raining down on the board, to be sent back before they land.
-    id: 7, scene: 'plateau', lanes: [0, 1, 2, 3, 4], startResources: 225, polls: 5,
-    waves: 10, baseBudget: 9, growth: 5.2, bigWaves: [4, 9],
+    // The debate between the two rounds: one heavyweight on the other side of the desk, their
+    // "petites phrases" raining down on the board, and everybody after your notes.
+    id: 8, scene: 'plateau', goal: 'fiches', lanes: [0, 1, 2, 3, 4], startResources: 225, polls: 5,
+    waves: 10, baseBudget: 9, growth: 4.8, bigWaves: [4, 9],
     pool: [
       { id: 'militant', weight: 4, from: 0 },
       { id: 'pundit', weight: 5, from: 0 },
@@ -103,11 +120,12 @@ export const LEVELS: LevelDef[] = [
       { id: 'patron', weight: 1, from: 4 },
       { id: 'bus', weight: 1, from: 6 },
     ],
-    starsFrom: 1, bosses: 1, punchlines: { interval: 6.5, life: 4.5 }, firstWaveAt: 24, waveGap: 26, slots: 6, reinforcements: true,
+    starsFrom: 1, bosses: 1, punchlines: { interval: 6.5, life: 4.5 }, firstWaveAt: 24, waveGap: 26, slots: 5, reinforcements: true,
   },
   {
-    id: 8, scene: 'elysee-nuit', lanes: [0, 1, 2, 3, 4], startResources: 225, polls: 5,
-    waves: 12, baseBudget: 9, growth: 3.9, bigWaves: [3, 7, 11],
+    // The run-off: two rival headliners, and everybody wants the armchair.
+    id: 9, scene: 'elysee-nuit', goal: 'fauteuil', lanes: [0, 1, 2, 3, 4], startResources: 225, polls: 5,
+    waves: 12, baseBudget: 8, growth: 3.4, bigWaves: [3, 7, 11],
     pool: [
       { id: 'militant', weight: 5, from: 0 },
       { id: 'placard', weight: 3, from: 0 },
@@ -119,7 +137,7 @@ export const LEVELS: LevelDef[] = [
       { id: 'cnews', weight: 0.8, from: 5 },
       { id: 'tracteur', weight: 0.8, from: 5 },
     ],
-    starsFrom: 1, bosses: 2, twists: ['manif'], firstWaveAt: 24, waveGap: 27, slots: 6, reinforcements: true,
+    starsFrom: 1, bosses: 2, twists: ['manif'], firstWaveAt: 24, waveGap: 27, slots: 5, reinforcements: true,
   },
 ];
 
@@ -127,21 +145,22 @@ export const LAST_LEVEL = LEVELS[LEVELS.length - 1].id;
 
 /** Two players on one screen: the attacker sends opponents from a budget, the defender holds for three minutes. */
 export const VERSUS: LevelDef = {
-  id: -1, scene: 'plateau', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
+  id: -1, scene: 'plateau', goal: 'micros', lanes: [0, 1, 2, 3, 4], startResources: 200, polls: 5,
   waves: Number.POSITIVE_INFINITY, baseBudget: 0, growth: 0, bigWaves: [], pool: [],
-  starsFrom: 99, bosses: 0, firstWaveAt: 1e9, waveGap: 1e9, slots: 6, reinforcements: true,
+  starsFrom: 99, bosses: 0, firstWaveAt: 1e9, waveGap: 1e9, slots: 5, reinforcements: true,
   versus: { duration: 180 },
 };
 
-/** Level 0: the endless "Cohabitation" mode, unlocked by finishing the campaign. */
+/** Level 0: the endless "Cohabitation" mode, unlocked by finishing the campaign. Everybody wants the budget. */
 export const ENDLESS: LevelDef = {
-  id: 0, scene: 'elysee', lanes: [0, 1, 2, 3, 4], startResources: 225, polls: 5,
+  id: 0, scene: 'elysee', goal: 'budget', lanes: [0, 1, 2, 3, 4], startResources: 225, polls: 5,
   waves: Number.POSITIVE_INFINITY, baseBudget: 5, growth: 2.4, bigWaves: [],
   pool: [
     { id: 'militant', weight: 5, from: 0 },
     { id: 'placard', weight: 3, from: 1 },
     { id: 'pundit', weight: 3, from: 2 },
     { id: 'lyceen', weight: 3, from: 3 },
+    { id: 'trottinette', weight: 1.5, from: 3 },
     { id: 'gilet', weight: 2, from: 3 },
     { id: 'syndicat', weight: 2, from: 3 },
     { id: 'smicard', weight: 1.5, from: 2 },
@@ -150,11 +169,12 @@ export const ENDLESS: LevelDef = {
     { id: 'agriculteur', weight: 2, from: 2 },
     { id: 'impots', weight: 1, from: 4 },
     { id: 'patron', weight: 1, from: 5 },
+    { id: 'vache', weight: 0.8, from: 6 },
     { id: 'bus', weight: 1.2, from: 6 },
     { id: 'tracteur', weight: 1, from: 7 },
     { id: 'cnews', weight: 1, from: 8 },
   ],
-  starsFrom: 3, bosses: 1, guests: ['trump', 'hugo', 'lucet', 'squeezie', 'durif', 'lisnard'], twists: ['manif', 'force'], firstWaveAt: 24, waveGap: 25, slots: 6, reinforcements: true, endless: true,
+  starsFrom: 3, bosses: 1, guests: ['trump', 'niel', 'hugo', 'lucet', 'squeezie'], twists: ['manif', 'force'], firstWaveAt: 24, waveGap: 25, slots: 5, reinforcements: true, endless: true,
 };
 
 export function levelDef(id: number): LevelDef {

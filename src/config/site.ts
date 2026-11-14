@@ -6,7 +6,7 @@ export const SITE = {
   url: 'https://politique2027.mbonnici.fr',
   version: pkg.version,
   /** ISO date of the last content/legal update. Bump it with each release. */
-  updated: '2026-11-13',
+  updated: '2026-11-14',
   published: '2026-11-12',
   author: {
     name: 'Maxence Bonnici',

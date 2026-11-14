@@ -17,7 +17,7 @@ const t = SITE_STRINGS[lang];
 const g = GAME_STRINGS[lang];
 const home = t.home;
 const url = absolute(path(lang, 'home'));
-const leaders = CAMP_IDS.map((camp) => ({ camp, id: CAMPS[camp].roster[5] }));
+const leaders = CAMP_IDS.map((camp) => ({ camp, id: CAMPS[camp].roster[CAMPS[camp].roster.length - 1] }));
 const spotlight = ['hollande', 'melenchon', 'macron', 'borne', 'sarkozy', 'lepen', 'riner', 'lassalle'];
 
 const author = { '@type': 'Person', name: SITE.author.name, url: SITE.author.url, sameAs: [SITE.author.github] };
@@ -88,7 +88,7 @@ const jsonLd = [
             <div class="board__poster" data-camp={camp}>
               <Puppet id={id} uid="hero" size={180} />
               <span class="board__camp">{g.camps[camp].short}</span>
-              <span class="board__name">{g.figures[id].title}</span>
+              <span class="board__name">{g.figures[id].name}</span>
             </div>
           ))
         }

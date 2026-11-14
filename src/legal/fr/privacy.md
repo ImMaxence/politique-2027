@@ -15,7 +15,7 @@ Pour retenir votre progression et vos réglages, le site utilise le stockage loc
 
 | Clé | Contenu | Durée |
 | --- | --- | --- |
-| `politique2027:save` | Camp choisi, niveaux débloqués, étoiles, record du mode sans fin, son coupé ou non, vitesse de jeu, paysage forcé ou non sur téléphone, mode difficile ou non, adversaires déjà présentés (fiches « Nouveau ! »), astuce « écran d'accueil » masquée ou non, meilleurs scores des défis du jour (deux dernières semaines), succès et compteurs qui y mènent, musique activée ou non, remplaçants choisis | Jusqu'à ce que vous l'effaciez |
+| `politique2027:save` | Camp choisi, niveaux débloqués, étoiles, record du mode sans fin, son coupé ou non, vitesse de jeu, paysage forcé ou non sur téléphone, mode difficile ou non, adversaires déjà présentés (fiches « Nouveau ! »), astuce « écran d'accueil » masquée ou non, meilleurs scores des défis du jour (deux dernières semaines), succès et compteurs qui y mènent, musique activée ou non | Jusqu'à ce que vous l'effaciez |
 
 Pour que le jeu s'ouvre et se joue **hors connexion** (notamment une fois ajouté à l'écran d'accueil), le navigateur garde aussi une copie des fichiers du site — pages, scripts, styles, polices et images — dans son cache (`Cache Storage`, géré par un *service worker*). Ce cache ne contient que les fichiers publics du site, aucune donnée vous concernant ; il est remplacé à chaque nouvelle version du jeu.
 
@@ -40,7 +40,7 @@ Aucune donnée n'est vendue, louée ou transmise à d'autres tiers.
 
 ## Polices, images et ressources tierces
 
-Les polices, les illustrations et les scripts sont servis depuis le site lui-même. Aucune ressource n'est chargée depuis Google Fonts, un réseau publicitaire ou un autre service tiers.
+Les polices, les illustrations, les photos des personnages et les scripts sont servis depuis le site lui-même (les photos ne sont pas chargées depuis Wikimedia). Aucune ressource n'est chargée depuis Google Fonts, un réseau publicitaire ou un autre service tiers.
 
 Les liens vers GitHub et vers le site de l'auteur mènent à des sites qui appliquent leur propre politique de confidentialité.
 

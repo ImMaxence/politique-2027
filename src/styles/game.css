@@ -207,6 +207,18 @@
   font-size: 0.9rem;
   color: var(--ink-soft);
 }
+/* What the crowd is after that night. */
+.level-card__goal {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.level-card__goal small {
+  margin-right: 0.3rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
 .level-card__state {
   margin-top: 0.3rem;
   font-weight: 800;

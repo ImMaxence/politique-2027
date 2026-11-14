@@ -1,8 +1,9 @@
 /**
  * Backdrops. Each campaign night has its own stage set: a village square, the
- * agricultural show, a street, a TV studio, an international summit and the
- * Élysée courtyard (at dusk and at night). They are painted once per level
- * onto an offscreen canvas.
+ * agricultural show, a school yard, a street, a TV studio, an international
+ * summit and the Élysée courtyard (at dusk and at night). They are painted once
+ * per level onto an offscreen canvas. The night's goal (what the crowd is after)
+ * stands left of the board and is drawn by the renderer (goals.ts).
  */
 import { COLS, ROWS } from '../data/levels';
 import type { SceneId } from '../data/types';
@@ -38,6 +39,7 @@ const STONE: [string, string, string] = ['#f4ecd8', '#e6dcc3', '#d6caac'];
 
 const PALETTES: Record<SceneId, Palette> = {
   mairie: { sky: '#cfe6f5', wall: '#f1e3c4', wallShade: '#d9c79a', ground: ['#e8ddc9', '#ddd0b8'], line: 'rgba(23,32,63,.13)', steps: STONE, carpet: '#c62f3a', door: '#6b4a2f', closed: '#5d9d57', border: '#5d9d57', edge: 'fence', dark: false },
+  lycee: { sky: '#cde4f2', wall: '#efe3cf', wallShade: '#d6c4a3', ground: ['#b7bdc9', '#aeb4c1'], line: 'rgba(255,255,255,.32)', steps: ['#d5d8de', '#c4c8d0', '#b3b8c2'], carpet: '#c62f3a', door: '#2a3566', closed: '#7d8597', border: '#5f6675', edge: 'fence', dark: false },
   salon: { sky: '#e9d9a8', wall: '#d8c58f', wallShade: '#b79f66', ground: ['#efd98c', '#e6cc74'], line: 'rgba(90,60,20,.16)', steps: ['#e9dcb6', '#dccd9f', '#cdbb87'], carpet: '#3c8a57', door: '#6b4a2f', closed: '#b79f66', border: '#a8834a', edge: 'fence', dark: false },
   rue: { sky: '#c9d3e0', wall: '#e9dfcf', wallShade: '#cdbfa6', ground: ['#8f97a7', '#868e9e'], line: 'rgba(255,255,255,.28)', steps: ['#d5d8de', '#c4c8d0', '#b3b8c2'], carpet: '#c62f3a', door: '#2a3566', closed: '#6c7482', border: '#5f6675', edge: 'barrier', dark: false },
   plateau: { sky: '#151936', wall: '#22275a', wallShade: '#191d45', ground: ['#3d4a8f', '#364283'], line: 'rgba(120,220,255,.22)', steps: ['#4c5aa6', '#414d92', '#37427f'], carpet: '#c62f3a', door: GOLD, closed: '#23284f', border: '#191d45', edge: 'curtain', dark: true },
@@ -332,6 +334,34 @@ function street(g: Ctx, pal: Palette): void {
   }
 }
 
+/** A lycée: a tall front with the national motto, windows, a clock and a closed gate. */
+function school(g: Ctx, pal: Palette): void {
+  wallBand(g, pal, 22);
+  g.fillStyle = pal.wallShade;
+  g.fillRect(X0, 22, SCENE_W, 8);
+  for (let i = -1; i < COLS + 1; i++) {
+    const x = BOARD_X + i * CELL_W + CELL_W / 2;
+    if (Math.abs(x - VIEW_W / 2) < 230) continue; // the sign hangs in the middle
+    box(g, x - 24, 44, 48, 56, '#9fc3e0', [4, 4, 0, 0], 2.5);
+    g.strokeStyle = pal.wall;
+    g.lineWidth = 3;
+    g.beginPath();
+    g.moveTo(x, 46);
+    g.lineTo(x, 98);
+    g.moveTo(x - 22, 70);
+    g.lineTo(x + 22, 70);
+    g.stroke();
+  }
+  // The national motto carved along the front, as on every French school.
+  box(g, X0 + 20, 104, SCENE_W - 40, 18, pal.wallShade, 2, 2);
+  g.font = `400 14px ${DISPLAY}`;
+  g.fillStyle = INK;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  for (const x of [200, 640, 1080]) g.fillText('LIBERTÉ · ÉGALITÉ · FRATERNITÉ', x, 114);
+  bunting(g);
+}
+
 function studio(g: Ctx, pal: Palette): void {
   wallBand(g, pal, 0);
   // Screens
@@ -449,6 +479,20 @@ function floorDetails(g: Ctx, scene: SceneId, lanes: number[]): void {
       g.fillStyle = 'rgba(255,255,255,.35)';
       for (let x = BOARD_X + CELL_W * 1.3; x < BOARD_X + BOARD_W - 30; x += 70) g.fillRect(x, laneTop(lane) + CELL_H / 2 - 3, 36, 6);
     }
+  } else if (scene === 'lycee') {
+    // Painted court lines and a hopscotch in the yard.
+    g.strokeStyle = 'rgba(255,255,255,.45)';
+    g.lineWidth = 3;
+    for (const lane of lanes) {
+      g.beginPath();
+      g.moveTo(BOARD_X + CELL_W * 1.2, laneTop(lane) + CELL_H / 2);
+      g.lineTo(BOARD_X + BOARD_W - 20, laneTop(lane) + CELL_H / 2);
+      g.stroke();
+    }
+    const hx = BOARD_X + CELL_W * 4.2;
+    const hy = laneTop(lanes[Math.floor(lanes.length / 2)]) + 20;
+    g.strokeStyle = 'rgba(255,214,63,.7)';
+    for (let i = 0; i < 4; i++) g.strokeRect(hx + i * 26, hy, 24, 24);
   } else if (scene === 'salon') {
     g.strokeStyle = 'rgba(150,110,30,.28)';
     g.lineWidth = 2;
@@ -620,6 +664,7 @@ export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: st
   switch (scene) {
     case 'mairie': village(g); break;
     case 'salon': show(g, pal); break;
+    case 'lycee': school(g, pal); break;
     case 'rue': street(g, pal); break;
     case 'plateau': studio(g, pal); break;
     case 'sommet': summit(g, pal); break;
@@ -657,24 +702,23 @@ export function paintBackdrop(g: Ctx, scene: SceneId, lanes: number[], label: st
   g.stroke();
   g.setLineDash([]);
 
-  // The steps (left): what the player defends.
-  pal.steps.forEach((color, i) => {
-    g.fillStyle = color;
-    g.fillRect(40 + i * 44, BOARD_Y, 44, BOARD_H);
-  });
+  // The goal's area (left): a strip of floor where the renderer stands what the crowd is after.
+  g.fillStyle = pal.steps[1];
+  g.fillRect(40, BOARD_Y, BOARD_X - 40, BOARD_H);
   facade(g, pal);
-  for (const lane of lanes) {
-    g.fillStyle = pal.carpet;
-    g.fillRect(40, laneTop(lane) + 36, BOARD_X - 40, CELL_H - 72);
-    g.fillStyle = 'rgba(0,0,0,.14)';
-    for (let i = 0; i < 3; i++) g.fillRect(40 + i * 44 + 39, laneTop(lane) + 36, 5, CELL_H - 72);
+  for (let lane = 0; lane < ROWS; lane++) {
+    // A low plinth under each piece.
+    g.beginPath();
+    g.ellipse(128, laneTop(lane) + CELL_H - 12, 42, 9, 0, 0, Math.PI * 2);
+    g.fillStyle = pal.steps[2];
+    g.fill();
     box(g, 8, laneTop(lane) + 22, 24, CELL_H - 44, pal.door, [12, 12, 2, 2]);
   }
   g.beginPath();
-  for (let i = 0; i <= 3; i++) {
-    g.moveTo(40 + i * 44, BOARD_Y);
-    g.lineTo(40 + i * 44, BOARD_Y + BOARD_H);
-  }
+  g.moveTo(40, BOARD_Y);
+  g.lineTo(40, BOARD_Y + BOARD_H);
+  g.moveTo(BOARD_X, BOARD_Y);
+  g.lineTo(BOARD_X, BOARD_Y + BOARD_H);
   outline(g);
 
   entrance(g, pal);

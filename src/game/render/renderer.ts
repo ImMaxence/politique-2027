@@ -4,11 +4,13 @@
  */
 import { fmt, type GameStrings } from '../../i18n/game';
 import { COLS, ROWS } from '../data/levels';
+import { PHOTOS, type Expression } from '../data/photos';
 import type { ProjectileKind } from '../data/types';
-import { CAMPS, UNITS } from '../data/units';
+import { CAMPS, UNITS, figureOf } from '../data/units';
 import { ZUCMAN_SHARE, canPlace, type Enemy, type GameEvent, type GameState, type Projectile, type Unit } from '../sim/engine';
 import { BOARD_W, BOARD_X, CELL_H, CELL_W, FIGURE_SCALE, SCENE_LEFT, SCENE_W, VIEW_H, VIEW_W, feetY, laneTop, xToPx } from './layout';
 import { INK } from './portraits';
+import { drawGoal } from './goals';
 import { paintBackdrop } from './scenes';
 import type { Sprite, SpriteStore } from './sprites';
 
@@ -25,6 +27,10 @@ const WATER = '#6fc3ff';
 const DISPLAY = "'Anton', 'Arial Narrow', Impact, sans-serif";
 const BODY = "'Public Sans Variable', 'Public Sans', system-ui, sans-serif";
 const MAX_BUBBLES = 3;
+/** Headliners march this much bigger than everybody else. */
+const BOSS_SCALE = 1.42;
+/** Where the night's goal stands in every row (inside the phone crop, left of the board). */
+const GOAL_X = 128;
 
 interface Particle { x: number; y: number; vx: number; vy: number; rot: number; spin: number; life: number; max: number; size: number; color: string }
 interface FloatText { x: number; y: number; text: string; color: string; size: number; life: number; max: number }
@@ -76,6 +82,10 @@ export class Renderer {
   /** Name plates and health bars, drawn after every lane so that no puppet hides them. */
   private plates: (() => void)[] = [];
   private banner: Banner | null = null;
+  /** The goal's five pieces, one per row: false once an opponent has carried it away. */
+  private goals = [true, true, true, true, true];
+  /** Pieces just taken, fading out. */
+  private taken: { row: number; life: number }[] = [];
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -123,6 +133,11 @@ export class Renderer {
     }
   }
 
+  /** A banner across the scene (the night's goal at the start of a match). */
+  announce(text: string): void {
+    this.showBanner(text, INK, 3.4);
+  }
+
   setCompact(compact: boolean): void {
     if (compact === this.compact) return;
     this.compact = compact;
@@ -139,6 +154,8 @@ export class Renderer {
     this.banner = null;
     this.shake = 0;
     this.chatter = 4;
+    this.goals = [true, true, true, true, true];
+    this.taken = [];
   }
 
   private buildBackdrop(state: GameState): void {
@@ -230,11 +247,12 @@ export class Renderer {
   }
 
   private linesOf(enemy: Enemy): string[] | undefined {
-    const id = enemy.def.unitId ?? enemy.def.portrait;
+    const id = figureOf(enemy.def);
     return id ? this.strings.figures[id]?.lines : this.strings.extraLines[enemy.def.id];
   }
 
   private enemyName(enemyId: string): string {
+    if (enemyId === 'hologram') return this.strings.extras.hologram;
     if (enemyId.startsWith('star:')) return this.strings.figures[enemyId.slice(5)].short;
     return this.strings.figures[enemyId]?.short ?? this.strings.extras[enemyId];
   }
@@ -283,17 +301,30 @@ export class Renderer {
           } else if (e.enemyId === 'cnews') {
             this.confetti(x, y, '#aab6cc', 18);
             this.float(x, y - 50, a.offAir, INK, 24, 1.5);
+          } else if (e.enemyId === 'hologram') {
+            this.confetti(x, y, WATER, 14);
+            this.float(x, y - 50, a.hologramOff, '#1c3fa8', 22, 1.4);
           } else {
-            this.confetti(x, y, e.enemyId === 'auto' || e.enemyId === 'trump' ? GOLD : CAMPS[e.camp].color, e.boss ? 40 : 12, e.boss ? 1.5 : 1);
+            const color = e.enemyId.startsWith('star:') ? CAMPS[e.camp].color : e.boss ? GOLD : '#c4cad6';
+            this.confetti(x, y, color, e.boss ? 40 : 12, e.boss ? 1.5 : 1);
           }
           if (e.boss) this.shake = 0.35;
           break;
         }
-        case 'leak':
+        case 'leak': {
           this.flashes.push({ lanes: [e.lane], fromX: 0, toX: BOARD_X + CELL_W, life: 0.8, max: 0.8, color: RED });
-          this.float(BOARD_X - 30, feetY(e.lane) - 70, `−${e.loss}`, RED, 40, 1.5);
+          for (let i = 0; i < e.loss; i++) {
+            // The piece in that row, or else the nearest one still standing.
+            const rows = [0, 1, 2, 3, 4].filter((r) => this.goals[r]).sort((p, q) => Math.abs(p - e.lane) - Math.abs(q - e.lane));
+            if (!rows.length) break;
+            this.goals[rows[0]] = false;
+            this.taken.push({ row: rows[0], life: 0.8 });
+            this.confetti(GOAL_X, feetY(rows[0]) - 40, RED, 14);
+          }
+          this.float(GOAL_X, feetY(e.lane) - 96, `−${e.loss}`, RED, 40, 1.5);
           this.shake = 0.3;
           break;
+        }
         case 'boom': {
           const x = xToPx(e.col + 0.5);
           const y = laneTop(e.lane) + CELL_H / 2;
@@ -400,6 +431,45 @@ export class Renderer {
           } else {
             this.float(BOARD_X + 40, VIEW_H - 80, a.cafLate, '#5b6270', 20, 2.6);
           }
+          break;
+        case 'cast': {
+          const p = t.powers[e.power];
+          if (p?.cast) {
+            this.speak(e.id, p.cast);
+            if (e.power === 'dissolve' || e.power === 'roar' || e.power === 'lag') this.showBanner(p.cast, RED, 1.8);
+          }
+          this.ring(xToPx(e.x), feetY(e.lane) - 70, 90, RED, 6, 0.5);
+          break;
+        }
+        case 'power': {
+          const p = t.powers[e.power];
+          const color = e.power === 'lag' ? WATER : e.power === 'hologram' ? '#1c3fa8' : RED;
+          for (const hit of e.hits) {
+            this.ring(xToPx(hit.col + 0.5), feetY(hit.lane) - 60, 70, color, 7, 0.45);
+            if (e.power === 'lag') this.float(xToPx(hit.col + 0.5), feetY(hit.lane) - 120, a.lagged, '#1c3fa8', 18, 1.6);
+          }
+          if (p?.landed) this.float(xToPx(e.x), feetY(e.to ?? e.lane) - 140, p.landed, color === RED ? RED : '#1c3fa8', 26, 1.4);
+          if (e.power === 'dissolve' || e.power === 'ippon') this.shake = Math.max(this.shake, 0.35);
+          break;
+        }
+        case 'appeal':
+          this.showBanner(a.appealBanner, RED, 3);
+          this.float(xToPx(e.x), feetY(e.lane) - 150, a.appeal, RED, 30, 1.8);
+          this.confetti(xToPx(e.x), feetY(e.lane) - 80, PAPER, 24, 1.2);
+          this.speak(e.id, a.appealLine);
+          this.shake = 0.4;
+          break;
+        case 'tag':
+          this.float(xToPx(e.x), feetY(e.lane) - 150, a.tag, '#1f7a3d', 30, 1.6);
+          this.ring(xToPx(e.x), feetY(e.lane) - 10, 60, '#5bd16b', 6, 0.6);
+          this.ring(xToPx(e.x), feetY(e.lane) - 10, 90, '#5bd16b', 4, 0.8);
+          break;
+        case 'enrage':
+          this.float(xToPx(e.x), feetY(e.lane) - 150, a.enrage, RED, 28, 1.6);
+          this.shake = 0.25;
+          break;
+        case 'hike':
+          this.showBanner(a.hikeBanner, RED, 3);
           break;
         case 'censure':
           for (const hit of e.hits) {
@@ -516,8 +586,53 @@ export class Renderer {
     g.fillText(text, x, y);
   }
 
+  /** Which photo a figure wears: angry while it acts or announces a power, hurt when it is struggling. */
+  private mood(id: string, angry: boolean, hurt: boolean): Expression {
+    const faces = PHOTOS[id];
+    if (angry && faces?.includes('angry')) return 'angry';
+    if (hurt && faces?.includes('hurt')) return 'hurt';
+    return 'neutral';
+  }
+
+  /** A cartoon sign of the mood, for the faces that have no photo of it: an anger mark, or sweat drops. */
+  private moodMark(x: number, y: number, mood: 'angry' | 'hurt', now: number): void {
+    const g = this.ctx;
+    g.save();
+    g.translate(x, y);
+    if (mood === 'angry') {
+      const s = this.reducedMotion ? 1 : 1 + Math.abs(Math.sin(now * 10)) * 0.15;
+      g.scale(s, s);
+      g.strokeStyle = RED;
+      g.lineWidth = 4;
+      g.lineCap = 'round';
+      for (let i = 0; i < 4; i++) {
+        g.rotate(Math.PI / 2);
+        g.beginPath();
+        g.moveTo(4, -9);
+        g.quadraticCurveTo(4, -4, 9, -4);
+        g.stroke();
+      }
+    } else {
+      for (const [dx, dy] of [[0, 0], [10, 8]]) {
+        g.beginPath();
+        g.moveTo(dx, dy - 8);
+        g.quadraticCurveTo(dx + 6, dy, dx, dy + 4);
+        g.quadraticCurveTo(dx - 6, dy, dx, dy - 8);
+        g.fillStyle = '#8fd3ff';
+        g.fill();
+        g.strokeStyle = INK;
+        g.lineWidth = 2;
+        g.stroke();
+      }
+    }
+    g.restore();
+  }
+
   private drawUnit(state: GameState, unit: Unit, now: number, removing = false): void {
-    const sprite = this.sprites.unit(unit.def.id);
+    const acting = state.time - unit.lastAct < 0.45;
+    const struggling = unit.hp < unit.def.hp * 0.4;
+    const mood = this.mood(unit.def.id, acting, struggling);
+    const sprite = this.sprites.unit(unit.def.id, mood);
     if (!sprite) return;
     const g = this.ctx;
     const x = xToPx(unit.col + 0.5);
@@ -555,6 +670,7 @@ export class Renderer {
     const flash = hit >= 0 && hit < 0.1 ? (this.reducedMotion ? 0.18 : 0.12 + 0.3 * Math.abs(Math.sin(now * 9))) : 0;
     // Removal mode: every figure is washed out and tagged with a red cross.
     this.blit(sprite, x, y, sx * FIGURE_SCALE, sy * FIGURE_SCALE, rot, removing ? 0.55 : flash, removing ? 0.9 : 1);
+    if (!removing && struggling && mood === 'neutral' && PHOTOS[unit.def.id]) this.moodMark(x + 30, y - sprite.h * FIGURE_SCALE + 30, 'hurt', now);
     if (removing) {
       const pulse = this.reducedMotion ? 1 : 1 + 0.12 * Math.sin(now * 7 + unit.id);
       g.save();
@@ -621,14 +737,19 @@ export class Renderer {
   }
 
   private drawEnemy(state: GameState, enemy: Enemy, now: number, dimmed = false): void {
-    const sprite = this.sprites.enemy(enemy.def.id, enemy.camp);
+    const figureId = figureOf(enemy.def);
+    const casting = enemy.cast !== null;
+    const struggling = enemy.revived || enemy.hp < enemy.def.hp * 0.4;
+    const mood = figureId ? this.mood(figureId, casting, struggling) : 'neutral';
+    const sprite = this.sprites.enemy(enemy.def.id, mood);
     if (!sprite) return;
     const g = this.ctx;
-    const figureId = enemy.def.unitId ?? enemy.def.portrait;
-    const vehicle = enemy.def.id === 'bus' || enemy.def.id === 'auto' || enemy.def.id === 'tracteur' || enemy.def.id === 'cnews';
-    // Puppets are drawn bigger than their bitmap; vehicles already fill a square.
-    const size = (enemy.def.boss ? 1.12 : 1) * (vehicle ? 1 : FIGURE_SCALE);
-    const y = feetY(enemy.lane);
+    const vehicle = enemy.def.id === 'bus' || enemy.def.id === 'auto' || enemy.def.id === 'tracteur' || enemy.def.id === 'cnews' || enemy.def.id === 'vache';
+    // Puppets are drawn bigger than their bitmap; vehicles already fill a square; headliners tower over the rest.
+    const size = (enemy.def.boss ? BOSS_SCALE : 1) * (vehicle ? 1 : FIGURE_SCALE);
+    // Crossing the street: a short hop from the old lane to the new one.
+    const shift = Math.min(1, (state.time - enemy.shiftAt) / 0.5);
+    const y = shift < 1 ? feetY(enemy.fromLane) + (feetY(enemy.lane) - feetY(enemy.fromLane)) * shift - Math.sin(shift * Math.PI) * 30 : feetY(enemy.lane);
     const striking = state.ult.strike > 0;
     const stunned = enemy.stunT > 0;
     const moving = !enemy.attacking && !striking && !stunned;
@@ -646,6 +767,11 @@ export class Renderer {
     } else if (enemy.attacking) {
       x -= Math.abs(Math.sin(now * 9 + enemy.id)) * 9;
       rot = -0.06;
+    }
+    if (casting && !this.reducedMotion) {
+      // Winding up: a tremble, as the angry face comes on.
+      x += Math.sin(now * 40) * 3;
+      rot = Math.sin(now * 25) * 0.04;
     }
     if (this.reducedMotion) {
       rot *= 0.3;
@@ -666,11 +792,72 @@ export class Renderer {
       g.ellipse(xToPx(enemy.x), y - 10, CELL_W * 0.95, 34, 0, 0, Math.PI * 2);
       g.fill();
     }
+    if (casting) {
+      // The warning: a red circle on the floor that fills up until the power lands.
+      const cast = enemy.cast!;
+      const p = 1 - cast.left / cast.max;
+      g.strokeStyle = RED;
+      g.lineWidth = 5;
+      g.beginPath();
+      g.ellipse(xToPx(enemy.x), y - 2, sprite.w * 0.5 * size, 16, 0, 0, Math.PI * 2);
+      g.stroke();
+      g.fillStyle = `rgba(229,56,59,${0.15 + p * 0.3})`;
+      g.beginPath();
+      g.ellipse(xToPx(enemy.x), y - 2, sprite.w * 0.5 * size * p, 16 * p, 0, 0, Math.PI * 2);
+      g.fill();
+      if (cast.zone) {
+        // Dissolution: the squares that are about to go.
+        const pulse = this.reducedMotion ? 0.3 : 0.18 + Math.abs(Math.sin(now * 12)) * 0.3;
+        for (let dl = -1; dl <= 1; dl++) {
+          const lane = cast.zone.lane + dl;
+          if (!state.level.lanes.includes(lane)) continue;
+          for (let dc = -1; dc <= 1; dc++) {
+            const col = cast.zone.col + dc;
+            if (col < 0 || col >= COLS) continue;
+            g.fillStyle = `rgba(229,56,59,${pulse})`;
+            g.fillRect(BOARD_X + col * CELL_W + 3, laneTop(lane) + 3, CELL_W - 6, CELL_H - 6);
+          }
+        }
+      }
+    }
     const hit = state.time - enemy.lastHit;
-    this.blit(sprite, x, y - lift, size, size, rot, hit >= 0 && hit < 0.09 ? 0.6 : 0, (striking || enemy.dry ? 0.75 : 1) * (dimmed ? 0.45 : 1));
+    const ghost = enemy.def.ghost === true;
+    // A hit flashes the puppet white; a photo face only lightly, so that it stays recognisable under fire.
+    const flash = hit >= 0 && hit < 0.09 ? (figureId ? 0.22 : 0.6) : 0;
+    this.blit(sprite, x, y - lift, size, size, rot, ghost ? 0.35 : flash, (ghost ? 0.62 : striking || enemy.dry ? 0.75 : 1) * (dimmed ? 0.45 : 1));
+    if (ghost) {
+      // A hologram: blue scan lines over the puppet.
+      g.fillStyle = 'rgba(111,195,255,.35)';
+      const top0 = y - sprite.h * size;
+      for (let ly = top0 + ((now * 40) % 8); ly < y; ly += 8) g.fillRect(x - sprite.w * size * 0.38, ly, sprite.w * size * 0.76, 2);
+    }
     if (enemy.def.fire) this.flames(x - 2, y - sprite.h * 0.74, now, enemy.id);
 
     const top = y - sprite.h * size + 6;
+    if (figureId && !ghost) {
+      const wanted = casting ? 'angry' : struggling ? 'hurt' : null;
+      if (wanted && mood === 'neutral') this.moodMark(x + 26 * size, top + 26 * size, wanted, now);
+    }
+    if (casting) {
+      // "!" above the head.
+      g.save();
+      g.translate(x, top - 34);
+      const s = this.reducedMotion ? 1 : 1 + Math.abs(Math.sin(now * 14)) * 0.2;
+      g.scale(s, s);
+      g.fillStyle = RED;
+      g.strokeStyle = INK;
+      g.lineWidth = 3;
+      g.beginPath();
+      g.arc(0, 0, 15, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.font = `400 22px ${DISPLAY}`;
+      g.fillStyle = PAPER;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('!', 0, 1);
+      g.restore();
+    }
     if (striking) {
       g.save();
       g.translate(x, top - 6);
@@ -702,12 +889,12 @@ export class Renderer {
     }
 
     if (figureId) {
-      const name = this.strings.figures[figureId].short.toUpperCase();
-      const ink = enemy.def.unitId ? CAMPS[enemy.camp].ink : '#8a5300';
+      const name = (ghost ? this.strings.extras.hologram : this.strings.figures[figureId].short).toUpperCase();
+      const ink = ghost ? '#1c3fa8' : enemy.def.unitId ? CAMPS[enemy.camp].ink : '#8a5300';
       const ratio = enemy.hp / enemy.def.hp;
       this.plates.push(() => {
-        this.label(name, x, top - (striking ? 28 : 10), enemy.def.boss ? 20 : 15, ink);
-        this.bar(x, y + 2, enemy.def.boss ? 96 : 62, ratio, RED);
+        this.label(name, x, top - (striking ? 28 : casting ? 58 : 10), enemy.def.boss ? 22 : 15, ink);
+        this.bar(x, y + 2, enemy.def.boss ? 120 : 62, ratio, enemy.revived ? '#f6aa1c' : RED);
       });
     } else if (enemy.hp < enemy.def.hp && enemy.def.hp > 200) {
       const ratio = enemy.hp / enemy.def.hp;
@@ -752,9 +939,6 @@ export class Renderer {
       case 'bubble':
         this.speechShape('!');
         break;
-      case 'word':
-        this.speechShape('?');
-        break;
       case 'tract':
         g.rotate(phase * 9);
         g.fillStyle = PAPER;
@@ -778,27 +962,8 @@ export class Renderer {
         g.fill();
         g.stroke();
         break;
-      case 'ice':
-        g.rotate(phase * 3);
-        g.fillStyle = '#bfe8ff';
-        g.beginPath();
-        g.moveTo(0, -14);
-        g.lineTo(12, -6);
-        g.lineTo(12, 7);
-        g.lineTo(0, 14);
-        g.lineTo(-12, 7);
-        g.lineTo(-12, -6);
-        g.closePath();
-        g.fill();
-        g.stroke();
-        g.strokeStyle = PAPER;
-        g.beginPath();
-        g.moveTo(-5, -4);
-        g.lineTo(-5, 4);
-        g.stroke();
-        break;
       case 'cat': {
-        const cat = this.sprites.enemy('cat', 'droite');
+        const cat = this.sprites.enemy('cat');
         if (cat) {
           g.translate(0, 34 - Math.abs(Math.sin(phase * 12)) * 8);
           g.scale(-1, 1);
@@ -806,18 +971,6 @@ export class Renderer {
         }
         break;
       }
-      case 'order':
-        g.strokeStyle = '#2f5fe0';
-        g.lineWidth = 6;
-        g.lineCap = 'round';
-        for (let i = 0; i < 3; i++) {
-          g.beginPath();
-          g.moveTo(-18 + i * 12, -12);
-          g.lineTo(-9 + i * 12, 0);
-          g.lineTo(-18 + i * 12, 12);
-          g.stroke();
-        }
-        break;
     }
   }
 
@@ -853,8 +1006,10 @@ export class Renderer {
           for (const offset of ability.lanes ?? [0]) {
             if (open(hover.lane + offset)) g.fillRect(cellX, laneTop(hover.lane + offset), BOARD_X + BOARD_W - cellX, CELL_H);
           }
-        } else if (ability.kind === 'shout' || ability.kind === 'aura') {
+        } else if (ability.kind === 'shout') {
           g.fillRect(cellX, cellY, Math.min((ability.range + 0.5) * CELL_W, BOARD_X + BOARD_W - cellX), CELL_H);
+        } else if (ability.kind === 'wall' && ability.zone) {
+          g.fillRect(cellX, cellY, Math.min((ability.zone.range + 0.5) * CELL_W, BOARD_X + BOARD_W - cellX), CELL_H);
         } else if (ability.kind === 'hose' || (ability.kind === 'bomb' && ability.area === 'lane')) {
           g.fillRect(BOARD_X, cellY, BOARD_W, CELL_H);
         } else if (ability.kind === 'bomb' || (ability.kind === 'wall' && ability.healAura)) {
@@ -1116,6 +1271,67 @@ export class Renderer {
     }
   }
 
+  /** The night's goal: one piece per row, faded out once it has been carried away. */
+  private drawGoals(state: GameState, dt: number): void {
+    const g = this.ctx;
+    for (let row = 0; row < 5; row++) {
+      const fading = this.taken.find((p) => p.row === row);
+      const alpha = this.goals[row] ? 1 : fading ? Math.max(0.16, fading.life / 0.8) : 0.16;
+      g.save();
+      g.globalAlpha = alpha;
+      if (fading && !this.reducedMotion) {
+        g.translate(0, -(1 - fading.life / 0.8) * 30);
+      }
+      drawGoal(g, state.level.goal, GOAL_X, feetY(row) - 2);
+      g.restore();
+    }
+    for (let i = this.taken.length - 1; i >= 0; i--) {
+      this.taken[i].life -= dt;
+      if (this.taken[i].life <= 0) this.taken.splice(i, 1);
+    }
+  }
+
+  /** The headliner on stage, with a long health bar over the sign (wide layouts only). */
+  private drawBossBar(state: GameState): void {
+    if (!this.sign) return;
+    const boss = state.enemies.filter((e) => e.def.boss && e.x <= COLS && e.hp > 0).sort((p, q) => p.x - q.x)[0];
+    if (!boss) return;
+    const id = figureOf(boss.def);
+    if (!id) return;
+    const g = this.ctx;
+    const name = this.strings.figures[id].name.toUpperCase();
+    const width = 520;
+    g.save();
+    g.translate(VIEW_W / 2, 82);
+    g.fillStyle = INK;
+    g.strokeStyle = PAPER;
+    g.lineWidth = 3;
+    g.beginPath();
+    g.roundRect(-width / 2, -26, width, 52, 10);
+    g.fill();
+    g.stroke();
+    g.font = `400 18px ${DISPLAY}`;
+    g.fillStyle = PAPER;
+    g.textAlign = 'left';
+    g.textBaseline = 'middle';
+    g.fillText(name, -width / 2 + 16, -10, width - 140);
+    if (boss.revived) {
+      g.fillStyle = '#f6aa1c';
+      g.textAlign = 'right';
+      g.fillText(this.strings.announce.appeal.toUpperCase(), width / 2 - 16, -10);
+    }
+    const ratio = Math.max(0, boss.hp / boss.def.hp);
+    g.fillStyle = '#4a5273';
+    g.beginPath();
+    g.roundRect(-width / 2 + 16, 4, width - 32, 12, 6);
+    g.fill();
+    g.fillStyle = boss.revived ? '#f6aa1c' : RED;
+    g.beginPath();
+    g.roundRect(-width / 2 + 16, 4, Math.max(6, (width - 32) * ratio), 12, 6);
+    g.fill();
+    g.restore();
+  }
+
   /** `now` is a visual clock in seconds that stops while the match is paused. */
   draw(state: GameState | null, view: ViewState, now: number): void {
     const g = this.ctx;
@@ -1156,22 +1372,9 @@ export class Renderer {
     }
     g.globalAlpha = 1;
 
-    // A red carpet rolls out behind whoever brought one, under the puppets.
-    for (const enemy of state.enemies) {
-      if (enemy.def.trait?.kind !== 'carpet' || enemy.x > COLS) continue;
-      const from = xToPx(enemy.x);
-      const to = BOARD_X + BOARD_W;
-      if (to <= from) continue;
-      const top = laneTop(enemy.lane) + 34;
-      const height = CELL_H - 62;
-      g.fillStyle = 'rgba(198,47,58,.6)';
-      g.fillRect(from, top, to - from, height);
-      g.fillStyle = 'rgba(255,210,63,.85)';
-      g.fillRect(from, top, to - from, 3);
-      g.fillRect(from, top + height - 3, to - from, 3);
-    }
+    this.drawGoals(state, dt);
 
-    // Warn when someone is about to reach the steps.
+    // Warn when someone is about to reach the goal.
     for (const lane of state.level.lanes) {
       if (!state.enemies.some((e) => e.lane === lane && e.x < 1.6)) continue;
       const pulse = this.reducedMotion ? 0.3 : 0.2 + Math.abs(Math.sin(now * 5)) * 0.25;
@@ -1201,6 +1404,9 @@ export class Renderer {
     this.drawPunchlines(state, now);
     if (state.tariff > 1) this.drawTariff();
     if (view.removing) this.drawRemoveRibbon(state, now);
-    else this.drawBanner(dt);
+    else {
+      this.drawBossBar(state);
+      this.drawBanner(dt);
+    }
   }
 }

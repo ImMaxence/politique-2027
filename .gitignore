@@ -5,6 +5,9 @@ node_modules/
 dist/
 .astro/
 
+# downloaded photo sources (scripts/build-heads.ts)
+.cache/
+
 # tests
 test-results/
 playwright-report/

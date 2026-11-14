@@ -21,7 +21,7 @@ export interface CampProgress {
 }
 
 export interface Save {
-  v: 3;
+  v: 4;
   camp: CampId | null;
   progress: Record<CampId, CampProgress>;
   muted: boolean;
@@ -42,14 +42,14 @@ export interface Save {
   counters: Counters;
   /** Background music (sound effects follow the mute button). */
   music: boolean;
-  /** Camps whose substitute is fielded instead of the starter in the same slot. */
-  bench: Record<CampId, boolean>;
 }
 
 /** v1 had five levels; 1.1.0 inserted "the street" and "the summit". */
 const V1_LEVELS: Record<number, number> = { 1: 1, 2: 2, 3: 4, 4: 6, 5: 7 };
 /** 2.0.0 inserted the debate as night 7: the run-off night moved to 8. */
 const V2_LEVELS = (n: number) => (n >= 7 ? n + 1 : n);
+/** 3.0.0 inserted the school blockade as night 3: "the street" (now the 17th of October) and every later night move up one. */
+const V3_LEVELS = (n: number) => (n >= 3 ? n + 1 : n);
 
 function blankProgress(): CampProgress {
   return { unlocked: 1, stars: {}, endlessBest: 0, finished: false };
@@ -57,7 +57,7 @@ function blankProgress(): CampProgress {
 
 export function blankSave(): Save {
   return {
-    v: 3,
+    v: 4,
     camp: null,
     progress: { gauche: blankProgress(), centre: blankProgress(), droite: blankProgress(), autres: blankProgress() },
     muted: false,
@@ -70,7 +70,6 @@ export function blankSave(): Save {
     achievements: [],
     counters: blankCounters(),
     music: true,
-    bench: { gauche: false, centre: false, droite: false, autres: false },
   };
 }
 
@@ -82,11 +81,12 @@ export function loadSave(): Save {
     const data = JSON.parse(raw) as {
       v?: number; camp?: unknown; muted?: unknown; speed?: unknown; forceLandscape?: unknown;
       hard?: unknown; seen?: unknown; installTipDismissed?: unknown;
-      daily?: unknown; achievements?: unknown; counters?: Record<string, unknown>; music?: unknown; bench?: Record<string, unknown>;
+      daily?: unknown; achievements?: unknown; counters?: Record<string, unknown>; music?: unknown;
       progress?: Record<string, Partial<CampProgress>>;
     };
-    if (data.v !== 1 && data.v !== 2 && data.v !== 3) return save;
-    const level = (n: number) => (data.v === 1 ? V2_LEVELS(V1_LEVELS[n] ?? 1) : data.v === 2 ? V2_LEVELS(n) : n);
+    if (data.v !== 1 && data.v !== 2 && data.v !== 3 && data.v !== 4) return save;
+    const level = (n: number) =>
+      data.v === 1 ? V3_LEVELS(V2_LEVELS(V1_LEVELS[n] ?? 1)) : data.v === 2 ? V3_LEVELS(V2_LEVELS(n)) : data.v === 3 ? V3_LEVELS(n) : n;
 
     if (CAMP_IDS.includes(data.camp as CampId)) save.camp = data.camp as CampId;
     save.muted = data.muted === true;
@@ -96,10 +96,9 @@ export function loadSave(): Save {
     save.seen = Array.isArray(data.seen) ? data.seen.filter((id): id is string => typeof id === 'string').slice(0, 100) : [];
     save.installTipDismissed = data.installTipDismissed === true;
     save.music = data.music !== false;
-    for (const camp of CAMP_IDS) save.bench[camp] = data.bench?.[camp] === true;
     if (data.daily && typeof data.daily === 'object') {
       const days = Object.entries(data.daily as Record<string, unknown>)
-        .filter(([day, score]) => /^d{4}-d{2}-d{2}$/.test(day) && Number.isFinite(Number(score)))
+        .filter(([day, score]) => /^\d{4}-\d{2}-\d{2}$/.test(day) && Number.isFinite(Number(score)))
         .sort(([a], [b]) => (a < b ? 1 : -1))
         .slice(0, 14);
       save.daily = Object.fromEntries(days.map(([day, score]) => [day, Math.max(0, Number(score))]));

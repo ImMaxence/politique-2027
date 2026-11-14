@@ -35,7 +35,7 @@ export function hash(text: string): number {
 
 export function dailySetup(day = today()): Setup {
   const h = hash(`politique2027:${day}`);
-  return { mode: 'daily', level: 2 + (h % 7), camp: CAMP_IDS[(h >>> 8) % 4], seed: h % 1_000_000_000 };
+  return { mode: 'daily', level: 2 + (h % (LAST_LEVEL - 1)), camp: CAMP_IDS[(h >>> 8) % 4], seed: h % 1_000_000_000 };
 }
 
 /** A duel fits in a short code: night, camp, seed and, once played, the score to beat. */
@@ -45,7 +45,7 @@ export function duelCode(setup: Setup, score?: number): string {
 }
 
 export function parseDuel(code: string): Setup | null {
-  const m = /^([1-8])-([0-3])-([0-9a-z]{1,7})(?:-([0-9a-z]{1,6}))?$/.exec(code.trim().toLowerCase());
+  const m = /^([1-9])-([0-3])-([0-9a-z]{1,7})(?:-([0-9a-z]{1,6}))?$/.exec(code.trim().toLowerCase());
   if (!m || Number(m[1]) > LAST_LEVEL) return null;
   return { mode: 'duel', level: Number(m[1]), camp: CAMP_IDS[Number(m[2])], seed: parseInt(m[3], 36), rival: m[4] ? parseInt(m[4], 36) : undefined };
 }

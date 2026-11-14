@@ -1,5 +1,9 @@
 import type { APIRoute } from 'astro';
 import { SITE } from '../config/site';
+import { PHOTOS } from '../game/data/photos';
+
+/** Every photo head, so that a match started offline still shows real faces. */
+const HEADS = Object.entries(PHOTOS).flatMap(([id, faces]) => faces.map((face) => `/heads/${id}-${face}.webp`));
 
 /**
  * Service worker: keeps a copy of the game on the device so that it opens and
@@ -10,6 +14,7 @@ import { SITE } from '../config/site';
 const source = `const CACHE = 'politique2027-${SITE.version}';
 const PAGES = ['/', '/fr', '/en', '/fr/jouer', '/en/play', '/site.webmanifest', '/favicon.svg', '/icon-192.png'];
 const PLAY = ['/fr/jouer', '/en/play'];
+const HEADS = ${JSON.stringify(HEADS)};
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -28,7 +33,7 @@ self.addEventListener('install', (event) => {
         if (!match[1].includes('latin-ext')) assets.add(match[1]);
       }
     }
-    await cache.addAll([...assets]);
+    await cache.addAll([...assets, ...HEADS]);
     await self.skipWaiting();
   })());
 });

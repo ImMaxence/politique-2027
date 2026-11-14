@@ -1,12 +1,11 @@
 ---
-import type { CampId } from '../game/data/types';
 import { enemySvg, portraitSvg } from '../game/render/portraits';
 
 interface Props {
-  /** Figure id ("macron") or extra kind ("militant") when `camp` is set. */
+  /** Figure id ("macron") or extra kind ("militant") when `extra` is set. */
   id: string;
-  /** Tint for anonymous extras. */
-  camp?: CampId;
+  /** An anonymous extra rather than a named figure. */
+  extra?: boolean;
   /** Scope that keeps SVG filter ids unique when a figure appears twice on a page. */
   uid: string;
   /** Accessible name. Leave empty when the name is written next to the portrait. */
@@ -14,11 +13,11 @@ interface Props {
   size?: number;
 }
 
-const { id, camp, uid, label, size = 120 } = Astro.props;
+const { id, extra, uid, label, size = 120 } = Astro.props;
 // The die-cut "sticker" edge is an SVG filter: below ~70 px it turns jagged, so
 // small puppets are drawn as plain, crisp vectors.
 const options = { size, uid, label, sticker: size >= 72 };
-const svg = camp ? enemySvg(id, camp, options) : portraitSvg(id, options);
+const svg = extra ? enemySvg(id, options) : portraitSvg(id, options);
 ---
 
 <span class="puppet" set:html={svg} />

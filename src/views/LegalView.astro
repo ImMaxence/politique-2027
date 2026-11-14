@@ -1,6 +1,8 @@
 ---
 import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
 import { SITE } from '../config/site';
+import { CREDITS } from '../game/data/photos';
+import { GAME_STRINGS } from '../i18n/game';
 import type { Lang } from '../i18n/game';
 import { path, type RouteKey } from '../i18n/routes';
 import { SITE_STRINGS } from '../i18n/site';
@@ -46,6 +48,34 @@ const updated = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-GB', { dat
   <div class="container">
     <div class="prose">
       <Content />
+      {
+        route === 'legal' && (
+          <section aria-labelledby="credits-title">
+            <h2 id="credits-title">{t.legalLayout.creditsTitle}</h2>
+            <p>{t.legalLayout.creditsLead}</p>
+            <table class="credits">
+              <thead>
+                <tr>
+                  <th scope="col">{t.legalLayout.person}</th>
+                  <th scope="col">{t.legalLayout.face}</th>
+                  <th scope="col">{t.legalLayout.author}</th>
+                  <th scope="col">{t.legalLayout.licence}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CREDITS.map((c) => (
+                  <tr>
+                    <td>{GAME_STRINGS[lang].figures[c.id]?.name ?? c.id}</td>
+                    <td>{t.legalLayout.faces[c.expression]}</td>
+                    <td><a href={c.source} rel="noopener">{c.author}</a></td>
+                    <td>{c.licenseUrl ? <a href={c.licenseUrl} rel="noopener license">{c.license}</a> : c.license}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )
+      }
     </div>
     <aside class="notice section-gap" aria-labelledby="legal-contact">
       <h2 id="legal-contact">{t.legalLayout.contactTitle}</h2>

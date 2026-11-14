@@ -16,7 +16,7 @@ import { resolve } from 'node:path';
 import { CAMP_IDS } from '../src/game/data/types';
 import { CAMPS, UNITS } from '../src/game/data/units';
 import { FIGURE_IDS, figureSlug } from '../src/lib/pages';
-import { extraSvg, portraitSvg } from '../src/game/render/portraits';
+import { extraSvg, headUrl, portraitSvg, type PortraitOptions } from '../src/game/render/portraits';
 import { GAME_STRINGS } from '../src/i18n/game';
 import { fontFaces, launch } from './browser';
 
@@ -25,6 +25,13 @@ const g = GAME_STRINGS.en;
 mkdirSync(resolve(root, 'docs'), { recursive: true });
 mkdirSync(resolve(root, 'public/og'), { recursive: true });
 const fr = GAME_STRINGS.fr;
+
+/** A puppet with its photo head inlined: the pages below are rendered from a string, with no server to fetch /heads from. */
+function puppet(id: string, options: PortraitOptions): string {
+  const url = headUrl(id);
+  const headHref = url ? `data:image/webp;base64,${readFileSync(resolve(root, 'public', url.slice(1))).toString('base64')}` : undefined;
+  return portraitSvg(id, { ...options, headHref });
+}
 
 const BASE_CSS = `${fontFaces()}
   * { box-sizing: border-box; }
@@ -37,9 +44,9 @@ function html(body: string, css: string): string {
 
 function socialCard(): string {
   const posters = CAMP_IDS.map((camp, i) => {
-    const leader = CAMPS[camp].roster[5];
+    const leader = CAMPS[camp].roster[CAMPS[camp].roster.length - 1];
     const on = camp === 'centre' ? '#17203f' : '#fffdf6';
-    return `<div class="poster p${i}">${portraitSvg(leader, { size: 150, uid: 'og' })}
+    return `<div class="poster p${i}">${puppet(leader, { size: 150, uid: 'og' })}
       <span class="display camp" style="background:${CAMPS[camp].color};color:${on}">${g.camps[camp].short}</span></div>`;
   }).join('');
   return html(
@@ -78,30 +85,30 @@ function socialCard(): string {
 function castSheet(): string {
   const rows = CAMP_IDS.map((camp) => {
     const on = camp === 'centre' ? '#17203f' : '#fffdf6';
-    const figures = [...CAMPS[camp].roster, CAMPS[camp].bench]
+    const figures = CAMPS[camp].roster
       .map(
-        (id) => `<figure>${portraitSvg(id, { size: 122, uid: 'sheet' })}
+        (id) => `<figure>${puppet(id, { size: 122, uid: 'sheet' })}
           <figcaption><b>${g.figures[id].name}</b><i>${g.figures[id].power}</i></figcaption></figure>`,
       )
       .join('');
     return `<section><h2 class="display"><span style="background:${CAMPS[camp].color};color:${on}">${g.camps[camp].name}</span>
       <small>${g.camps[camp].motto}</small></h2><div class="row">${figures}</div></section>`;
   }).join('');
-  const width: Record<string, number> = { bus: 170, tracteur: 160, cnews: 164, auto: 150, cat: 70, poubelle: 84 };
+  const width: Record<string, number> = { bus: 170, tracteur: 160, cnews: 164, auto: 150, cat: 70, poubelle: 84, vache: 170 };
   const sheet = (ids: string[]) =>
     ids
       .map(
-        (kind, i) =>
-          `<figure>${extraSvg(kind, CAMP_IDS[i % 3], { size: width[kind] ?? 112, uid: 'sheet' })}
+        (kind) =>
+          `<figure>${g.figures[kind] ? puppet(kind, { size: 112, uid: 'sheet' }) : extraSvg(kind, { size: width[kind] ?? 112, uid: 'sheet' })}
           <figcaption><b>${g.figures[kind]?.name ?? g.extras[kind]}</b></figcaption></figure>`,
       )
       .join('');
   return html(
     `<main>${rows}<section><h2 class="display"><span style="background:#f3ecdd;color:#141a36">Guests, reinforcements and extras</span></h2>
-      <div class="row extras">${sheet(['trump', 'hugo', 'lucet', 'squeezie', 'durif', 'lisnard', 'crs'])}</div>
-      <div class="row extras">${sheet(['pompiers', 'lyceen', 'gilet', 'syndicat', 'smicard', 'agriculteur', 'impots'])}</div>
+      <div class="row extras">${sheet(['trump', 'niel', 'hugo', 'lucet', 'squeezie', 'crs', 'pompiers'])}</div>
+      <div class="row extras">${sheet(['lyceen', 'trottinette', 'gilet', 'syndicat', 'smicard', 'agriculteur', 'impots'])}</div>
       <div class="row extras">${sheet(['patron', 'militant', 'placard', 'pundit', 'auto', 'poubelle', 'cat'])}</div>
-      <div class="row extras">${sheet(['cnews', 'tracteur', 'bus'])}</div></section></main>`,
+      <div class="row extras">${sheet(['cnews', 'tracteur', 'vache', 'bus'])}</div></section></main>`,
     `main { width: 1280px; padding: 36px 40px 28px; background-color: #141a36;
         background-image: radial-gradient(rgba(243,236,221,.13) 1.6px, transparent 1.8px); background-size: 14px 14px; }
       section { margin-bottom: 26px; }
@@ -126,7 +133,7 @@ function figureCard(id: string): string {
   const label = camp ? fr.camps[camp].name : text.party;
   return html(
     `<main>
-      <div class="art" style="--c:${color}">${portraitSvg(id, { size: 360, uid: 'card' })}</div>
+      <div class="art" style="--c:${color}">${puppet(id, { size: 360, uid: 'card' })}</div>
       <div class="copy">
         <span class="display camp" style="background:${color};color:${on}">${label}</span>
         <h1 class="display">${text.name}</h1>

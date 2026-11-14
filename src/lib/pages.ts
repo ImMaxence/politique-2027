@@ -24,8 +24,8 @@ export function slugify(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
-/** Every named figure: the four line-ups, their substitutes and the guests. */
-export const FIGURE_IDS = [...CAMP_IDS.flatMap((camp) => [...CAMPS[camp].roster, CAMPS[camp].bench]), ...GUESTS];
+/** Every named figure: the four line-ups and the guests. */
+export const FIGURE_IDS = [...CAMP_IDS.flatMap((camp) => CAMPS[camp].roster), ...GUESTS];
 export const NIGHT_IDS = [...LEVELS.map((l) => l.id), ENDLESS.id];
 
 export function figureSlug(id: string): string {

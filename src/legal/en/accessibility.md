@@ -25,12 +25,12 @@ The site has not yet been tested with a screen reader by someone who uses one ev
 
 ## What the game does to be accessible
 
-- **Keyboard**: every action goes through real buttons. Keys 1 to 8 pick a figure, arrows move around the field, Enter or Space places, and R, U, P, F and M drive the tools. Shortcuts only work while focus is inside the game.
+- **Keyboard**: every action goes through real buttons. Keys 1 to 7 pick a figure, arrows move around the field, Enter or Space places, and R, U, P, F and M drive the tools. Shortcuts only work while focus is inside the game.
 - **Screen readers**: each square of the field is a button that describes its content (figure present, credibility, number of opponents in the lane). Waves, lost points, incoming heavyweights, tariffs and the end of the match are announced in live regions; a figure's catchphrase is read out when it is placed.
 - **Orientation**: on a phone the match is shown in landscape by default (turned a quarter turn if the device is held upright). One button in the pause menu switches this off: the game then follows the device's orientation.
 - **Zoom**: pinch-to-zoom always works. Only double-tap zoom is turned off inside the game, so that two quick taps (a card, then a square) do not enlarge the page by accident.
 - **New opponents**: the first time a special opponent appears, the match stops and a dialog explains what it does in text; focus goes to the "Got it!" button, Escape closes it and the match resumes. Each card only appears once.
-- **Keyboard shortcuts**: they are listed in the pause menu (P or Escape). The S key reads a summary of the board (endorsements, polls, opponents per lane).
+- **Keyboard shortcuts**: they are listed in the pause menu (P or Escape). The S key reads a summary of the board (votes, goal left, opponents per lane). Boss attacks are announced to screen readers as soon as they are being prepared, before they land.
 - **Pace**: the match can be paused at any time, and a slow speed (×½) joins the normal and fast ones (button or F key).
 - **Debate**: the debate's soundbites are sent back by activating their square (click, tap or Enter); each one is announced with its position.
 - **Card descriptions**: on a touch screen, a long press on a card shows its full description; with a keyboard or a screen reader, the same description is attached to the card.

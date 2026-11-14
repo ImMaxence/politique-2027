@@ -35,7 +35,7 @@ for (const width of [320, 640]) {
 test('a phone held sideways shows the whole courtyard', async ({ page }) => {
   await page.setViewportSize({ width: 844, height: 390 });
   await openGame(page, 'en');
-  await startMatch(page, 'centre', 5); // the fullest toolbar: six figures and two reinforcements
+  await startMatch(page, 'centre', 5); // the fullest toolbar: five figures and two reinforcements
   const stage = (await page.locator('.stage').boundingBox())!;
   const tickets = (await page.locator('.hud__cards').boundingBox())!;
   // The board and the column of tickets both fit inside the 390 px tall viewport…
@@ -51,11 +51,11 @@ test('a phone held sideways shows the whole courtyard', async ({ page }) => {
   expect(cell.height).toBeGreaterThanOrEqual(44);
 
   // Every ticket shows the name of its figure and, in full, the family of the card.
-  await expect(page.locator('.card')).toHaveCount(8);
+  await expect(page.locator('.card')).toHaveCount(7);
   for (const card of await page.locator('.card').all()) {
     const type = card.locator('.card__type');
     await expect(type).toBeVisible();
-    expect(['Money', 'Attack', 'Effect', 'Defence']).toContain(await type.textContent());
+    expect(['Votes', 'Attack', 'Effect', 'Defence']).toContain(await type.textContent());
     const label = (await type.boundingBox())!;
     expect(label.height).toBeGreaterThanOrEqual(10);
     await expect(card.locator('.card__name')).toBeVisible();
@@ -101,7 +101,7 @@ for (const [width, height] of [
     await openGame(page, 'fr');
     await startMatch(page, 'droite', 7);
     await expect(page.locator('#game')).toHaveClass(/is-compact/);
-    await expect(page.locator('.card')).toHaveCount(8);
+    await expect(page.locator('.card')).toHaveCount(7);
     const inside = async (selector: string) => {
       for (const box of await page.locator(selector).evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON()))) {
         expect(box.x).toBeGreaterThanOrEqual(0);

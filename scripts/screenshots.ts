@@ -62,11 +62,12 @@ try {
   await page.locator('#game').screenshot({ path: resolve(out, 'camp-select.png') });
 
   const shots: [string, string, string, string, number, number, string?][] = [
-    ['gameplay.png', 'en', 'play', 'centre', 8, 150],
-    ['gameplay-street.png', 'fr', 'jouer', 'gauche', 3, 95, 'poubelle'],
-    ['gameplay-summit.png', 'en', 'play', 'droite', 5, 150, 'trump'],
-    ['gameplay-studio.png', 'fr', 'jouer', 'autres', 4, 120],
-    ['gameplay-show.png', 'en', 'play', 'autres', 2, 110, 'tracteur'],
+    ['gameplay.png', 'en', 'play', 'gauche', 9, 300, 'star:lepen'],
+    ['gameplay-school.png', 'fr', 'jouer', 'droite', 3, 150, 'niel'],
+    ['gameplay-street.png', 'fr', 'jouer', 'gauche', 4, 95, 'poubelle'],
+    ['gameplay-summit.png', 'en', 'play', 'droite', 6, 150, 'trump'],
+    ['gameplay-studio.png', 'fr', 'jouer', 'autres', 5, 120],
+    ['gameplay-show.png', 'en', 'play', 'autres', 2, 110, 'vache'],
     ['gameplay-village.png', 'fr', 'jouer', 'droite', 1, 80],
   ];
   for (const [file, lang, slug, camp, level, seconds, until] of shots) {
@@ -75,13 +76,13 @@ try {
   }
 
   // Removal mode: the board dims and every figure can be taken off.
-  await match(page, 'en', 'play', 'gauche', 6, 120);
+  await match(page, 'en', 'play', 'gauche', 7, 120);
   await page.locator('[data-action="remove"]').click();
   await page.waitForTimeout(500);
   await page.locator('#game').screenshot({ path: resolve(out, 'gameplay-remove.png') });
 
   // The run-off debate: soundbites to send back before they land.
-  await match(page, 'en', 'play', 'droite', 7, 70);
+  await match(page, 'en', 'play', 'droite', 8, 70);
   await page.evaluate(() => {
     const state = (window as unknown as { __P2027__: { state(): { punchlines: object[] } } }).__P2027__.state();
     state.punchlines.push({ id: 9001, lane: 1, col: 5, life: 3, max: 4.5 }, { id: 9002, lane: 3, col: 3, life: 1.2, max: 4.5 });
@@ -89,12 +90,12 @@ try {
   await page.waitForTimeout(300);
   await page.locator('#game').screenshot({ path: resolve(out, 'gameplay-debate.png') });
 
-  // A "New!" card: the match waits while a special opponent is introduced.
-  await match(page, 'en', 'play', 'centre', 6, 50);
+  // A "New!" card: the match waits while a rival headliner is introduced, with her powers as a boss.
+  await match(page, 'en', 'play', 'centre', 7, 50);
   await page.evaluate(() => {
     const hook = (window as unknown as { __P2027__: { intros(on: boolean): void; spawn(id: string, lane: number, x: number): void } }).__P2027__;
     hook.intros(true);
-    hook.spawn('lucet', 2, 8.4);
+    hook.spawn('star:lepen', 2, 8.4);
   });
   await page.waitForTimeout(600);
   await page.locator('#game').screenshot({ path: resolve(out, 'new-card.png') });
@@ -120,7 +121,7 @@ try {
   const phone = await browser.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
   const small = await phone.newPage();
   small.on('pageerror', (err) => errors.push(`${small.url()} — ${err.message}`));
-  await match(small, 'en', 'play', 'droite', 6, 110);
+  await match(small, 'fr', 'jouer', 'droite', 4, 110);
   await small.screenshot({ path: resolve(out, 'gameplay-phone.png') });
   await phone.close();
 
@@ -131,7 +132,7 @@ try {
   const camps = ['gauche', 'centre', 'droite', 'autres'];
   for (const [i, id] of NIGHT_IDS.entries()) {
     if (id === 0) await nightPage.goto(`${base}/fr/jouer?e2e=1`).then(() => nightPage.waitForSelector('#game[data-ready="true"]')).then(() => nightPage.evaluate(() => (window as unknown as { __P2027__: { unlockAll(): void } }).__P2027__.unlockAll()));
-    await match(nightPage, 'fr', 'jouer', camps[i % 4], id, id === 7 ? 70 : 60);
+    await match(nightPage, 'fr', 'jouer', camps[i % 4], id, id === 8 ? 70 : 60);
     const file = resolve(out, '..', 'public/og/nights', `${nightSlug(id, 'fr')}.jpg`);
     await nightPage.locator('.stage').screenshot({ path: file, type: 'jpeg', quality: 80 });
   }

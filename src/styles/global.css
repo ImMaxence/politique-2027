@@ -727,6 +727,15 @@ ol[role='list'] {
 .figure-card__power b {
   display: block;
 }
+/* What a headliner does as a boss, when it marches against you. */
+.figure-card__boss {
+  grid-column: 1 / -1;
+  margin: 0.5rem 0 0;
+  padding: 0.45rem 0.6rem;
+  border: 2px dashed var(--gauche);
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
 .stats {
   grid-column: 1 / -1;
   display: flex;
@@ -1113,9 +1122,15 @@ kbd {
 .figure-page__cta {
   margin: 1.6rem 0 1rem;
 }
-.figure-page__satire {
+.figure-page__satire,
+.figure-page__credit {
   font-size: 0.85rem;
   color: var(--ink-soft);
+}
+.figure-page__boss {
+  padding: 0.6rem 0.8rem;
+  border: 2px dashed var(--gauche);
+  border-radius: 8px;
 }
 .figure-others__list {
   display: grid;

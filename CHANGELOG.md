@@ -12,6 +12,41 @@ Versions follow **`MAJOR.MEDIUM.MINOR`**:
 
 When a version is released, update `version` in `package.json` and `updated` in `src/config/site.ts` (both are shown in the footer and the legal pages).
 
+## [3.0.0] — 2026-11-14
+
+Real faces, boss fights and nine themed nights. A smaller cast that everybody knows, ballots instead of endorsements, and a goal you can see at the end of every lane. The save format changes (version 4): older saves are converted, and every night keeps its stars.
+
+### Added
+
+- **Real photo heads.** Every public figure wears a real photo of their head — freely licensed, from Wikimedia Commons — cut out with a white sticker edge and placed on the drawn cardboard body. Bosses change face: smiling, **angry** while they announce an attack, **struggling** when they are losing. No face is retouched: each expression is another real photo (where none exists, a cartoon anger mark or sweat drops are drawn next to the head). `npm run heads` rebuilds them from `scripts/heads.json`; the authors and licences are listed in the legal notice and on each figure's page.
+- **Boss fights.** The last figure of every camp marches against the others as a boss: drawn 40% bigger, with a long health bar over the stage and powers announced a second before they land (a red "!", the angry face, flashing squares, a warning for screen readers).
+  - **Marine Le Pen**: lets her cats out; her **electronic tag** beeps the first time she comes too close and pulls her back; beaten once, she **appeals to the Court of Cassation** and gets back up with 40% of her credibility.
+  - **Emmanuel Macron**: **"I cross the street"** into the next lane; **Dissolution** sends every figure on 3 × 3 squares back to the voters (half their cost back, cards ready).
+  - **Jean-Luc Mélenchon**: **"La République, c'est moi !"** cuts every mic in front of him over three lanes; his **hologram** holds a rally in another lane.
+  - **Teddy Riner**: **Ippon** throws the figure he faces; below half, his **last fight** makes him faster and harder.
+  - **Donald Trump** doubles his tariffs (to +50%) once he is in trouble.
+- **Xavier Niel**, guest boss of the school blockade: "Ping: 999 ms…", then every figure in three lanes freezes. His only line is his own public post of November 2024 ("Je t'attends !! T'es où ?!").
+- **A goal at the end of every lane**, different every night — the endorsement forms, the farm subsidies, the confiscated phones, the full trolleys, the microphones, French cheese and wine, the ballot boxes, the debate notes, the presidential armchair, the budget. Five pieces, one per row: each opponent who gets through carries one away. The goal is announced at the start, shown on the calendar and read in the HUD.
+- **Night 3, the school blockade** (a new school-yard stage with the national motto on its front): pupils want their phones back, electric scooters race in.
+- **Night 4, the street against the cost of living**, after the 17 October 2026 protests: yellow vests, pupils, unions, burning bins, motorists, minimum-wage workers — and HugoDécrypte covering the march.
+- **New extras**: the star cow of the Agricultural Show (slow and very tough) and the electric scooter (very fast, fragile). A school-blockade week in Cohabitation.
+- **"New!" cards for the bosses**, with what they do against you.
+- Two achievements: **1v1 at the Lidl** (send Xavier Niel away) and **Second Round** (beat Marine Le Pen after her appeal).
+
+### Changed
+
+- **A cast everybody knows: 20 figures**, five per camp (votes, attack, defence, a one-shot, the headliner). Fabien Roussel, Bruno Le Maire, Éric Ciotti and Marine Tondelier leave the line-ups; the substitutes (Cazeneuve, Lecornu, Bertrand, Arthaud) and the guests Sylvain Durif and David Lisnard leave the game. Ségolène Royal becomes the Left's defence (**"Fra-ter-ni-té !"** heals her neighbours) and Bruno Retailleau the Right's (**zero tolerance**: whoever comes near him slows down).
+- **Ballots, not money**: the currency is now **ballots** ("bulletins de vote"), with a ballot-box icon; the card family "Money" becomes **Votes**. The family-benefits office becomes **proxy votes** (refused when a document is missing).
+- **Plain titles**: under each headliner the home page shows their name; every title says who they are ("The President", "The leader of La France insoumise", "The RN candidate"…) instead of a nickname like "Jupiter".
+- **One look per extra**: activists, sign bearers, pundits and the campaign bus no longer take the colour of the camp that sends them.
+- **Nine nights instead of eight**: the street (now the 17th of October) and every later night move up one; the debate is night 8 and the run-off night 9. The daily challenge and duel codes cover nights 2 to 9.
+- Hit flashes are lighter on photo faces, so that a boss stays recognisable under fire.
+- The calendar shows each night's goal; the characters page, the figure pages and `llms.txt` describe the bosses' powers; the legal notice, privacy policy, accessibility statement, README and social cards are updated.
+
+### Fixed
+
+- The daily-challenge scores were never read back from the save (the date pattern was missing its backslashes): they now survive a reload.
+
 ## [2.0.0] — 2026-11-13
 
 A new night, new ways to play, substitutes and a page for everyone. The save format changes (version 3): older saves are converted, and the run-off night keeps its stars as night 8.

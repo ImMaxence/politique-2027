@@ -25,12 +25,12 @@ Le site n'a pas encore été testé avec un lecteur d'écran par une personne qu
 
 ## Ce que le jeu fait pour être accessible
 
-- **Clavier** : toutes les actions passent par de vrais boutons. Touches 1 à 8 pour choisir une figure, flèches pour se déplacer sur le terrain, Entrée ou Espace pour placer, R, U, P, F et M pour les outils. Les raccourcis ne s'activent que lorsque le focus est dans le jeu.
+- **Clavier** : toutes les actions passent par de vrais boutons. Touches 1 à 7 pour choisir une figure, flèches pour se déplacer sur le terrain, Entrée ou Espace pour placer, R, U, P, F et M pour les outils. Les raccourcis ne s'activent que lorsque le focus est dans le jeu.
 - **Lecteurs d'écran** : chaque case du terrain est un bouton qui décrit son contenu (figure présente, crédibilité, nombre d'adversaires dans le couloir). Les vagues, les pertes de points, les arrivées de ténors, les droits de douane et la fin de partie sont annoncés dans des zones dynamiques ; la réplique d'une figure est lue quand on la place.
 - **Orientation** : sur téléphone, la partie s'affiche par défaut en paysage (tournée d'un quart de tour si l'appareil est tenu droit). Ce comportement se désactive d'un bouton dans le menu pause : le jeu suit alors l'orientation de l'appareil.
 - **Zoom** : le zoom à deux doigts reste toujours possible. Seul le zoom par double tap est désactivé dans le jeu, pour qu'un enchaînement rapide de touchers (une carte, puis une case) n'agrandisse pas la page par erreur.
 - **Nouveaux adversaires** : la première fois qu'un adversaire spécial apparaît, la partie s'arrête et une fenêtre de dialogue présente son effet en texte ; le focus va sur le bouton « Compris ! », Échap la ferme et la partie reprend. Chaque fiche n'apparaît qu'une fois.
-- **Raccourcis clavier** : ils sont rappelés dans le menu pause (touche P ou Échap). La touche S lit un résumé du terrain (parrainages, sondages, adversaires par couloir).
+- **Raccourcis clavier** : ils sont rappelés dans le menu pause (touche P ou Échap). La touche S lit un résumé du terrain (bulletins, objectif restant, adversaires par couloir). Les attaques des boss sont annoncées aux lecteurs d’écran dès qu’elles se préparent, avant de frapper.
 - **Rythme** : la partie se met en pause à tout moment, et une vitesse lente (×½) s'ajoute à la vitesse normale et rapide (bouton ou touche F).
 - **Débat** : les « petites phrases » du débat se renvoient en activant leur case (clic, toucher ou Entrée) ; chacune est annoncée avec sa position.
 - **Fiches des cartes** : sur écran tactile, un appui long sur une carte affiche sa description complète ; au clavier et avec un lecteur d'écran, la même description est associée à la carte.

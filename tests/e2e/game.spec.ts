@@ -51,7 +51,7 @@ test('a match can be played with the keyboard only', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('placing with the mouse spends endorsements and reports errors', async ({ page }) => {
+test('placing with the mouse spends votes and reports errors', async ({ page }) => {
   await openGame(page, 'en');
   await startMatch(page, 'droite', 1);
 
@@ -63,7 +63,7 @@ test('placing with the mouse spends endorsements and reports errors', async ({ p
   // (The card is aria-disabled but stays clickable on purpose, hence `force`.)
   await page.locator('.card[data-unit="sarkozy"]').click({ force: true });
   await page.locator('[data-cell]').nth(2 * 9 + 0).click();
-  await expect(page.locator('[data-slot="alert"]')).toHaveText('Not enough endorsements.');
+  await expect(page.locator('[data-slot="alert"]')).toHaveText('Not enough votes.');
   expect(await page.evaluate(() => window.__P2027__.state()!.units.length)).toBe(1);
 });
 
@@ -76,7 +76,7 @@ test('winning unlocks the next level and is remembered', async ({ page }) => {
   await expect(result).toBeVisible();
   await expect(result).toHaveAttribute('data-outcome', 'won');
   await expect(result.locator('[data-slot="headline"]')).not.toBeEmpty();
-  await expect(result.locator('[data-slot="unlock"]')).toContainText('Bruno Le Maire');
+  await expect(result.locator('[data-slot="unlock"]')).toContainText('Élisabeth Borne');
   await expect(result.locator('[data-action="next"]')).toBeFocused();
 
   await result.locator('[data-action="calendar"]').click();
@@ -134,7 +134,7 @@ test('tariffs raise the price printed on every card while the guest is on the bo
   await startMatch(page, 'droite', 5);
   const cost = page.locator('.card[data-unit="bardella"] .card__cost');
   await expect(cost).toHaveAttribute('data-label', '100');
-  await expect(page.locator('.card')).toHaveCount(8);
+  await expect(page.locator('.card')).toHaveCount(7);
 
   await page.evaluate(() => window.__P2027__.spawn('trump', 2, 8.5));
   await expect(cost).toHaveAttribute('data-label', '125');
@@ -191,20 +191,19 @@ test('every card shows which family it belongs to', async ({ page }) => {
     cards.map((card) => [(card as HTMLElement).dataset.unit, (card as HTMLElement).dataset.type, card.querySelector('.card__type')?.textContent]),
   );
   expect(types).toEqual([
-    ['bmacron', 'money', 'Argent'],
+    ['bmacron', 'money', 'Votes'],
     ['villepin', 'attack', 'Attaque'],
     ['lassalle', 'defence', 'Défense'],
-    ['tondelier', 'effect', 'Effet'],
     ['poutou', 'attack', 'Attaque'],
     ['riner', 'defence', 'Défense'],
     ['crs', 'defence', 'Défense'],
     ['pompiers', 'effect', 'Effet'],
   ]);
   // The family is also part of what a screen reader hears.
-  await expect(page.locator('#card-desc-tondelier')).toContainText('Type : Effet');
+  await expect(page.locator('#card-desc-pompiers')).toContainText('Type : Effet');
 });
 
-test('the tax inspector withholds endorsements at source', async ({ page }) => {
+test('the tax inspector withholds votes at source', async ({ page }) => {
   await openGame(page, 'en');
   await startMatch(page, 'gauche', 3);
   const before = await page.evaluate(() => window.__P2027__.state()!.resources);

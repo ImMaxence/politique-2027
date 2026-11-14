@@ -15,7 +15,7 @@ To remember your progress and settings, the site uses your browser's local stora
 
 | Key | Content | Duration |
 | --- | --- | --- |
-| `politique2027:save` | Chosen camp, unlocked levels, stars, endless-mode record, sound muted or not, game speed, forced landscape on phones or not, hard mode or not, opponents already introduced ("New!" cards), "home screen" tip dismissed or not, best daily-challenge scores (last two weeks), achievements and the totals they count, music on or off, substitutes chosen | Until you delete it |
+| `politique2027:save` | Chosen camp, unlocked levels, stars, endless-mode record, sound muted or not, game speed, forced landscape on phones or not, hard mode or not, opponents already introduced ("New!" cards), "home screen" tip dismissed or not, best daily-challenge scores (last two weeks), achievements and the totals they count, music on or off | Until you delete it |
 
 So that the game opens and plays **offline** (in particular once added to the home screen), the browser also keeps a copy of the site's files — pages, scripts, styles, fonts and pictures — in its cache (`Cache Storage`, managed by a *service worker*). This cache only holds the site's public files, no data about you; it is replaced with every new version of the game.
 
@@ -40,7 +40,7 @@ No data is sold, rented or passed on to any other third party.
 
 ## Fonts, images and third-party resources
 
-Fonts, illustrations and scripts are served from the site itself. Nothing is loaded from Google Fonts, an ad network or any other third-party service.
+Fonts, illustrations, the characters' photos and scripts are served from the site itself (the photos are not loaded from Wikimedia). Nothing is loaded from Google Fonts, an ad network or any other third-party service.
 
 Links to GitHub and to the author's website lead to sites that apply their own privacy policies.
 

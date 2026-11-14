@@ -1,6 +1,6 @@
-import { CAMP_IDS, type CampId } from '../data/types';
-import { EXTRAS, NEUTRAL_EXTRAS } from '../data/units';
-import { PORTRAIT_IDS, extraSvg, portraitSvg } from './portraits';
+import { PHOTOS, type Expression } from '../data/photos';
+import { EXTRAS, VEHICLES } from '../data/units';
+import { PORTRAIT_IDS, extraSvg, headUrl, portraitSvg } from './portraits';
 
 export interface Sprite {
   image: HTMLCanvasElement;
@@ -20,7 +20,7 @@ const RASTER_SCALE =
   typeof window !== 'undefined' && (window.devicePixelRatio || 1) * Math.max(window.screen.width, window.screen.height) > 2600 ? 3 : 2;
 
 /** Logical sprite widths; heights follow each SVG's aspect ratio. */
-const WIDTH: Record<string, number> = { bus: 184, tracteur: 172, cnews: 176, auto: 150, cat: 62, poubelle: 76 };
+const WIDTH: Record<string, number> = { bus: 184, tracteur: 172, cnews: 176, auto: 150, cat: 62, poubelle: 76, vache: 176 };
 const FIGURE_WIDTH = 104;
 
 function rasterise(svg: string): Promise<Sprite> {
@@ -51,41 +51,74 @@ function rasterise(svg: string): Promise<Sprite> {
   });
 }
 
+/**
+ * An SVG drawn as an image cannot fetch anything: the photo of the head is
+ * handed to it as a data: URI instead.
+ */
+async function inlineHead(url: string): Promise<string | undefined> {
+  try {
+    const blob = await (await fetch(url)).blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return undefined; // offline and not cached: the drawn face stands in
+  }
+}
+
 /** Rasterises every puppet once so the game loop only ever blits bitmaps. */
 export class SpriteStore {
   private sprites = new Map<string, Sprite>();
   private loading: Promise<void> | null = null;
 
+  /**
+   * Resolves once every figure has its everyday face; the angry and hurt photos
+   * follow in the background (until then the everyday face is used).
+   */
   load(): Promise<void> {
     if (this.loading) return this.loading;
     const jobs: Promise<void>[] = [];
-    const add = (key: string, svg: string) => {
-      jobs.push(rasterise(svg).then((sprite) => void this.sprites.set(key, sprite)));
+    const later: (() => Promise<void>)[] = [];
+    const add = (key: string, svg: string) => rasterise(svg).then((sprite) => void this.sprites.set(key, sprite));
+    const figure = async (id: string, expression: Expression) => {
+      const url = headUrl(id, expression);
+      const headHref = url ? await inlineHead(url) : undefined;
+      if (url && !headHref && expression !== 'neutral') return;
+      await add(`star:${id}:${expression}`, portraitSvg(id, { size: FIGURE_WIDTH, expression, headHref }));
     };
-    // Named figures, the guest and the reinforcements.
-    for (const id of PORTRAIT_IDS) add(`star:${id}`, portraitSvg(id, { size: FIGURE_WIDTH }));
+    for (const id of PORTRAIT_IDS) {
+      jobs.push(figure(id, 'neutral'));
+      for (const expression of PHOTOS[id] ?? []) if (expression !== 'neutral') later.push(() => figure(id, expression));
+    }
     for (const kind of Object.keys(EXTRAS)) {
       if (EXTRAS[kind].portrait) continue;
       const size = WIDTH[kind] ?? FIGURE_WIDTH;
-      if (NEUTRAL_EXTRAS.includes(kind)) {
-        add(kind, extraSvg(kind, 'droite', { size }));
-        continue;
-      }
-      for (const camp of CAMP_IDS) add(`${kind}:${camp}`, extraSvg(kind, camp, { size }));
+      jobs.push(add(kind, extraSvg(kind, { size })));
     }
-    this.loading = Promise.all(jobs).then(() => undefined);
+    this.loading = Promise.all(jobs).then(() => {
+      void (async () => {
+        for (const job of later) await job().catch(() => undefined);
+      })();
+    });
     return this.loading;
   }
 
-  unit(id: string): Sprite | undefined {
-    return this.sprites.get(`star:${id}`);
+  /** A figure's puppet, with the requested face when it is available. */
+  unit(id: string, expression: Expression = 'neutral'): Sprite | undefined {
+    return this.sprites.get(`star:${id}:${expression}`) ?? this.sprites.get(`star:${id}:neutral`);
   }
 
-  enemy(enemyId: string, camp: CampId): Sprite | undefined {
-    if (enemyId.startsWith('star:')) return this.sprites.get(enemyId);
+  enemy(enemyId: string, expression: Expression = 'neutral'): Sprite | undefined {
+    if (enemyId.startsWith('star:')) return this.unit(enemyId.slice(5), expression);
     const portrait = EXTRAS[enemyId]?.portrait;
-    if (portrait) return this.sprites.get(`star:${portrait}`);
-    if (NEUTRAL_EXTRAS.includes(enemyId)) return this.sprites.get(enemyId);
-    return this.sprites.get(`${enemyId}:${camp}`);
+    if (portrait) return this.unit(portrait, expression);
+    return this.sprites.get(enemyId);
+  }
+
+  static isVehicle(enemyId: string): boolean {
+    return VEHICLES.includes(enemyId);
   }
 }

@@ -107,17 +107,13 @@ test('speed cycles normal, fast, slow; S reads the board; the pause menu switche
   await expect(music).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('a substitute can be fielded, and achievements are earned and listed', async ({ page }) => {
+test('achievements are earned and listed, and the night starts with its goal', async ({ page }) => {
   await openGame(page, 'en');
   await page.locator('[data-camp="gauche"]').click();
-  const bench = page.locator('[data-action="bench"]');
-  await expect(bench).toContainText('Cazeneuve instead of Hollande');
-  await bench.click();
-  await expect(bench).toHaveAttribute('aria-pressed', 'true');
   await page.locator('[data-level="1"]').click();
   await page.waitForSelector('[data-screen="match"]:not([hidden])');
-  await expect(page.locator('.card[data-unit="cazeneuve"]')).toBeVisible();
-  await expect(page.locator('.card[data-unit="hollande"]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="live"]')).toContainText('They want your endorsements');
+  await expect(page.locator('[data-slot="polls"]')).toHaveAttribute('aria-label', /Your 500 endorsements/);
 
   await page.evaluate(() => window.__P2027__.advance(400, true));
   await expect(page.locator('[data-overlay="result"] [data-slot="notes"]')).toContainText('Achievement unlocked: First Term');

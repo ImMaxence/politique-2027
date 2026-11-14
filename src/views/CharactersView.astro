@@ -1,6 +1,6 @@
 ---
 import Puppet from '../components/Puppet.astro';
-import { CAMP_IDS, type CampId } from '../game/data/types';
+import { CAMP_IDS } from '../game/data/types';
 import { CAMPS, EXTRAS, GUESTS, REINFORCEMENTS, UNITS, categoryOf } from '../game/data/units';
 import { GAME_STRINGS, type Lang } from '../i18n/game';
 import { absolute, path } from '../i18n/routes';
@@ -17,7 +17,6 @@ const t = SITE_STRINGS[lang];
 const g = GAME_STRINGS[lang];
 const page = t.characters;
 const extras = Object.keys(EXTRAS).filter((kind) => !EXTRAS[kind].portrait);
-const tint: CampId[] = ['gauche', 'centre', 'droite', 'autres'];
 
 const jsonLd = [
   {
@@ -67,19 +66,19 @@ const jsonLd = [
           </div>
           <ul class="cast" role="list">
             {
-              [...CAMPS[camp].roster, CAMPS[camp].bench].map((id) => {
+              CAMPS[camp].roster.map((id) => {
                 const unit = UNITS[id];
                 const text = g.figures[id];
-                const bench = id === CAMPS[camp].bench;
                 return (
                   <li class="figure-card" data-camp={camp} id={id}>
                     <Puppet id={id} uid="sheet" size={96} />
                     <div>
-                      <p class="figure-card__party">{text.party}{bench && <> · {g.ui.benchTitle}</>}</p>
+                      <p class="figure-card__party">{text.party}{unit.boss && <> · {page.boss}</>}</p>
                       <h3><a href={figurePath(lang, id)}>{text.name}</a></h3>
                       <p class="figure-card__title">{text.title}</p>
                     </div>
                     <p class="figure-card__power"><b>{text.power}</b>{text.desc}</p>
+                    {text.boss && <p class="figure-card__boss">{text.boss}</p>}
                     <p class="figure-card__quote">« {text.lines.join(' » « ')} »</p>
                     <ul class="stats">
                       <li class="stats__type" data-type={categoryOf(unit)}>{g.types[categoryOf(unit)]}</li>
@@ -150,6 +149,7 @@ const jsonLd = [
                   <p class="figure-card__title">{text.title}</p>
                 </div>
                 <p class="figure-card__power"><b>{text.power}</b>{text.desc}</p>
+                {text.boss && <p class="figure-card__boss">{text.boss}</p>}
                 <p class="figure-card__quote">« {text.lines.join(' » « ')} »</p>
                 <ul class="stats">
                   <li>{page.credibility} : {EXTRAS[id].hp}</li>
@@ -170,9 +170,9 @@ const jsonLd = [
       </div>
       <ul class="cast" role="list">
         {
-          extras.map((kind, index) => (
+          extras.map((kind) => (
             <li class="figure-card">
-              <Puppet id={kind} camp={tint[index % tint.length]} uid="extras" size={96} />
+              <Puppet id={kind} extra uid="extras" size={96} />
               <div>
                 <h3>{g.extras[kind]}</h3>
               </div>

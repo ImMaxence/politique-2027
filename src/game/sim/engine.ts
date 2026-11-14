@@ -7,7 +7,7 @@
  */
 import { COLS, ROWS, levelDef } from '../data/levels';
 import { CAMPS, REINFORCEMENTS, UNITS, enemyDef, rivalsOf } from '../data/units';
-import type { CampId, EnemyDef, LevelDef, ProjectileKind, ThemeId, TwistId, UltimateId, UnitDef } from '../data/types';
+import type { CampId, EnemyDef, LevelDef, Power, PowerKind, ProjectileKind, ThemeId, TwistId, UltimateId, UnitDef } from '../data/types';
 
 export const TICK = 1 / 60;
 export const PASSIVE_INTERVAL = 9;
@@ -68,6 +68,31 @@ export interface Enemy {
   dry: boolean;
   born: number;
   lastHit: number;
+  /** Headliners: countdown to each timed power (same order as `def.powers`). */
+  powerTimers: number[];
+  /** A power being announced: the opponent stands still, angry, until it lands. */
+  cast: Cast | null;
+  /** True once an appeal has put her back on her feet. */
+  revived: boolean;
+  /** Electronic tag already beeped in this life. */
+  tagged: boolean;
+  /** Last stand (faster, harder) or tariffs raised. */
+  enraged: boolean;
+  /** Crossing the street: the lane it comes from and when it left (for the animation). */
+  fromLane: number;
+  shiftAt: number;
+}
+
+/** A power announced by a headliner, and what it will hit when it lands. */
+export interface Cast {
+  index: number;
+  kind: PowerKind;
+  left: number;
+  max: number;
+  /** Dissolution: the centre of the 3 × 3 squares. */
+  zone?: { lane: number; col: number };
+  /** Ippon: the figure about to be thrown. */
+  target?: number;
 }
 
 export interface Projectile {
@@ -96,7 +121,7 @@ export type GameEvent =
   | { type: 'shoot'; lane: number; col: number; kind: ProjectileKind }
   | { type: 'hit'; lane: number; x: number; kind: ProjectileKind | 'melee' }
   | { type: 'unitDown'; lane: number; col: number; unitId: string }
-  | { type: 'enemyDown'; lane: number; x: number; enemyId: string; camp: CampId; boss: boolean }
+  | { type: 'enemyDown'; lane: number; x: number; enemyId: string; camp: CampId; boss: boolean; revived: boolean }
   | { type: 'leak'; lane: number; enemyId: string; loss: number }
   | { type: 'wave'; index: number; total: number; big: boolean; final: boolean }
   | { type: 'spawn'; lane: number; enemyId: string; boss: boolean; camp: CampId }
@@ -121,6 +146,14 @@ export type GameEvent =
   | { type: 'riposte'; lane: number; col: number; x: number | null }
   | { type: 'theme'; id: ThemeId }
   | { type: 'caf'; amount: number }
+  /** A headliner announces a power (angry face, marker), then it lands. */
+  | { type: 'cast'; id: number; enemyId: string; power: PowerKind; lane: number; x: number; zone?: { lane: number; col: number } }
+  | { type: 'power'; id: number; enemyId: string; power: PowerKind; lane: number; x: number; hits: { lane: number; col: number }[]; to?: number }
+  /** Passive moves: the appeal, the electronic tag, the last stand, the tariff hike. */
+  | { type: 'appeal'; id: number; enemyId: string; lane: number; x: number }
+  | { type: 'tag'; id: number; lane: number; x: number }
+  | { type: 'enrage'; id: number; enemyId: string; lane: number; x: number }
+  | { type: 'hike'; id: number; lane: number; x: number }
   | { type: 'ultimate'; id: UltimateId }
   | { type: 'win' }
   | { type: 'lose' };
@@ -216,7 +249,7 @@ export interface GameOptions {
   seed?: number;
   /** "Hard" mode: every wave is bigger. */
   hard?: boolean;
-  /** The player's line-up, when it differs from the camp's roster (a substitute fielded). */
+  /** The player's line-up, when it differs from the camp's roster. */
   roster?: string[];
 }
 
@@ -338,6 +371,7 @@ export function useUltimate(state: GameState): boolean {
       for (const enemy of state.enemies) {
         enemy.x = SPAWN_X - rand(state) * 0.9;
         enemy.attacking = false;
+        enemy.cast = null;
       }
       state.resources = 0;
       break;
@@ -368,6 +402,8 @@ export function spawnEnemy(state: GameState, enemyId: string, lane: number, camp
     slowT: 0, slowF: 1, auraSlow: 1, slowed: false, stunT: 0,
     traitTimer: def.trait && 'interval' in def.trait ? def.trait.interval * 0.6 : 0,
     attacking: false, dry: false, born: state.time, lastHit: -9,
+    powerTimers: (def.powers ?? []).map((p) => ('interval' in p ? p.interval * 0.55 : 0)),
+    cast: null, revived: false, tagged: false, enraged: false, fromLane: lane, shiftAt: -9,
   };
   state.enemies.push(enemy);
   // Heavyweights and named guests get an entrance announcement.
@@ -398,8 +434,8 @@ function launchWave(state: GameState): void {
 
   // Headliners from the two rival camps.
   if (index >= level.starsFrom) {
-    // Rival lieutenants, substitutes included.
-    const lieutenants = rivals.flatMap((c) => [...CAMPS[c].roster, CAMPS[c].bench]).filter((id) => !UNITS[id].boss);
+    // Rival lieutenants.
+    const lieutenants = rivals.flatMap((c) => CAMPS[c].roster).filter((id) => !UNITS[id].boss);
     const count = big ? 2 : rand(state) < 0.6 ? 1 : 0;
     for (let i = 0; i < count; i++) {
       const id = pick(state, lieutenants);
@@ -517,14 +553,7 @@ function hurtEnemy(state: GameState, enemy: Enemy, amount: number): void {
 }
 
 function hurtUnit(state: GameState, unit: Unit, amount: number): void {
-  // Insured: a neighbouring wall with cover takes a share of the blow off.
-  let cover = 0;
-  for (const other of state.units) {
-    const ability = other.def.ability;
-    if (other === unit || ability.kind !== 'wall' || !ability.shield) continue;
-    if (Math.abs(other.lane - unit.lane) <= 1 && Math.abs(other.col - unit.col) <= 1) cover = Math.max(cover, ability.shield);
-  }
-  unit.hp -= amount * (1 - cover);
+  unit.hp -= amount;
   unit.lastHit = state.time;
 }
 
@@ -631,6 +660,13 @@ function updateUnits(state: GameState, dt: number): void {
             }
           }
         }
+        if (ability.zone) {
+          // Zero tolerance: whoever comes near walks at a crawl.
+          const x = unitX(unit);
+          for (const enemy of enemiesAhead(state, unit.lane, x - 0.3, x + ability.zone.range)) {
+            if ((enemy.def.resist ?? 0) < 1) enemy.auraSlow = Math.min(enemy.auraSlow, ability.zone.slow);
+          }
+        }
         if (ability.regen && unit.hp < unit.def.hp) {
           unit.hp = Math.min(unit.def.hp, unit.hp + ability.regen * dt);
         }
@@ -701,14 +737,6 @@ function updateUnits(state: GameState, dt: number): void {
         }
         break;
       }
-      case 'aura': {
-        const x = unitX(unit);
-        for (const enemy of enemiesAhead(state, unit.lane, x - 0.3, x + ability.range)) {
-          enemy.auraSlow = Math.min(enemy.auraSlow, ability.slow);
-          enemy.hp -= ability.dps * dt;
-        }
-        break;
-      }
     }
   }
 }
@@ -748,15 +776,6 @@ function updateProjectiles(state: GameState, dt: number): void {
 
 function updateEnemies(state: GameState, dt: number): void {
   const onStrike = state.ult.strike > 0;
-  // Red carpets: in a lane where one is rolled out, whoever walks behind its owner goes faster.
-  const carpets = new Map<number, { x: number; factor: number }>();
-  for (const enemy of state.enemies) {
-    const trait = enemy.def.trait;
-    if (trait?.kind !== 'carpet' || enemy.hp <= 0 || enemy.x > COLS) continue;
-    const current = carpets.get(enemy.lane);
-    if (!current || enemy.x < current.x) carpets.set(enemy.lane, { x: enemy.x, factor: trait.factor });
-  }
-
   for (const enemy of state.enemies) {
     if (enemy.hp <= 0) continue;
     const def = enemy.def;
@@ -771,6 +790,11 @@ function updateEnemies(state: GameState, dt: number): void {
     }
     if (enemy.stunT > 0) {
       enemy.stunT -= dt;
+      enemy.attacking = false;
+      continue;
+    }
+    // A headliner announcing a power stands still until it lands.
+    if (def.powers && updatePowers(state, enemy, def.powers, dt)) {
       enemy.attacking = false;
       continue;
     }
@@ -807,7 +831,7 @@ function updateEnemies(state: GameState, dt: number): void {
         continue;
       }
       if (investigating) {
-        // The interview starts: no comment, and no endorsements either while it lasts.
+        // The interview starts: no comment, and no ballots either while it lasts.
         if (!enemy.attacking) state.events.push({ type: 'interview', lane: target.lane, col: target.col });
         target.silenced = Math.max(target.silenced, 0.25);
       } else if (trait?.kind === 'picket' && melee) {
@@ -816,7 +840,7 @@ function updateEnemies(state: GameState, dt: number): void {
         target.silenced = Math.max(target.silenced, 0.25);
       }
       enemy.attacking = true;
-      hurtUnit(state, target, def.dps * dt);
+      hurtUnit(state, target, def.dps * dt * (enemy.enraged ? 1.3 : 1));
       const ability = target.def.ability;
       if (melee && ability.kind === 'wall' && ability.thorns) {
         enemy.hp -= ability.thorns * dt;
@@ -832,8 +856,9 @@ function updateEnemies(state: GameState, dt: number): void {
         }
         if (enemy.dry) speed = trait.slowSpeed;
       }
-      const carpet = carpets.get(enemy.lane);
-      if (carpet && enemy.x > carpet.x + 0.05) speed *= carpet.factor;
+      // Last stand: faster.
+      const enrage = enemy.enraged ? def.powers?.find((p) => p.kind === 'enrage') : undefined;
+      if (enrage?.kind === 'enrage') speed *= enrage.speed;
       enemy.x -= speed * slow * dt;
     }
 
@@ -885,17 +910,28 @@ function cleanup(state: GameState): void {
 
   for (let i = state.enemies.length - 1; i >= 0; i--) {
     const enemy = state.enemies[i];
+    const appeal = enemy.hp <= 0 && !enemy.revived ? enemy.def.powers?.find((p) => p.kind === 'appeal') : undefined;
+    if (appeal?.kind === 'appeal') {
+      // Not over yet: she appeals, and gets back up with part of her credibility.
+      enemy.revived = true;
+      enemy.hp = enemy.def.hp * appeal.share;
+      enemy.stunT = 1.6;
+      enemy.attacking = false;
+      enemy.cast = null;
+      state.events.push({ type: 'appeal', id: enemy.id, enemyId: enemy.def.id, lane: enemy.lane, x: enemy.x });
+      continue;
+    }
     if (enemy.hp <= 0) {
       state.enemies.splice(i, 1);
       state.stats.kills++;
       const trait = enemy.def.trait;
       if (trait?.kind === 'undecided') {
-        // Convinced on his way to vote: one more voice, and the endorsements that come with it.
+        // Convinced on his way to vote: one more voice, and the ballots that come with it.
         state.resources += trait.reward;
         state.events.push({ type: 'wonOver', lane: enemy.lane, x: enemy.x, amount: trait.reward });
       }
       state.events.push({
-        type: 'enemyDown', lane: enemy.lane, x: enemy.x, enemyId: enemy.def.id, camp: enemy.camp, boss: !!enemy.def.boss,
+        type: 'enemyDown', lane: enemy.lane, x: enemy.x, enemyId: enemy.def.id, camp: enemy.camp, boss: !!enemy.def.boss, revived: enemy.revived,
       });
     } else if (enemy.x < -0.15) {
       state.enemies.splice(i, 1);
@@ -915,14 +951,15 @@ function cleanup(state: GameState): void {
   }
 }
 
-const THEMES: ThemeId[] = ['cnews', 'zucman', 'greve', 'smic', 'agri'];
+const THEMES: ThemeId[] = ['cnews', 'zucman', 'greve', 'smic', 'agri', 'blocus'];
 /** Who a themed week brings, as weight multipliers (or weights, for someone not in the pool). */
 const THEME_POOL: Record<ThemeId, Record<string, number>> = {
   cnews: { cnews: 4, pundit: 2 },
   zucman: { patron: 4 },
   greve: { syndicat: 4, lyceen: 2 },
   smic: { smicard: 4 },
-  agri: { agriculteur: 3, tracteur: 3 },
+  agri: { agriculteur: 3, tracteur: 3, vache: 2 },
+  blocus: { lyceen: 4, trottinette: 2 },
 };
 
 /**
@@ -958,7 +995,7 @@ export interface Punchline {
   max: number;
 }
 
-/** What sending a "petite phrase" back is worth: endorsements, and a blow to the frontmost opponent. */
+/** What sending a "petite phrase" back is worth: ballots, and a blow to the frontmost opponent. */
 export const RIPOSTE_REWARD = 15;
 export const RIPOSTE_DAMAGE = 150;
 const LANDED_SILENCE = 3;
@@ -1039,6 +1076,174 @@ export function versusSend(state: GameState, kind: VersusKind, lane: number): Se
   return null;
 }
 
+// ───────────────────────────── headliners' powers ─────────────────────────────
+
+/** Figures standing in a lane up to `range` cells in front of x. */
+function figuresAhead(state: GameState, lane: number, x: number, range: number): Unit[] {
+  return state.units.filter((u) => u.lane === lane && x - unitX(u) >= -0.35 && x - unitX(u) <= range);
+}
+
+/** The figure an opponent is debating with (in contact), if any. */
+function facing(state: GameState, enemy: Enemy): Unit | null {
+  let best: Unit | null = null;
+  for (const unit of state.units) {
+    if (unit.lane !== enemy.lane) continue;
+    const gap = enemy.x - unitX(unit);
+    if (gap >= -0.35 && gap <= 0.62 && (!best || gap < enemy.x - unitX(best))) best = unit;
+  }
+  return best;
+}
+
+/**
+ * Passive moves, then timed powers: a power is announced first (`warn` seconds) and
+ * lands afterwards. Returns true while the opponent is busy announcing one.
+ */
+function updatePowers(state: GameState, enemy: Enemy, powers: Power[], dt: number): boolean {
+  const ratio = enemy.hp / enemy.def.hp;
+  for (const power of powers) {
+    if (power.kind === 'tag' && !enemy.tagged && !enemy.revived && enemy.x < power.limit) {
+      // Beep beep: out of bounds, and back to the permitted area.
+      enemy.tagged = true;
+      enemy.x = Math.min(SPAWN_X, enemy.x + power.back);
+      enemy.stunT = Math.max(enemy.stunT, 1.2);
+      enemy.cast = null;
+      state.events.push({ type: 'tag', id: enemy.id, lane: enemy.lane, x: enemy.x });
+      return true;
+    }
+    if ((power.kind === 'enrage' || power.kind === 'hike') && !enemy.enraged && ratio < power.below) {
+      enemy.enraged = true;
+      state.events.push(power.kind === 'enrage'
+        ? { type: 'enrage', id: enemy.id, enemyId: enemy.def.id, lane: enemy.lane, x: enemy.x }
+        : { type: 'hike', id: enemy.id, lane: enemy.lane, x: enemy.x });
+    }
+  }
+
+  if (enemy.cast) {
+    enemy.cast.left -= dt;
+    if (enemy.cast.left <= 0) {
+      const cast = enemy.cast;
+      enemy.cast = null;
+      landPower(state, enemy, powers[cast.index], cast);
+    }
+    return enemy.cast !== null;
+  }
+  if (enemy.x > COLS - 0.2) return false; // not on stage yet
+
+  for (let i = 0; i < powers.length; i++) {
+    const power = powers[i];
+    if (!('interval' in power)) continue;
+    enemy.powerTimers[i] -= dt;
+    if (enemy.powerTimers[i] > 0) continue;
+    let zone: Cast['zone'];
+    let target: number | undefined;
+    let ready = true;
+    switch (power.kind) {
+      case 'roar':
+        ready = [-1, 0, 1].some((d) => figuresAhead(state, enemy.lane + d, enemy.x, power.range).length > 0);
+        break;
+      case 'lag':
+        ready = state.units.some((u) => Math.abs(u.lane - enemy.lane) <= 1);
+        break;
+      case 'cross':
+        ready = crossTo(state, enemy) !== null && figuresAhead(state, enemy.lane, enemy.x, 3).length > 0;
+        break;
+      case 'dissolve': {
+        const ahead = figuresAhead(state, enemy.lane, enemy.x, 4).sort((a, b) => b.col - a.col)[0];
+        ready = !!ahead;
+        if (ahead) zone = { lane: ahead.lane, col: Math.max(1, Math.min(COLS - 2, ahead.col)) };
+        break;
+      }
+      case 'ippon': {
+        const unit = facing(state, enemy);
+        ready = !!unit;
+        target = unit?.id;
+        break;
+      }
+      case 'hologram':
+        ready = state.level.lanes.length > 1;
+        break;
+    }
+    if (!ready) {
+      enemy.powerTimers[i] = 0.5;
+      continue;
+    }
+    enemy.powerTimers[i] = power.interval;
+    enemy.cast = { index: i, kind: power.kind, left: power.warn, max: power.warn, zone, target };
+    state.events.push({ type: 'cast', id: enemy.id, enemyId: enemy.def.id, power: power.kind, lane: enemy.lane, x: enemy.x, zone });
+    return true;
+  }
+  return false;
+}
+
+/** The neighbouring open lane with the fewest figures in front of the opponent. */
+function crossTo(state: GameState, enemy: Enemy): number | null {
+  const options = [enemy.lane - 1, enemy.lane + 1].filter((l) => state.level.lanes.includes(l));
+  if (!options.length) return null;
+  const crowd = (l: number) => figuresAhead(state, l, enemy.x, COLS).length;
+  return options.sort((a, b) => crowd(a) - crowd(b))[0];
+}
+
+function landPower(state: GameState, enemy: Enemy, power: Power, cast: Cast): void {
+  const hits: { lane: number; col: number }[] = [];
+  let to: number | undefined;
+  switch (power.kind) {
+    case 'roar':
+      // "La République, c'est moi !": every microphone in front of him is cut.
+      for (const d of [-1, 0, 1]) {
+        for (const unit of figuresAhead(state, enemy.lane + d, enemy.x, power.range)) {
+          unit.silenced = Math.max(unit.silenced, power.duration);
+          hits.push({ lane: unit.lane, col: unit.col });
+        }
+      }
+      break;
+    case 'lag':
+      // The network is down: every figure in three lanes freezes.
+      for (const unit of state.units) {
+        if (Math.abs(unit.lane - enemy.lane) > 1) continue;
+        unit.silenced = Math.max(unit.silenced, power.duration);
+        hits.push({ lane: unit.lane, col: unit.col });
+      }
+      break;
+    case 'hologram': {
+      const lanes = state.level.lanes.filter((l) => l !== enemy.lane);
+      to = pick(state, lanes);
+      spawnEnemy(state, 'hologram', to, enemy.camp, Math.min(SPAWN_X, enemy.x + 0.8));
+      break;
+    }
+    case 'cross': {
+      const lane = crossTo(state, enemy);
+      if (lane === null) break;
+      enemy.fromLane = enemy.lane;
+      enemy.shiftAt = state.time;
+      enemy.lane = lane;
+      to = lane;
+      break;
+    }
+    case 'dissolve': {
+      // Back to the voters: the figures in the zone leave the board; half their cost comes back and the card is ready again.
+      const zone = cast.zone;
+      if (!zone) break;
+      for (const unit of [...state.units]) {
+        if (Math.abs(unit.lane - zone.lane) > 1 || Math.abs(unit.col - zone.col) > 1) continue;
+        state.resources += Math.floor(unit.def.cost * power.refund);
+        const card = state.cards.find((c) => c.def.id === unit.def.id);
+        if (card) card.cooldown = 0;
+        dropUnit(state, unit);
+        hits.push({ lane: unit.lane, col: unit.col });
+      }
+      break;
+    }
+    case 'ippon': {
+      const unit = state.units.find((u) => u.id === cast.target);
+      if (!unit || unit.lane !== enemy.lane || Math.abs(enemy.x - unitX(unit)) > 0.9) break;
+      hurtUnit(state, unit, unit.def.hp * power.share);
+      hits.push({ lane: unit.lane, col: unit.col });
+      break;
+    }
+  }
+  state.events.push({ type: 'power', id: enemy.id, enemyId: enemy.def.id, power: power.kind, lane: enemy.lane, x: enemy.x, hits, to });
+}
+
 /** The Zucman tax comes back to the vote while CAC 40 bosses stand in the courtyard. */
 function updateZucman(state: GameState, dt: number): void {
   state.zucmanTimer -= dt;
@@ -1091,7 +1296,9 @@ export function step(state: GameState, dt: number = TICK): void {
   let tariff = 1;
   for (const enemy of state.enemies) {
     const trait = enemy.def.trait;
-    if (trait?.kind === 'tariff' && enemy.x <= COLS) tariff = Math.max(tariff, trait.factor);
+    if (trait?.kind !== 'tariff' || enemy.x > COLS) continue;
+    const hike = enemy.enraged ? enemy.def.powers?.find((p) => p.kind === 'hike') : undefined;
+    tariff = Math.max(tariff, hike?.kind === 'hike' ? hike.factor : trait.factor);
   }
   if (tariff !== state.tariff) {
     state.tariff = tariff;

@@ -16,7 +16,8 @@ export const ACHIEVEMENTS = [
   'peoplesVoice',
   'socialDialogue',
   'noComment',
-  'redCarpet',
+  'lidl',
+  'appeal',
   'cohabitation',
   'hardRunoff',
   'dailyDone',
@@ -33,14 +34,17 @@ export interface Counters {
   unionists: number;
   ripostes: number;
   lucet: number;
-  lisnard: number;
+  /** Xavier Niel sent home. */
+  niel: number;
+  /** Marine Le Pen beaten after her appeal. */
+  appeal: number;
   dailies: number;
   versus: number;
   hardRunoff: number;
 }
 
 export function blankCounters(): Counters {
-  return { exiled: 0, wonOver: 0, unionists: 0, ripostes: 0, lucet: 0, lisnard: 0, dailies: 0, versus: 0, hardRunoff: 0 };
+  return { exiled: 0, wonOver: 0, unionists: 0, ripostes: 0, lucet: 0, niel: 0, appeal: 0, dailies: 0, versus: 0, hardRunoff: 0 };
 }
 
 function earned(id: AchievementId, save: Save): boolean {
@@ -63,8 +67,10 @@ function earned(id: AchievementId, save: Save): boolean {
       return c.unionists >= 30;
     case 'noComment':
       return c.lucet >= 1;
-    case 'redCarpet':
-      return c.lisnard >= 1;
+    case 'lidl':
+      return c.niel >= 1;
+    case 'appeal':
+      return c.appeal >= 1;
     case 'cohabitation':
       return camps.some((p) => p.endlessBest >= 20);
     case 'hardRunoff':

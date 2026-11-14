@@ -3,6 +3,7 @@
 import Puppet from '../components/Puppet.astro';
 import { LEVELS } from '../game/data/levels';
 import type { CampId } from '../game/data/types';
+import { CREDITS } from '../game/data/photos';
 import { CAMPS, EXTRAS, UNITS, categoryOf } from '../game/data/units';
 import { GAME_STRINGS, fmt, type Lang } from '../i18n/game';
 import { PAGE_STRINGS } from '../i18n/pages';
@@ -24,12 +25,11 @@ const text = g.figures[id];
 const unit = UNITS[id];
 const guest = EXTRAS[id];
 const camp = unit && unit.camp !== 'neutre' ? (unit.camp as CampId) : null;
-const bench = camp !== null && CAMPS[camp].bench === id;
-const starter = bench && camp ? CAMPS[camp].roster.find((r) => UNITS[r].slot === unit.slot) : undefined;
+const photos = CREDITS.filter((c) => c.id === id);
 const unlockedAt = unit ? LEVELS.find((l) => l.slots > unit.slot) : undefined;
 const nights = guest ? LEVELS.filter((l) => l.guests?.includes(id)) : [];
 const only = guest?.onlyAgainst;
-const others = camp ? [...CAMPS[camp].roster, CAMPS[camp].bench].filter((o) => o !== id) : [];
+const others = camp ? CAMPS[camp].roster.filter((o) => o !== id) : [];
 
 const description = fmt(p.metaDescription, { name: text.name, power: text.power, desc: text.desc });
 const jsonLd = [
@@ -82,12 +82,12 @@ const jsonLd = [
     </div>
     <div class="figure-page__body">
       <p class="figure-card__party">
-        {text.party}{camp && <> · {g.camps[camp].name}</>}{bench && <> · {p.substitute}</>}{guest && !camp && <> · {p.guest}</>}
+        {text.party}{camp && <> · {g.camps[camp].name}</>}{(unit?.boss || guest?.boss) && <> · {p.boss}</>}{guest && !camp && <> · {p.guest}</>}
       </p>
       <h1>{text.name}</h1>
       <p class="figure-page__title">{text.title}</p>
       <p class="figure-page__power"><b>{text.power}</b> — {text.desc}</p>
-      {starter && <p>{fmt(g.ui.benchSwap, { bench: text.short, starter: g.figures[starter].name })}</p>}
+      {text.boss && <p class="figure-page__boss">{text.boss}</p>}
 
       <h2>{p.lines}</h2>
       <ul class="figure-page__lines" role="list">{text.lines.map((line) => <li>« {line} »</li>)}</ul>
@@ -129,6 +129,20 @@ const jsonLd = [
         <a class="btn btn--primary" href={path(lang, 'play')}>{camp ? fmt(p.play, { camp: g.camps[camp].name }) : t.characters.cta}</a>
       </p>
       <p class="figure-page__satire">{p.satire} <a href={path(lang, 'legal')}>{p.legal}</a></p>
+      {
+        photos.length > 0 && (
+          <p class="figure-page__credit">
+            {p.photo}{' '}
+            {photos.map((c, i) => (
+              <>
+                {i > 0 && ' · '}
+                <a href={c.source} rel="noopener">{c.author}</a>, {c.license}
+              </>
+            ))}
+            {' '}{p.photoNote}
+          </p>
+        )
+      }
     </div>
   </article>
 

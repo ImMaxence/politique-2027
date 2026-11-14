@@ -25,28 +25,32 @@ test('a special opponent gets a "New!" card the first time only, and the match w
   await page.evaluate(() => window.__P2027__.spawn('syndicat', 1, 8.5));
   await page.waitForTimeout(300);
   await expect(card).toBeHidden();
-  await page.evaluate(() => window.__P2027__.spawn('lisnard', 3, 8.5));
+  await page.evaluate(() => window.__P2027__.spawn('niel', 3, 8.5));
   await expect(card).toBeVisible();
-  await expect(card.getByRole('heading')).toHaveText('David Lisnard');
-  await expect(card.locator('[data-slot="intro-power"]')).toContainText('Le Tapis rouge');
+  await expect(card.getByRole('heading')).toHaveText('Xavier Niel');
+  await expect(card.locator('[data-slot="intro-power"]')).toContainText('Coupure réseau');
   await page.keyboard.press('Escape');
   await expect(card).toBeHidden();
   const seen = await page.evaluate(() => JSON.parse(localStorage.getItem('politique2027:save')!).seen);
-  expect(seen).toEqual(['syndicat', 'lisnard']);
+  expect(seen).toEqual(['syndicat', 'niel']);
 });
 
 test('the calendar says who turns up each night, guests included', async ({ page }) => {
   await openGame(page, 'fr');
   await page.locator('[data-camp="droite"]').click();
-  const street = page.locator('[data-level="3"] .level-card__cast');
+  const street = page.locator('[data-level="4"] .level-card__cast');
   await expect(street).toContainText('Syndicaliste');
   await expect(street).toContainText('Smicard');
+  await expect(street).toContainText('HugoDécrypte');
   // Squeezie only comes against the Right.
-  await expect(street.getByText('Squeezie')).toBeVisible();
+  const firstRound = page.locator('[data-level="7"] .level-card__cast');
+  await expect(firstRound.getByText('Squeezie')).toBeVisible();
   await page.locator('[data-action="change-camp"]').click();
   await page.locator('[data-camp="gauche"]').click();
-  await expect(street.getByText('Squeezie')).toBeHidden();
-  await expect(page.locator('[data-level="2"] .level-card__cast')).toContainText('David Lisnard');
+  await expect(firstRound.getByText('Squeezie')).toBeHidden();
+  await expect(page.locator('[data-level="3"] .level-card__cast')).toContainText('Xavier Niel');
+  // And what the crowd is after.
+  await expect(page.locator('[data-level="2"] .level-card__goal')).toContainText('Les subventions de la PAC');
 });
 
 test('hard mode is a choice on the calendar, remembered and applied to the match', async ({ page }) => {
